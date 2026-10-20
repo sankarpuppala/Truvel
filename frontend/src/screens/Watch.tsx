@@ -245,16 +245,17 @@ export function Watch() {
             ))}
           </div>
 
-          {/* Buttons for the vertical gesture (SPEC §13). */}
+          {/* Buttons for the vertical gesture (SPEC §13). On the left edge,
+              because the right rail already owns the other side. */}
           <div
             style={{
               position: 'absolute',
-              right: 8,
-              top: '45%',
+              left: 8,
+              top: '42%',
               zIndex: 4,
               display: 'flex',
               flexDirection: 'column',
-              gap: 6,
+              gap: 8,
             }}
           >
             <button

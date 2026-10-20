@@ -10,10 +10,15 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
+    // The device preset first, then our own values -- a spread that comes
+    // *after* these would put the 1280x720 desktop viewport back and the
+    // screenshots would not be the phone size AC-20 asks for.
+    ...devices['Desktop Chrome'],
     baseURL: 'http://localhost:5173',
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
-    ...devices['Desktop Chrome'],
+    isMobile: false,
+    hasTouch: true,
   },
   projects: [
     { name: 'light', use: { colorScheme: 'light' } },
