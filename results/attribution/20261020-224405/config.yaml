@@ -1,0 +1,325 @@
+city_default: hyderabad
+languages:
+- en
+- hi
+- mr
+- ne
+- sa
+- gom
+- mai
+- doi
+- brx
+- bn
+- as
+- gu
+- pa
+- or
+- te
+- ta
+- kn
+- ml
+- ur
+- ks
+- sd
+- sat
+- mni
+state_languages:
+  Telangana:
+  - te
+  - ur
+  Andhra Pradesh:
+  - te
+  Tamil Nadu:
+  - ta
+  Karnataka:
+  - kn
+  Kerala:
+  - ml
+  Maharashtra:
+  - mr
+  Gujarat:
+  - gu
+  Punjab:
+  - pa
+  Odisha:
+  - or
+  West Bengal:
+  - bn
+  Assam:
+  - as
+  Manipur:
+  - mni
+  Jammu and Kashmir:
+  - ur
+  - ks
+  Goa:
+  - gom
+  Bihar:
+  - hi
+  - mai
+  Jharkhand:
+  - hi
+  - sat
+  Sikkim:
+  - ne
+  Delhi:
+  - hi
+  Uttar Pradesh:
+  - hi
+  - ur
+  Madhya Pradesh:
+  - hi
+  Rajasthan:
+  - hi
+  Haryana:
+  - hi
+  Uttarakhand:
+  - hi
+  Himachal Pradesh:
+  - hi
+  Chhattisgarh:
+  - hi
+  Tripura:
+  - bn
+  Meghalaya:
+  - en
+  Nagaland:
+  - en
+  Mizoram:
+  - en
+  Arunachal Pradesh:
+  - en
+  Puducherry:
+  - ta
+  Chandigarh:
+  - pa
+  - hi
+  Ladakh:
+  - ur
+  Andaman and Nicobar Islands:
+  - hi
+  Dadra and Nagar Haveli and Daman and Diu:
+  - gu
+  Lakshadweep:
+  - ml
+wikidata:
+  classes:
+  - Q570116
+  - Q33506
+  - Q34038
+  - Q23397
+  - Q8502
+  - Q40080
+  - Q22698
+  - Q46169
+  - Q179049
+  - Q1107656
+  - Q23413
+  - Q57821
+  - Q44539
+  - Q4989906
+  - Q839954
+  - Q35509
+  - Q842402
+  - Q32815
+  - Q16970
+  - Q337986
+  - Q2613100
+  - Q2639699
+  - Q1473950
+  - Q1010155
+  - Q16560
+  - Q2393184
+  famous_sitelinks: 15
+  user_agent: Pagdandi/1.0 (https://example.org/pagdandi; student project) python-httpx/0.28
+commons:
+  licence_allowlist:
+  - CC0
+  - Public domain
+  - CC BY
+  - CC BY-SA
+  thumb_width: 1200
+  max_requests_per_second: 2
+watch:
+  weights:
+    quality: 0.35
+    prox: 0.2
+    pref: 0.2
+    fresh: 0.15
+    following: 0.1
+  prox_tau_km: 25
+  fresh_tau_days: 5
+  engaged_min_s: 3
+  completion_ratio: 0.9
+  break_nudge_min: 20
+  video_max_s: 60
+  video_max_mb: 60
+  max_same_creator_run: 2
+  max_same_category_run: 3
+  nearby_max_km: 25
+  foryou_near_km: 100
+pulse:
+  live_hours: 6
+  recent_hours: 48
+  hide_days: 7
+  visit_window_hours: 2
+attribution:
+  lookback_days: 30
+  half_life_days: 7
+  steps_min_read_s: 10
+invalid_traffic:
+  new_account_hours: 24
+  repeat_window_hours: 24
+  velocity_sd: 4
+  velocity_min: 50
+partner:
+  creator_share: 0.55
+  weights:
+    engaged_view: 1
+    visit_caused: 25
+    helpful_vote: 5
+    pulse_confirmed: 2
+  min_account_days: 30
+  min_verified_content: 10
+  min_visits_caused_90d: 300
+  min_engaged_views_90d: 100000
+  min_payout_inr: 1000
+  demo_pool_inr: 250000
+ranking:
+  wilson_z: 1.96
+  hidden_weight:
+    hidden: 1.0
+    known: 0.7
+    famous: 0.3
+  trending_half_life_days: 7
+  trending_window_days: 30
+  trending_weights:
+    like: 1
+    visit: 3
+    pulse: 1
+deck:
+  weights:
+    q: 0.4
+    prox: 0.25
+    pref: 0.25
+    fresh: 0.1
+  prox_tau_km: 4
+  page_size: 30
+  skip_cooldown_days: 14
+  max_same_category_run: 2
+  unverified_radius_km: 5
+  fresh_days: 14
+  fresh_viewers: 10
+verification:
+  min_radius_m: 150
+  max_accuracy_m: 100
+  add_pin_max_drag_m: 300
+  verify_visits_needed: 2
+  max_speed_kmh: 120
+dedupe:
+  radius_m: 300
+  name_sim_min: 80
+  same_category_radius_m: 100
+  clip_sim_min: 0.9
+  generic_words:
+    en:
+    - the
+    - lake
+    - hill
+    - temple
+    - point
+    - view
+    - park
+    - fort
+    - falls
+    - rocks
+    - garden
+    - museum
+    - beach
+    te:
+    - cheruvu
+    - gutta
+    - konda
+    - gudi
+    - kota
+    hi:
+    - talab
+    - mandir
+    - pahadi
+    - kila
+    - jheel
+    ta:
+    - eri
+    - kovil
+    - malai
+    - kottai
+    kn:
+    - kere
+    - gudi
+    - betta
+    - kote
+    ml:
+    - kayal
+    - ambalam
+    - mala
+    mr:
+    - talav
+    - mandir
+    - gad
+integrity:
+  phash_max_hamming: 8
+  exif_mismatch_km: 2
+rate_limits:
+  uploads_per_hour: 20
+  likes_per_hour: 300
+  checkins_per_hour: 10
+  pulse_per_hour: 10
+kadam:
+  discovery: 50
+  visit_caused: 10
+  visit_caused_daily_cap_per_place: 20
+  like_received: 1
+  like_received_daily_cap: 50
+  own_visit: 5
+  steps_helpful: 2
+  steps_helpful_daily_cap: 20
+  pulse: 3
+  pulse_daily_cap: 5
+  weekly_trail: 50
+  new_account_hours: 24
+  levels:
+    Wanderer: 0
+    Pathfinder: 200
+    Trailblazer: 800
+    Local Legend: 2500
+fog:
+  clear_radius_km: 1.0
+media:
+  max_photos: 10
+  max_videos: 2
+  photo_long_side: 2048
+  display_long_side: 1200
+  thumb_long_side: 400
+  jpeg_quality: 85
+  caption_max_chars: 150
+moderation:
+  auto_hide_reports: 3
+  strikes_to_block: 3
+ui_languages:
+  available:
+  - en
+  in_review:
+  - hi
+  - te
+cities:
+  hyderabad:
+    name: Hyderabad
+    state: Telangana
+    bbox:
+    - 17.2
+    - 78.2
+    - 17.62
+    - 78.7
+    centre:
+    - 17.385
+    - 78.4867

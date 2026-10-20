@@ -1,0 +1,73 @@
+{
+  "simulation": "phash",
+  "run_at": "2026-10-20T22:43:41.065354+00:00",
+  "commit": "unknown",
+  "seeds": [
+    7
+  ],
+  "seed_count": 1,
+  "assumptions": [
+    "50 source images, each put through 9 transforms.",
+    "GENERATED stand-in images, not photographs -- a weaker test than real photos.",
+    "A match is a Hamming distance of at most 8 bits, the app's configured threshold (integrity.phash_max_hamming).",
+    "False matches are counted over every pair of different source images.",
+    "phash_image and hamming are the app's own functions (app.integrity.phash)."
+  ],
+  "metrics": {
+    "photos": 50,
+    "photos_are_real": false,
+    "threshold_hamming": 8,
+    "overall_detection_rate": 0.5867,
+    "per_transform": {
+      "recompress q55": {
+        "detection_rate": 1.0,
+        "mean_hamming": 0.36,
+        "max_hamming": 2
+      },
+      "resize 50%": {
+        "detection_rate": 1.0,
+        "mean_hamming": 0.12,
+        "max_hamming": 2
+      },
+      "crop 5%": {
+        "detection_rate": 0.32,
+        "mean_hamming": 12.24,
+        "max_hamming": 22
+      },
+      "crop 20%": {
+        "detection_rate": 0.0,
+        "mean_hamming": 29.76,
+        "max_hamming": 40
+      },
+      "brightness +25%": {
+        "detection_rate": 0.98,
+        "mean_hamming": 2.68,
+        "max_hamming": 10
+      },
+      "contrast +30%": {
+        "detection_rate": 1.0,
+        "mean_hamming": 1.32,
+        "max_hamming": 4
+      },
+      "watermark": {
+        "detection_rate": 0.46,
+        "mean_hamming": 9.72,
+        "max_hamming": 28
+      },
+      "rotate 3deg": {
+        "detection_rate": 0.36,
+        "mean_hamming": 10.92,
+        "max_hamming": 18
+      },
+      "screenshot frame": {
+        "detection_rate": 0.16,
+        "mean_hamming": 12.36,
+        "max_hamming": 22
+      }
+    },
+    "pairs_compared": 1225,
+    "false_matches": 0,
+    "false_match_rate": 0.0,
+    "mean_distance_between_different_photos": 31.52
+  }
+}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" font-family="Mukta, system-ui, sans-serif">
+<rect width="720" height="380" fill="#F6F1E7"/>
+<text x="70" y="32" font-size="19" font-weight="700" fill="#1D2420">Share of the simulated pool taken by fraud (50 seeds)</text>
+<line x1="70" y1="310.0" x2="696" y2="310.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="314.0" font-size="12" fill="#5A635D" text-anchor="end">0</text>
+<line x1="70" y1="246.5" x2="696" y2="246.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="250.5" font-size="12" fill="#5A635D" text-anchor="end">0.172</text>
+<line x1="70" y1="183.0" x2="696" y2="183.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="187.0" font-size="12" fill="#5A635D" text-anchor="end">0.345</text>
+<line x1="70" y1="119.5" x2="696" y2="119.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="123.5" font-size="12" fill="#5A635D" text-anchor="end">0.517</text>
+<line x1="70" y1="56.0" x2="696" y2="56.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="60.0" font-size="12" fill="#5A635D" text-anchor="end">0.689</text>
+<text x="16" y="183" font-size="12" fill="#5A635D" transform="rotate(-90 16 183)" text-anchor="middle">share of the pool</text>
+<rect x="138.9" y="89.7" width="175.3" height="220.3" fill="#A8401C" rx="4"/>
+<text x="226.5" y="81.7" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.598</text>
+<text x="226.5" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">rules off</text>
+<line x1="226.5" y1="90.2" x2="226.5" y2="89.1" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="219.5" y1="90.2" x2="233.5" y2="90.2" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="219.5" y1="89.1" x2="233.5" y2="89.1" stroke="#1D2420" stroke-width="1.6"/>
+<rect x="451.9" y="207.7" width="175.3" height="102.3" fill="#25627F" rx="4"/>
+<text x="539.5" y="199.7" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.278</text>
+<text x="539.5" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">rules on</text>
+<line x1="539.5" y1="208.6" x2="539.5" y2="206.8" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="532.5" y1="208.6" x2="546.5" y2="208.6" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="532.5" y1="206.8" x2="546.5" y2="206.8" stroke="#1D2420" stroke-width="1.6"/>
+<text x="70" y="362" font-size="11" fill="#5A635D">Whiskers show the 95% confidence interval of the mean over seeds. Simulation under stated assumptions, not a user study.</text>
+</svg>

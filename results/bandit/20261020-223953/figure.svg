@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" font-family="Mukta, system-ui, sans-serif">
+<rect width="720" height="380" fill="#F6F1E7"/>
+<text x="70" y="32" font-size="19" font-weight="700" fill="#1D2420">Save rate once settled (last 30 of 150 swipes, 300 users, 10 seeds)</text>
+<line x1="70" y1="310.0" x2="696" y2="310.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="314.0" font-size="12" fill="#5A635D" text-anchor="end">0</text>
+<line x1="70" y1="246.5" x2="696" y2="246.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="250.5" font-size="12" fill="#5A635D" text-anchor="end">0.0454</text>
+<line x1="70" y1="183.0" x2="696" y2="183.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="187.0" font-size="12" fill="#5A635D" text-anchor="end">0.0908</text>
+<line x1="70" y1="119.5" x2="696" y2="119.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="123.5" font-size="12" fill="#5A635D" text-anchor="end">0.136</text>
+<line x1="70" y1="56.0" x2="696" y2="56.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="60.0" font-size="12" fill="#5A635D" text-anchor="end">0.182</text>
+<text x="16" y="183" font-size="12" fill="#5A635D" transform="rotate(-90 16 183)" text-anchor="middle">share of cards saved</text>
+<rect x="104.4" y="152.9" width="87.6" height="157.1" fill="#A8401C" rx="4"/>
+<text x="148.2" y="144.9" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.112</text>
+<text x="148.2" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">random</text>
+<line x1="148.2" y1="156.8" x2="148.2" y2="149.0" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="141.2" y1="156.8" x2="155.2" y2="156.8" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="141.2" y1="149.0" x2="155.2" y2="149.0" stroke="#1D2420" stroke-width="1.6"/>
+<rect x="260.9" y="107.9" width="87.6" height="202.1" fill="#25627F" rx="4"/>
+<text x="304.8" y="99.9" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.144</text>
+<text x="304.8" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">popularity</text>
+<line x1="304.8" y1="113.2" x2="304.8" y2="102.6" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="297.8" y1="113.2" x2="311.8" y2="113.2" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="297.8" y1="102.6" x2="311.8" y2="102.6" stroke="#1D2420" stroke-width="1.6"/>
+<rect x="417.4" y="108.2" width="87.6" height="201.8" fill="#2E6A4E" rx="4"/>
+<text x="461.2" y="100.2" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.144</text>
+<text x="461.2" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">fixed weights</text>
+<line x1="461.2" y1="113.6" x2="461.2" y2="102.8" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="454.2" y1="113.6" x2="468.2" y2="113.6" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="454.2" y1="102.8" x2="468.2" y2="102.8" stroke="#1D2420" stroke-width="1.6"/>
+<rect x="573.9" y="94.2" width="87.6" height="215.8" fill="#E9A21B" rx="4"/>
+<text x="617.8" y="86.2" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.154</text>
+<text x="617.8" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">Thompson</text>
+<line x1="617.8" y1="99.2" x2="617.8" y2="89.1" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="610.8" y1="99.2" x2="624.8" y2="99.2" stroke="#1D2420" stroke-width="1.6"/>
+<line x1="610.8" y1="89.1" x2="624.8" y2="89.1" stroke="#1D2420" stroke-width="1.6"/>
+<text x="70" y="362" font-size="11" fill="#5A635D">Whiskers show the 95% confidence interval of the mean over seeds. Simulation under stated assumptions, not a user study.</text>
+</svg>

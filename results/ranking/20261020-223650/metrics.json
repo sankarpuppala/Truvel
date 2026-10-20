@@ -1,0 +1,139 @@
+{
+  "simulation": "ranking",
+  "run_at": "2026-10-20T22:36:50.045943+00:00",
+  "commit": "unknown",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59
+  ],
+  "seed_count": 60,
+  "assumptions": [
+    "500 places per run; true like rate ~ Beta(2.0, 5.0).",
+    "Exposure is a power law (alpha=1.6) between 5 and 4000 viewers, independent of quality.",
+    "Likes are Binomial(viewers, true rate); no bots, no repeat likes.",
+    "wilson_lb is the function the app uses (app.ranking.wilson), not a copy."
+  ],
+  "metrics": {
+    "raw_tau": {
+      "mean": 0.285549,
+      "ci95_low": 0.279242,
+      "ci95_high": 0.291856,
+      "sd": 0.024926,
+      "n": 60
+    },
+    "raw_p10": {
+      "mean": 0.053333,
+      "ci95_low": 0.035012,
+      "ci95_high": 0.071655,
+      "sd": 0.072408,
+      "n": 60
+    },
+    "raw_top10_true_rate": {
+      "mean": 0.382646,
+      "ci95_low": 0.369117,
+      "ci95_high": 0.396175,
+      "sd": 0.053468,
+      "n": 60
+    },
+    "ratio_tau": {
+      "mean": 0.619964,
+      "ci95_low": 0.615656,
+      "ci95_high": 0.624273,
+      "sd": 0.017027,
+      "n": 60
+    },
+    "ratio_p10": {
+      "mean": 0.335,
+      "ci95_low": 0.303121,
+      "ci95_high": 0.366879,
+      "sd": 0.125988,
+      "n": 60
+    },
+    "ratio_top10_true_rate": {
+      "mean": 0.586463,
+      "ci95_low": 0.574174,
+      "ci95_high": 0.598752,
+      "sd": 0.048567,
+      "n": 60
+    },
+    "wilson_tau": {
+      "mean": 0.557327,
+      "ci95_low": 0.552697,
+      "ci95_high": 0.561957,
+      "sd": 0.018299,
+      "n": 60
+    },
+    "wilson_p10": {
+      "mean": 0.456667,
+      "ci95_low": 0.421075,
+      "ci95_high": 0.492259,
+      "sd": 0.14066,
+      "n": 60
+    },
+    "wilson_top10_true_rate": {
+      "mean": 0.650055,
+      "ci95_low": 0.641278,
+      "ci95_high": 0.658832,
+      "sd": 0.034687,
+      "n": 60
+    }
+  }
+}

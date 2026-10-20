@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" font-family="Mukta, system-ui, sans-serif">
+<rect width="720" height="380" fill="#F6F1E7"/>
+<text x="70" y="32" font-size="19" font-weight="700" fill="#1D2420">Does the rule still work when the truth decays differently?</text>
+<line x1="70" y1="310.0" x2="570" y2="310.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="314.0" font-size="12" fill="#5A635D" text-anchor="end">0</text>
+<line x1="70" y1="246.5" x2="570" y2="246.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="250.5" font-size="12" fill="#5A635D" text-anchor="end">0.254</text>
+<line x1="70" y1="183.0" x2="570" y2="183.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="187.0" font-size="12" fill="#5A635D" text-anchor="end">0.509</text>
+<line x1="70" y1="119.5" x2="570" y2="119.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="123.5" font-size="12" fill="#5A635D" text-anchor="end">0.763</text>
+<line x1="70" y1="56.0" x2="570" y2="56.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="60.0" font-size="12" fill="#5A635D" text-anchor="end">1.02</text>
+<polyline points="70.0,79.1 153.3,98.1 236.7,118.4 320.0,99.9 403.3,105.3 486.7,112.7 570.0,110.5" fill="none" stroke="#A8401C" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="586" y1="72" x2="608" y2="72" stroke="#A8401C" stroke-width="3"/>
+<text x="614" y="76" font-size="12.5" fill="#1D2420">last touch</text>
+<polyline points="70.0,125.4 153.3,111.1 236.7,105.6 320.0,102.6 403.3,93.2 486.7,93.7 570.0,92.8" fill="none" stroke="#25627F" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="586" y1="94" x2="608" y2="94" stroke="#25627F" stroke-width="3"/>
+<text x="614" y="98" font-size="12.5" fill="#1D2420">linear</text>
+<polyline points="70.0,83.8 153.3,89.7 236.7,97.4 320.0,89.6 403.3,91.5 486.7,91.6 570.0,89.7" fill="none" stroke="#2E6A4E" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="586" y1="116" x2="608" y2="116" stroke="#2E6A4E" stroke-width="3"/>
+<text x="614" y="120" font-size="12.5" fill="#1D2420">time decay</text>
+<text x="320" y="346" font-size="12" fill="#5A635D" text-anchor="middle">ground-truth decay constant, days: [2, 4, 7, 10, 14, 21, 30]</text>
+<text x="16" y="183" font-size="12" fill="#5A635D" transform="rotate(-90 16 183)" text-anchor="middle">Spearman rho vs true credit</text>
+<text x="70" y="364" font-size="11" fill="#5A635D">Simulation under stated assumptions, not a user study.</text>
+</svg>

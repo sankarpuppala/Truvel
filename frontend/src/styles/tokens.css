@@ -1,0 +1,33 @@
+/* Design tokens -- SPEC §12.2. Copied from docs/design-reference.html so the
+   app and the reference cannot drift apart. Contrast ratios are in the SPEC
+   table; do not change a value here without changing it there. */
+:root{
+ --paper:#F6F1E7;--surface:#FFFCF6;--ink:#1D2420;--muted:#5A635D;--line:#E2D9C8;
+ --laterite:#A8401C;--marigold:#E9A21B;--moss:#2E6A4E;--lake:#25627F;--danger:#A3263A;
+ --on-primary:#FFFCF6;--on-marigold:#1D2420;--fog:rgba(196,190,176,.62);--fog-hatch:rgba(29,36,32,.10);
+ --shadow:0 12px 32px -12px rgba(29,36,32,.35);
+ --sunk:color-mix(in srgb,var(--ink) 6%,var(--surface));
+ --map-land:color-mix(in srgb,var(--paper) 88%,var(--marigold));
+ --map-road:var(--surface);
+ --map-major:color-mix(in srgb,var(--marigold) 38%,var(--surface));
+ --map-water:color-mix(in srgb,var(--lake) 34%,var(--paper));
+ --map-park:color-mix(in srgb,var(--moss) 20%,var(--paper));
+ --bezel:#0E100F;
+ --f-ui:Mukta,'Anek Telugu','Anek Tamil','Anek Kannada','Anek Malayalam','Anek Bangla','Anek Gujarati','Anek Gurmukhi','Anek Odia','Noto Nastaliq Urdu','Noto Sans Ol Chiki','Noto Sans Meetei Mayek',system-ui,sans-serif;
+ color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --paper:#111512;--surface:#1A201C;--ink:#EEE9DE;--muted:#A9B1AA;--line:#2D3530;
+ --laterite:#F08B63;--marigold:#F3B843;--moss:#6CC495;--lake:#6FB3D6;--danger:#F2848F;
+ --on-primary:#111512;--fog:rgba(4,6,5,.68);--fog-hatch:rgba(238,233,222,.07);--shadow:0 12px 32px -12px rgba(0,0,0,.6);
+ --map-land:#161B17;--map-road:#232A25;--map-major:color-mix(in srgb,var(--marigold) 30%,#232A25);
+ --map-water:color-mix(in srgb,var(--lake) 30%,#111512);--map-park:color-mix(in srgb,var(--moss) 16%,#111512);
+ --bezel:#2A302C;color-scheme:dark}}
+:root[data-theme="dark"]{
+ --paper:#111512;--surface:#1A201C;--ink:#EEE9DE;--muted:#A9B1AA;--line:#2D3530;
+ --laterite:#F08B63;--marigold:#F3B843;--moss:#6CC495;--lake:#6FB3D6;--danger:#F2848F;
+ --on-primary:#111512;--fog:rgba(4,6,5,.68);--fog-hatch:rgba(238,233,222,.07);--shadow:0 12px 32px -12px rgba(0,0,0,.6);
+ --map-land:#161B17;--map-road:#232A25;--map-major:color-mix(in srgb,var(--marigold) 30%,#232A25);
+ --map-water:color-mix(in srgb,var(--lake) 30%,#111512);--map-park:color-mix(in srgb,var(--moss) 16%,#111512);
+ --bezel:#2A302C;color-scheme:dark}
+

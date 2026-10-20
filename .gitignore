@@ -1,0 +1,45 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Data and media — never committed (CLAUDE.md "Git")
+backend/media/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite3
+data/
+!data/.gitkeep
+
+# Secrets and env
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/test-results/
+frontend/playwright-report/
+
+# The starter archive: its contents are already in the repo.
+pagdandi-starter.zip
+
+# Playwright's own scratch output (the kept screenshots live in results/screens/)
+frontend/test-results/
+frontend/playwright-report/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# Keep results metrics + figures (committed), drop scratch
+results/**/*.tmp

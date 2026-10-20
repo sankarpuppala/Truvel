@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" font-family="Mukta, system-ui, sans-serif">
+<rect width="720" height="380" fill="#F6F1E7"/>
+<text x="70" y="32" font-size="19" font-weight="700" fill="#1D2420">Detection rate per transform (threshold 8 bits, 50 photos)</text>
+<line x1="70" y1="310.0" x2="696" y2="310.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="314.0" font-size="12" fill="#5A635D" text-anchor="end">0</text>
+<line x1="70" y1="246.5" x2="696" y2="246.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="250.5" font-size="12" fill="#5A635D" text-anchor="end">0.287</text>
+<line x1="70" y1="183.0" x2="696" y2="183.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="187.0" font-size="12" fill="#5A635D" text-anchor="end">0.575</text>
+<line x1="70" y1="119.5" x2="696" y2="119.5" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="123.5" font-size="12" fill="#5A635D" text-anchor="end">0.862</text>
+<line x1="70" y1="56.0" x2="696" y2="56.0" stroke="#E2D9C8" stroke-width="1"/>
+<text x="62" y="60.0" font-size="12" fill="#5A635D" text-anchor="end">1.15</text>
+<text x="16" y="183" font-size="12" fill="#5A635D" transform="rotate(-90 16 183)" text-anchor="middle">share still recognised</text>
+<rect x="85.3" y="89.1" width="39.0" height="220.9" fill="#A8401C" rx="4"/>
+<text x="104.8" y="81.1" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">1</text>
+<text x="104.8" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">recompress q55</text>
+<rect x="154.9" y="89.1" width="39.0" height="220.9" fill="#25627F" rx="4"/>
+<text x="174.3" y="81.1" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">1</text>
+<text x="174.3" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">resize 50%</text>
+<rect x="224.4" y="239.3" width="39.0" height="70.7" fill="#2E6A4E" rx="4"/>
+<text x="243.9" y="231.3" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.32</text>
+<text x="243.9" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">crop 5%</text>
+<rect x="294.0" y="310.0" width="39.0" height="0.0" fill="#E9A21B" rx="4"/>
+<text x="313.4" y="302.0" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0</text>
+<text x="313.4" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">crop 20%</text>
+<rect x="363.5" y="93.5" width="39.0" height="216.5" fill="#5A635D" rx="4"/>
+<text x="383.0" y="85.5" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.98</text>
+<text x="383.0" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">brightness +25%</text>
+<rect x="433.1" y="89.1" width="39.0" height="220.9" fill="#A8401C" rx="4"/>
+<text x="452.6" y="81.1" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">1</text>
+<text x="452.6" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">contrast +30%</text>
+<rect x="502.6" y="208.4" width="39.0" height="101.6" fill="#25627F" rx="4"/>
+<text x="522.1" y="200.4" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.46</text>
+<text x="522.1" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">watermark</text>
+<rect x="572.2" y="230.5" width="39.0" height="79.5" fill="#2E6A4E" rx="4"/>
+<text x="591.7" y="222.5" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.36</text>
+<text x="591.7" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">rotate 3deg</text>
+<rect x="641.7" y="274.7" width="39.0" height="35.3" fill="#E9A21B" rx="4"/>
+<text x="661.2" y="266.7" font-size="13" font-weight="600" fill="#1D2420" text-anchor="middle">0.16</text>
+<text x="661.2" y="332.0" font-size="13" fill="#1D2420" text-anchor="middle">screenshot frame</text>
+<text x="70" y="362" font-size="11" fill="#5A635D">Whiskers show the 95% confidence interval of the mean over seeds. Simulation under stated assumptions, not a user study.</text>
+</svg>

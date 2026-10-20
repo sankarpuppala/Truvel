@@ -1,0 +1,220 @@
+{
+  "simulation": "coverage",
+  "run_at": "2026-10-20T22:42:39.491516+00:00",
+  "commit": "unknown",
+  "seeds": [],
+  "seed_count": 0,
+  "assumptions": [
+    "Counted from the local database as seeded; not a claim about India.",
+    "'With a photo' counts places with any media row, including a Wikimedia Commons image recorded but not yet fetched.",
+    "A place counts for a language if it has any name row in it, from any source."
+  ],
+  "metrics": {
+    "places_total": 16971,
+    "with_photo": 7005,
+    "photo_share": 0.4128,
+    "by_source": {
+      "community": 4,
+      "osm": 289,
+      "wikidata": 16678
+    },
+    "by_fame": {
+      "famous": 363,
+      "hidden": 4,
+      "known": 16604
+    },
+    "by_category": {
+      "temple_sacred": 7787,
+      "hill_trek": 2712,
+      "fort_heritage": 2186,
+      "lake": 2138,
+      "park_garden": 998,
+      "museum_art": 554,
+      "waterfall": 285,
+      "beach_river": 241,
+      "other": 63,
+      "viewpoint": 7
+    },
+    "states_covered": 34,
+    "by_state": {
+      "(unknown)": 3595,
+      "West Bengal": 2098,
+      "Tamil Nadu": 1421,
+      "Kerala": 1334,
+      "Maharashtra": 1270,
+      "Karnataka": 1081,
+      "Andhra Pradesh": 853,
+      "Gujarat": 674,
+      "Madhya Pradesh": 664,
+      "Rajasthan": 591,
+      "Odisha": 571,
+      "Telangana": 530,
+      "Uttar Pradesh": 436,
+      "Himachal Pradesh": 268,
+      "Uttarakhand": 245,
+      "Jammu and Kashmir": 241,
+      "Assam": 146,
+      "Bihar": 141,
+      "Punjab": 138,
+      "Chhattisgarh": 128,
+      "Haryana": 106,
+      "Jharkhand": 101,
+      "Goa": 86,
+      "Sikkim": 64,
+      "Arunachal Pradesh": 35,
+      "Meghalaya": 32,
+      "Manipur": 30,
+      "Madras State": 27,
+      "Tripura": 23,
+      "Nagaland": 20,
+      "Mizoram": 17,
+      "Ajmer State": 2,
+      "Bhopal State (1949\u20131956)": 2,
+      "Bombay State": 1
+    },
+    "names_by_language": [
+      {
+        "lang": "en",
+        "name": "English",
+        "places": 16889,
+        "share": 0.9952
+      },
+      {
+        "lang": "ta",
+        "name": "Tamil",
+        "places": 3795,
+        "share": 0.2236
+      },
+      {
+        "lang": "hi",
+        "name": "Hindi",
+        "places": 2937,
+        "share": 0.1731
+      },
+      {
+        "lang": "bn",
+        "name": "Bengali",
+        "places": 2621,
+        "share": 0.1544
+      },
+      {
+        "lang": "te",
+        "name": "Telugu",
+        "places": 2104,
+        "share": 0.124
+      },
+      {
+        "lang": "ml",
+        "name": "Malayalam",
+        "places": 2001,
+        "share": 0.1179
+      },
+      {
+        "lang": "pa",
+        "name": "Punjabi",
+        "places": 1359,
+        "share": 0.0801
+      },
+      {
+        "lang": "kn",
+        "name": "Kannada",
+        "places": 1267,
+        "share": 0.0747
+      },
+      {
+        "lang": "or",
+        "name": "Odia",
+        "places": 1154,
+        "share": 0.068
+      },
+      {
+        "lang": "mr",
+        "name": "Marathi",
+        "places": 847,
+        "share": 0.0499
+      },
+      {
+        "lang": "gu",
+        "name": "Gujarati",
+        "places": 767,
+        "share": 0.0452
+      },
+      {
+        "lang": "ur",
+        "name": "Urdu",
+        "places": 733,
+        "share": 0.0432
+      },
+      {
+        "lang": "as",
+        "name": "Assamese",
+        "places": 427,
+        "share": 0.0252
+      },
+      {
+        "lang": "sa",
+        "name": "Sanskrit",
+        "places": 252,
+        "share": 0.0148
+      },
+      {
+        "lang": "ne",
+        "name": "Nepali",
+        "places": 183,
+        "share": 0.0108
+      },
+      {
+        "lang": "mai",
+        "name": "Maithili",
+        "places": 180,
+        "share": 0.0106
+      },
+      {
+        "lang": "sat",
+        "name": "Santali",
+        "places": 176,
+        "share": 0.0104
+      },
+      {
+        "lang": "ks",
+        "name": "Kashmiri",
+        "places": 110,
+        "share": 0.0065
+      },
+      {
+        "lang": "sd",
+        "name": "Sindhi",
+        "places": 44,
+        "share": 0.0026
+      },
+      {
+        "lang": "gom",
+        "name": "Konkani",
+        "places": 27,
+        "share": 0.0016
+      },
+      {
+        "lang": "mni",
+        "name": "Manipuri",
+        "places": 21,
+        "share": 0.0012
+      },
+      {
+        "lang": "doi",
+        "name": "Dogri",
+        "places": 0,
+        "share": 0.0
+      },
+      {
+        "lang": "brx",
+        "name": "Bodo",
+        "places": 0,
+        "share": 0.0
+      }
+    ],
+    "languages_with_no_names": [
+      "doi",
+      "brx"
+    ]
+  }
+}

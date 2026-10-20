@@ -1,0 +1,41 @@
+/* Self-hosted fonts, one per script (SPEC §12.3, §19 D16).
+ *
+ * Each @fontsource package ships `unicode-range` on its @font-face rules, so a
+ * browser downloads a script's font only when that script actually appears on
+ * screen. A user in Hyderabad gets Latin + Devanagari + Telugu + Urdu subsets,
+ * not all thirteen families -- which is the whole reason we self-host instead
+ * of using a font CDN (and a CDN would breach invariant 7 anyway).
+ *
+ * The single font stack in tokens.css (`--f-ui`) lists every family after
+ * Mukta, so each script picks its own font automatically with no per-language
+ * CSS. `:lang(sd)` in base.css is the one exception: Sindhi needs Naskh rather
+ * than the Nastaliq that Urdu and Kashmiri use.
+ */
+
+/* Display: names on cards, titles, big numbers (>= 22 px). */
+@import '@fontsource/rozha-one/400.css';
+
+/* UI and body text: Latin + Devanagari. */
+@import '@fontsource/mukta/400.css';
+@import '@fontsource/mukta/500.css';
+@import '@fontsource/mukta/600.css';
+@import '@fontsource/mukta/700.css';
+
+/* Handwritten: local tips and last-mile steps only. */
+@import '@fontsource/kalam/400.css';
+
+/* Indic scripts, one family each (SPEC §7.1). */
+@import '@fontsource/anek-bangla/400.css';       /* Bengali, Assamese */
+@import '@fontsource/anek-gujarati/400.css';     /* Gujarati */
+@import '@fontsource/anek-gurmukhi/400.css';     /* Punjabi */
+@import '@fontsource/anek-odia/400.css';         /* Odia */
+@import '@fontsource/anek-telugu/400.css';       /* Telugu */
+@import '@fontsource/anek-tamil/400.css';        /* Tamil */
+@import '@fontsource/anek-kannada/400.css';      /* Kannada */
+@import '@fontsource/anek-malayalam/400.css';    /* Malayalam */
+
+/* Perso-Arabic and the two smaller scripts. */
+@import '@fontsource/noto-nastaliq-urdu/400.css';      /* Urdu, Kashmiri */
+@import '@fontsource/noto-naskh-arabic/400.css';       /* Sindhi */
+@import '@fontsource/noto-sans-ol-chiki/400.css';      /* Santali */
+@import '@fontsource/noto-sans-meetei-mayek/400.css';  /* Manipuri */

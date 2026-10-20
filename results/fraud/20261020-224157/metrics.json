@@ -1,0 +1,75 @@
+{
+  "simulation": "fraud",
+  "run_at": "2026-10-20T22:41:57.590628+00:00",
+  "commit": "unknown",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "seed_count": 6,
+  "assumptions": [
+    "8 honest creators with organic traffic over one month; 3 fraudsters, one per attack type.",
+    "bot burst = 4,000 views in 2 hours from aged accounts, one view each.",
+    "sock puppets = 300 accounts under 24 h old, 8 views each.",
+    "self views = the creator watching their own item 1,200 times.",
+    "Each fraudster also posts organic-looking traffic, so 'no organic views' is not the giveaway.",
+    "Earnings are views-only here, to isolate the view rules; in the app a visit is worth 25 views, which is the real defence.",
+    "Fraud is unsubtle. A patient attacker with aged accounts viewing once each at human pace would evade all four rules.",
+    "The rules are the app's own functions (app.watch.views, app.partner.invalid)."
+  ],
+  "metrics": {
+    "precision": {
+      "mean": 1.0,
+      "ci95_low": 1.0,
+      "ci95_high": 1.0,
+      "sd": 0.0,
+      "n": 6
+    },
+    "recall": {
+      "mean": 0.790964,
+      "ci95_low": 0.785389,
+      "ci95_high": 0.796538,
+      "sd": 0.006967,
+      "n": 6
+    },
+    "fraud_pool_share_rules_off": {
+      "mean": 0.600281,
+      "ci95_low": 0.597187,
+      "ci95_high": 0.603374,
+      "sd": 0.003866,
+      "n": 6
+    },
+    "fraud_pool_share_rules_on": {
+      "mean": 0.277352,
+      "ci95_low": 0.272294,
+      "ci95_high": 0.282409,
+      "sd": 0.006321,
+      "n": 6
+    },
+    "fraud_share_reduction": {
+      "mean": 0.537976,
+      "ci95_low": 0.530452,
+      "ci95_high": 0.545499,
+      "sd": 0.009403,
+      "n": 6
+    },
+    "views_total": {
+      "mean": 11328.833333,
+      "ci95_low": 11286.289091,
+      "ci95_high": 11371.377575,
+      "sd": 53.169227,
+      "n": 6
+    },
+    "views_flagged": {
+      "mean": 5062.166667,
+      "ci95_low": 5026.488146,
+      "ci95_high": 5097.845187,
+      "sd": 44.588863,
+      "n": 6
+    }
+  }
+}
