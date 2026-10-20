@@ -43,3 +43,4 @@ Thumbs.db
 
 # Keep results metrics + figures (committed), drop scratch
 results/**/*.tmp
+frontend/tsconfig.tsbuildinfo
