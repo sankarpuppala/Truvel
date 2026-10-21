@@ -106,16 +106,12 @@ def commons_photo(
     if media is None or media.source != "commons" or media.status != "ok":
         raise not_found("No such photo.", "no_media")
 
+    # Credit first: this also hides the photo if its licence is not allowed.
+    if not commons.resolve_media(session, media):
+        raise not_found("That photo is not available.", "no_photo")
     cached = commons.cached_path(media.path_display)
     if cached is None:
-        # The row exists but the cache was cleared; fetch it again, licence
-        # check included.
-        photo = commons.fetch_and_cache(media.path_display)
-        if photo is None:
-            raise not_found("That photo is not available.", "no_photo")
-        cached = commons.cached_path(media.path_display)
-        if cached is None:
-            raise not_found("That photo is not available.", "no_photo")
+        raise not_found("That photo is not available.", "no_photo")
 
     response = ranged_response(cached, request)
     # The attribution travels with the bytes, so it cannot be lost downstream.

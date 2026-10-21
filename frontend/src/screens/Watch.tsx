@@ -176,7 +176,7 @@ export function Watch() {
   );
 
   return (
-    <div className="scr scr-watch" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div className="scr scr-watch scr-fill" style={{ overflow: 'hidden' }}>
       <StatusBar />
 
       <div className="wtabs" role="tablist" aria-label="Watch feeds">

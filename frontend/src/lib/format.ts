@@ -134,3 +134,22 @@ export function delta(pct: number | null | undefined): string {
   if (pct === null || pct === undefined) return '';
   return `${pct > 0 ? '+' : ''}${pct}%`;
 }
+
+/** Up to two initials for an avatar, from any script (SPEC §7.2).
+ *
+ * `\p{L}` keeps letters in every script, so Telugu and Urdu names get the same
+ * treatment as Latin ones rather than falling back to "??".
+ */
+export function initials(name: string | undefined | null): string {
+  const parts = (name ?? '')
+    .replace(/[^\p{L}\s.]/gu, ' ')
+    .trim()
+    .split(/[\s.]+/);
+  return (
+    parts
+      .slice(0, 2)
+      .map((part) => part[0] ?? '')
+      .join('')
+      .toUpperCase() || '??'
+  );
+}

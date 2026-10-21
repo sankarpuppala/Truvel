@@ -24,6 +24,7 @@ import { categoryIcon } from '../lib/categories';
 import { distance, num } from '../lib/format';
 import type { City, Fog, Place } from '../lib/types';
 import { Icon } from './Icon';
+import { PlaceThumb } from './PlaceRow';
 import { Loading } from './common';
 
 const TILES = 'https://tiles.openfreemap.org/styles/bright';
@@ -129,10 +130,21 @@ export function FogMap({
     drawFog(map, city, fog);
   }, [fog, ready, city]);
 
+  // MapLibre sizes its canvas once, from the container it was given. The
+  // container changes size whenever the window is resized or the layout
+  // switches between the phone and the laptop one, so tell the map about it.
+  useEffect(() => {
+    const node = container.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => (mapRef.current as MapLibreMap | null)?.resize());
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   if (!city) return <Loading what="Loading the map" />;
 
   return (
-    <div className="mapwrap" style={{ height: '100dvh', flex: 1 }}>
+    <div className="mapwrap map-full">
       <div ref={container} className="mapsvg" aria-label={`Map of ${city.name}`} role="application" />
 
       {failed && (
@@ -183,17 +195,7 @@ export function FogMap({
         </div>
         {(inView.length ? inView : places).slice(0, 4).map((place) => (
           <Link className="sh-row" key={place.id} to={`/place/${place.id}`}>
-            {place.lead_media?.thumb ? (
-              <img
-                className="thumb thumb-sm"
-                src={place.lead_media.thumb}
-                alt=""
-                width={52}
-                height={52}
-              />
-            ) : (
-              <span className="thumb thumb-sm" style={{ background: 'var(--sunk)' }} />
-            )}
+            <PlaceThumb place={place} className="thumb thumb-sm" />
             <div>
               <b>{place.name.primary.text}</b>
               <span>
@@ -238,11 +240,47 @@ function hideBoundaries(map: MapLibreMap): void {
   }
 }
 
+/** Read a design token as a colour MapLibre will accept.
+ *
+ * The map tokens in SPEC §12.2 are written as `color-mix(...)`, and a browser
+ * only works that out when the value is actually painted: ask for the custom
+ * property and you get the text back. MapLibre validates what it is given and
+ * rejects the text, which silently left the map in the stock basemap colours.
+ * Painting it onto a throwaway element makes the browser resolve it to `rgb()`.
+ */
+function token(name: string): string {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  if (!raw || !/color-mix|var\(/.test(raw)) return raw;
+
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+  probe.style.color = raw;
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  probe.remove();
+  return srgbToRgb(resolved) || raw;
+}
+
+/** `color(srgb 0.95 0.9 0.8 / .5)` -> `rgba(242, 230, 204, 0.5)`.
+ *
+ * Chromium resolves `color-mix()` into CSS Color 4 notation, which MapLibre's
+ * style validator does not know. Everything else is passed through untouched.
+ */
+function srgbToRgb(value: string): string {
+  const match = /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/.exec(
+    value.trim(),
+  );
+  if (!match) return value;
+
+  const channel = (text: string) =>
+    Math.round(Math.min(1, Math.max(0, Number.parseFloat(text))) * 255);
+  const [r, g, b] = [match[1], match[2], match[3]].map(channel);
+  const alpha = match[4] === undefined ? 1 : Number.parseFloat(match[4]);
+  return alpha < 1 ? `rgba(${r}, ${g}, ${b}, ${alpha})` : `rgb(${r}, ${g}, ${b})`;
+}
+
 /** Six paint overrides, so the map reads as our paper (SPEC §12.2 map tokens). */
 function restyle(map: MapLibreMap): void {
-  const token = (name: string) =>
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
   const land = token('--map-land') || '#F2E9D8';
   const road = token('--map-road') || '#FFFCF6';
   const major = token('--map-major') || '#F0D9A8';
@@ -350,11 +388,8 @@ async function drawFog(map: MapLibreMap, city: City, fog: Fog | null): Promise<v
     if (next) covered = next as unknown as GeoJSON.Feature<GeoJSON.Polygon>;
   }
 
-  const fogColour =
-    getComputedStyle(document.documentElement).getPropertyValue('--fog').trim() ||
-    'rgba(196,190,176,.62)';
-  const marigold =
-    getComputedStyle(document.documentElement).getPropertyValue('--marigold').trim() || '#E9A21B';
+  const fogColour = token('--fog') || 'rgba(196,190,176,.62)';
+  const marigold = token('--marigold') || '#E9A21B';
 
   map.addSource('fog', { type: 'geojson', data: covered } as never);
   map.addLayer({

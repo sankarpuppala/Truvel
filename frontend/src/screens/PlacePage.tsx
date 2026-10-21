@@ -49,6 +49,7 @@ export function PlacePage() {
   const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [newName, setNewName] = useState({ lang: 'te', name: '' });
+  const [photoFailed, setPhotoFailed] = useState(false);
   const stepsReadAt = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -227,8 +228,14 @@ export function PlacePage() {
     <>
       {/* 1. Media carousel, with attribution on Commons photos. */}
       <div className="carousel">
-        {current ? (
-          <img className="car-ph" src={current.url} alt={current.caption} style={{ objectFit: 'cover' }} />
+        {current && !photoFailed ? (
+          <img
+            className="car-ph"
+            src={current.url}
+            alt={current.caption}
+            style={{ objectFit: 'cover' }}
+            onError={() => setPhotoFailed(true)}
+          />
         ) : (
           <Scene
             name={categoryScene(place.category)}

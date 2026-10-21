@@ -4,6 +4,7 @@
  * month, badges, and the distance. A place with no photo shows its category
  * illustration, never a grey box (SPEC §12.6).
  */
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { categoryIcon, categoryLabel, categoryScene } from '../lib/categories';
@@ -21,7 +22,8 @@ export function PlaceThumb({
   className?: string;
 }) {
   const photo = place.lead_media;
-  if (photo?.thumb || photo?.url) {
+  const [failed, setFailed] = useState(false);
+  if ((photo?.thumb || photo?.url) && !failed) {
     return (
       <img
         className={className}
@@ -30,6 +32,7 @@ export function PlaceThumb({
         loading="lazy"
         width={64}
         height={64}
+        onError={() => setFailed(true)}
       />
     );
   }

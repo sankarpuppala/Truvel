@@ -8,6 +8,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/map.css';
+import './styles/desktop.css';
 
 import { App } from './App';
 import { AppProvider } from './lib/app-state';

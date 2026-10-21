@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session as DbSession
 from sqlmodel import func, select
 
-from .. import services
+from .. import commons, services
 from ..auth import current_user_optional
 from ..config import cfg, regional_langs
 from ..db import fts_query, get_session
@@ -320,6 +320,16 @@ def place_detail(
         if seen is None:
             session.add(View(user_id=int(user.id), place_id=place_id, first_seen_at=now))
             session.commit()
+
+    # Commons photos get their author and licence the first time a page needs
+    # them, so the credit is in this response and not one request late.
+    for item in session.exec(
+        select(Media).where(
+            Media.place_id == place_id, Media.source == "commons", Media.status == "ok"
+        )
+    ).all():
+        if not (item.licence and item.attribution):
+            commons.resolve_media(session, item)
 
     payload = services.place_payload(
         session, place, user, lat=lat, lng=lng, full=True, now=now

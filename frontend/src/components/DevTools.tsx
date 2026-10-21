@@ -40,7 +40,7 @@ export function DevTools() {
   }
 
   return (
-    <div className="devbar" role="note">
+    <div className="devbar devbar-compact" role="note">
       <span className="sim-badge">DEV</span>
       <b>Location simulator</b>
       <select
@@ -73,7 +73,8 @@ export function DevTools() {
           Clear
         </button>
       )}
-      <span style={{ color: 'var(--muted)' }}>
+      {/* AC-25: the warning is always visible, never only a tooltip. */}
+      <span className="devbar-note">
         Simulated visits never reach metrics, attribution or earnings.
       </span>
     </div>

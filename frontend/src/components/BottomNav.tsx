@@ -4,10 +4,9 @@
  * not a link, because it opens a sheet rather than navigating.
  */
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
-import { useApp } from '../lib/app-state';
-import { BottomSheet } from './common';
+import { AddSheet } from './AddSheet';
 import { Icon } from './Icon';
 
 const ITEMS = [
@@ -19,18 +18,6 @@ const ITEMS = [
 
 export function BottomNav({ dark = false }: { dark?: boolean }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const navigate = useNavigate();
-  const { me, toast } = useApp();
-
-  function go(path: string) {
-    setSheetOpen(false);
-    if (!me) {
-      toast('Sign in to add a place.', 'bad');
-      navigate('/signin');
-      return;
-    }
-    navigate(path);
-  }
 
   return (
     <>
@@ -71,46 +58,7 @@ export function BottomNav({ dark = false }: { dark?: boolean }) {
         ))}
       </nav>
 
-      <BottomSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title="Add to Pagdandi"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button type="button" className="cand" onClick={() => go('/add/place')}>
-            <span className="mini">
-              <Icon name="i-pin" size={18} />
-            </span>
-            <div>
-              <b>A new place</b>
-              <span>Somewhere the app doesn&apos;t know yet</span>
-            </div>
-            <Icon name="i-chevr" size={18} />
-          </button>
-
-          <button type="button" className="cand" onClick={() => go('/add/media')}>
-            <span className="mini">
-              <Icon name="i-camera" size={18} />
-            </span>
-            <div>
-              <b>Photos or a video of a place</b>
-              <span>Add to a place that is already here</span>
-            </div>
-            <Icon name="i-chevr" size={18} />
-          </button>
-
-          <button type="button" className="cand" onClick={() => go('/add/pulse')}>
-            <span className="mini">
-              <Icon name="i-drop" size={18} />
-            </span>
-            <div>
-              <b>How is it right now?</b>
-              <span>On-site only, within 2 hours of checking in</span>
-            </div>
-            <Icon name="i-chevr" size={18} />
-          </button>
-        </div>
-      </BottomSheet>
+      <AddSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </>
   );
 }

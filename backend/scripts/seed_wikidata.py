@@ -19,6 +19,7 @@ are needed, which also keeps us clear of the map-boundary rules in SPEC §14.
 from __future__ import annotations
 
 import argparse
+from urllib.parse import unquote
 import json
 import sys
 import time
@@ -270,7 +271,9 @@ def upsert_item(session: Session, row: dict, category: str) -> tuple[Place | Non
     # on first view by `app.commons` (SPEC §6.3), which is also where the
     # licence allowlist is enforced.
     if image:
-        filename = image.rsplit("/", 1)[-1].replace("_", " ")
+        # Wikidata gives a percent-encoded URL ("Sankey%20Tank.jpg"); Commons wants the
+        # plain title, so decode it first or every lookup misses.
+        filename = unquote(image.rsplit("/", 1)[-1]).replace("_", " ")
         has_photo = session.exec(
             select(Media).where(Media.place_id == place.id, Media.source == "commons")
         ).first()

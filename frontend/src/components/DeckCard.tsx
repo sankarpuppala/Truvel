@@ -29,13 +29,17 @@ function reducedMotion(): boolean {
 
 function CardArt({ place }: { place: Place }) {
   const photo = place.lead_media;
-  if (photo?.url) {
+  // A photo that fails to load (offline, licence refused) falls back to the
+  // category illustration -- never a broken-image icon (SPEC §12.6).
+  const [failed, setFailed] = useState(false);
+  if (photo?.url && !failed) {
     return (
       <img
         className="ph"
         src={photo.url}
         alt={photo.caption || place.name.primary.text}
         style={{ objectFit: 'cover' }}
+        onError={() => setFailed(true)}
       />
     );
   }

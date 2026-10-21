@@ -192,3 +192,31 @@ def fetch_and_cache(filename: str, client: httpx.Client | None = None) -> Common
 def attribution_text(author: str, licence: str) -> str:
     """The line shown under every Commons photo (CLAUDE.md invariant 6)."""
     return f"Photo: {author} - {licence} - Wikimedia Commons"
+
+
+def resolve_media(session, media) -> bool:  # noqa: ANN001
+    """Make sure a Commons Media row has its credit, fetching it once if needed.
+
+    Returns True when the photo is usable. The row is updated in place with the
+    author, licence and file-page link (invariant 6), so every later read shows
+    the attribution without another network call. A photo whose licence is not
+    on the allowlist is hidden and never served: the place falls back to its
+    category illustration (SPEC §6.3).
+    """
+    if media.licence and media.attribution:
+        return True
+    try:
+        photo = fetch_and_cache(media.path_display)
+    except Exception:  # noqa: BLE001 - offline or rate-limited: try again later
+        return False
+    if photo is None:
+        media.status = "hidden"
+        session.add(media)
+        session.commit()
+        return False
+    media.licence = photo.licence
+    media.attribution = attribution_text(photo.author, photo.licence)
+    media.source_url = photo.file_page
+    session.add(media)
+    session.commit()
+    return True

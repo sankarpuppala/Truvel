@@ -1,0 +1,270 @@
+/* The laptop layout.
+ *
+ * The design reference draws a 360x780 phone, and under 1100px that is exactly
+ * what ships. This file is what happens above 1100px, where a 430px column
+ * stranded in the middle of a 1440px window would be a worse product, not a
+ * faithful one: the same markup becomes a navigation rail plus a page that uses
+ * the width. Nothing here changes the phone.
+ *
+ *   1. Fixes for sizes the reference states in pixels, at every width.
+ *   2. The shell: rail, page, and the bottom bar standing down.
+ *   3. Each screen on its own terms.
+ */
+
+:root{
+  --rail:280px;      /* the left navigation */
+  --page:1180px;     /* reading width for ordinary content */
+  --gut:32px;        /* page gutter */
+  --dock:404px;      /* the panel docked beside the map */
+}
+
+/* --- 1. Sizes that must follow the width --------------------------------- */
+
+/* The reference gives the deck a fixed 450px, which is right at 360px wide and
+ * wrong anywhere else: a 4:5 card in a wider column is taller than 450px and
+ * covers the Skip / Open / Save buttons. Take the height from the card. */
+.deck{height:auto;aspect-ratio:4/5;margin-bottom:20px}
+.tip-deck{top:auto;bottom:8px}
+
+/* Watch and the map fill the space above the bottom bar rather than assuming a
+ * 100dvh that also has to fit the bar (which pushed the bar off-screen). */
+.scr-fill{flex:1;min-height:0}
+.mapwrap.map-full{flex:1;height:auto;min-height:0}
+.shell{display:block}
+.shell .app{display:flex;flex-direction:column}
+.shell .app>.scr{flex:1}
+.siderail{display:none}
+.devbar-compact{margin:0 16px 8px;padding:7px 10px;gap:6px 8px;font-size:12.5px}
+.devbar-compact select{flex:1;min-width:120px}
+.devbar-note{flex-basis:100%;color:var(--muted);font-size:11.5px;line-height:1.3}
+
+/* The reference draws the Watch bottom bar *inside* the screen, so its video,
+ * shade, progress bar and text all leave 68px for it. Here the bar sits outside
+ * the player, so those offsets would leave a black gap above it. */
+.scr-watch .watch-ph{height:100%}
+.scr-watch .watch-shade{inset:0}
+.scr-watch .wprog{bottom:0}
+.scr-watch .wbody{bottom:20px}
+.scr-watch .wrail{bottom:104px}
+
+/* A phone fills the screen; nothing else to do. */
+@media (max-width:1099px){
+  .shell .app{min-height:100dvh}
+  .shell .app.app-fixed{height:100dvh}
+}
+
+/* --- 2. The shell -------------------------------------------------------- */
+
+@media (min-width:1100px){
+  body{background:var(--paper)}
+
+  .shell{
+    display:grid;
+    grid-template-columns:var(--rail) minmax(0,1fr);
+    min-height:100dvh;
+  }
+
+  /* The app is the page now: full height, its own scrolling, no phone frame. */
+  .shell .app{
+    max-width:none;
+    margin:0;
+    min-height:0;
+    height:100dvh;
+    box-shadow:none;
+    border-left:1px solid var(--line);
+    overflow:hidden;
+  }
+  .shell .app>.scr{height:100%;min-height:0;overflow:hidden}
+  .shell .toast-wrap{left:var(--rail)}
+
+  /* One navigation at a time: the rail replaces the bottom bar, and the phone
+     status bar is a phone affectation with no place on a laptop. */
+  .nav{display:none}
+  .scr>.sb,.mapwrap .sb,.scr-watch .sb{display:none}
+
+  /* --- the rail --- */
+  .siderail{
+    display:flex;
+    flex-direction:column;
+    gap:26px;
+    position:sticky;
+    top:0;
+    height:100dvh;
+    padding:26px 18px 20px;
+    background:var(--surface);
+    overflow:auto;
+  }
+  .side-logo{display:flex;align-items:center;gap:10px;color:var(--ink);padding:0 8px}
+  .side-logo span{font:400 32px/1 "Rozha One",Georgia,serif;letter-spacing:-.01em}
+  .side-nav{display:flex;flex-direction:column;gap:4px}
+  .side-link{
+    display:flex;align-items:center;gap:14px;
+    padding:11px 14px;border-radius:14px;color:var(--ink);
+    position:relative;
+  }
+  .side-link-t{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+  .side-link-t b{font-size:16px;font-weight:600}
+  .side-link-t small{font-size:12.5px;color:var(--muted)}
+  .side-link:hover{background:var(--sunk)}
+  .side-link.on{background:color-mix(in srgb,var(--laterite) 10%,var(--surface));color:var(--laterite)}
+  .side-link.on .side-link-t b{font-weight:700}
+  .side-link.on .side-link-t small{color:color-mix(in srgb,var(--laterite) 70%,var(--muted))}
+  /* The dashed footpath marks where you are: the same mark as the logo. */
+  .side-link.on::before{
+    content:"";position:absolute;left:-18px;top:10px;bottom:10px;
+    border-left:3px dashed var(--marigold);
+  }
+  .side-add{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    min-height:50px;border-radius:15px;font-size:16px;font-weight:600;
+    background:var(--laterite);color:var(--on-primary);
+    box-shadow:0 10px 20px -12px color-mix(in srgb,var(--laterite) 80%,transparent);
+  }
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+  .side-me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;color:var(--ink)}
+  .side-me:hover{background:var(--sunk)}
+  .side-signin{width:100%}
+  .side-note{margin:0;font-size:11.5px;line-height:1.45;color:var(--muted);padding:0 8px}
+
+  /* --- the page --- */
+
+  /* Each screen keeps its own header; on a laptop it becomes a band across the
+     top of the page rather than a strip at the top of a phone. */
+  .scr>.topbar,.scr>.srow,.scr>.you-top,.scr>.lg-head,.scr>.add-head{
+    padding:18px var(--gut) 14px;
+    border-bottom:1px solid var(--line);
+    background:var(--surface);
+  }
+  .scr>.tabs,.scr>.chips,.scr>.golden,.scr>.ex-head,.scr>.st-period,.scr>.simbanner,
+  .scr>.dprog,.scr>.media-strip,.scr>.pp-head,.scr>.pp-prog,.scr>.pp-cards{
+    padding-inline:var(--gut);
+  }
+  .scr>.tabs{padding-top:4px}
+
+  /* Content is centred at a reading width; the 16px paddings the screens
+     already have still apply inside it. */
+  .scr-body{padding-inline:max(calc(var(--gut) - 16px),calc((100% - var(--page))/2))}
+
+  .city{font-size:30px}
+  .ex-city{font-size:44px}
+  .pp-name{font-size:34px}
+  .lg-head h3,.add-title{font-size:28px}
+
+  /* A two-choice switch stretched across 1100 px reads as a toolbar with
+     nothing in it. Give the switches their natural size back. */
+  .you-top .seg{flex:none;min-width:320px}
+  .you-top .seg button{flex:1}
+  .seg-full{max-width:420px}
+
+  /* The dev simulator is scaffolding, not a part of the product: on a laptop
+     it gets out of the way instead of sitting across the foot of every page.
+     It does not exist in a production build at all (AC-25). */
+  .devbar.devbar-compact{
+    position:fixed;right:18px;bottom:42px;z-index:40;
+    width:300px;margin:0;
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+  .devbar-compact select{width:100%;flex-basis:100%}
+}
+
+/* --- 3. Each screen ------------------------------------------------------- */
+
+@media (min-width:1100px){
+
+  /* Nearby: one card, deliberately. The deck is the whole point of the screen,
+     so it gets a narrow column and the width stays quiet around it. */
+  .page-nearby .scr-body{padding-inline:max(var(--gut),calc((100% - 540px)/2))}
+  .page-nearby .deck{max-width:460px;margin-inline:auto}
+  .page-nearby .golden{max-width:508px;margin-inline:auto}
+
+  /* Explore, list: two columns of rows. One column of 64px thumbnails across
+     1100px is mostly empty paper. */
+  .page-explore .rows{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(400px,1fr));
+    column-gap:36px;
+    padding-inline:16px;
+  }
+  .page-explore .row{border-bottom:1px solid var(--line)}
+
+  /* Explore, map: the map takes the window and the list docks beside it as one
+     panel -- search, progress and places in a single column, the way every map
+     product on a laptop does it. */
+  .app-explore .mapwrap.map-full{height:100dvh}
+  .mapwrap .map-top{
+    left:0;right:auto;top:0;
+    width:var(--dock);
+    padding:20px 0 0;
+    z-index:4;
+  }
+  .mapwrap .map-top .srow{border-bottom:0;background:transparent;padding:0 20px 10px;margin:0}
+  .mapwrap .map-top .search-map{box-shadow:none;border:1.5px solid var(--line)}
+  .mapwrap .explored{margin:0 20px;box-shadow:none;border:1px solid var(--line)}
+  .sheet.sheet-map{
+    left:0;right:auto;top:0;bottom:0;
+    width:var(--dock);
+    padding:188px 16px 16px;
+    border-radius:0;
+    border-right:1px solid var(--line);
+    box-shadow:none;
+    overflow:auto;
+  }
+  .sheet.sheet-map .grab{display:none}
+  /* The key, our attribution and MapLibre's own all sit clear of each other
+     and of the docked panel. */
+  .legend{left:calc(var(--dock) + 20px);right:auto;bottom:20px}
+  .osm{left:calc(var(--dock) + 20px);right:auto;bottom:110px}
+
+  /* Place: the photos stay put while the details scroll past them. The art is a
+     card rather than a full-height bleed, so a 4:3 photo is not cropped to a
+     slot twice as tall as it is wide. */
+  .page-place{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .page-place>.carousel{
+    position:sticky;top:0;
+    height:auto;aspect-ratio:4/5;
+    max-height:calc(100dvh - 48px);
+    margin:24px;
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .page-place>.scr-body{padding-inline:0;height:100dvh}
+  .page-place .pl{max-width:620px;padding:28px var(--gut) 8px}
+  .page-place>.checkin-bar{grid-column:2;padding-inline:var(--gut)}
+  .page-place>.devbar{grid-column:2}
+
+  /* You: the Studio cards and the stamp grid both want the width. */
+  .page-you .metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .page-you .stamps{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .page-you .pp-cards{grid-template-columns:repeat(3,minmax(0,220px))}
+  .page-you .partner,.page-you .topc{margin-inline:16px}
+
+  /* Settings: the city tiles read better several across. */
+  .page-settings .cities{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .page-settings .lsec{max-width:760px}
+
+  /* Add and sign in are forms, not full-bleed pages. */
+  .page-add .scr-body{padding-inline:max(var(--gut),calc((100% - 760px)/2))}
+  .page-signin .scr-body{padding-inline:max(var(--gut),calc((100% - 520px)/2))}
+
+  /* Watch: a 9:16 stage centred on a dark page, the way a vertical video is
+     shown on a desktop everywhere. The rail and caption are positioned against
+     the stage, so constraining the stage keeps them aligned. */
+  .app-fixed{background:#0B0D0C}
+  .scr-watch{
+    width:min(480px,calc((100dvh - 48px) * 9 / 16));
+    margin:24px auto;
+    height:calc(100dvh - 48px);
+    border-radius:26px;
+    overflow:hidden;
+    box-shadow:0 30px 70px -30px rgba(0,0,0,.8);
+  }
+  .scr-watch .wtabs{padding-top:14px}
+}
+
+/* Wide laptops: let the reading width grow rather than leaving two bands of
+   empty paper either side. */
+@media (min-width:1600px){
+  :root{--page:1320px;--rail:300px}
+}
