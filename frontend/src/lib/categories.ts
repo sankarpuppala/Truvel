@@ -159,7 +159,10 @@ export function pulseIcon(field: string, value: string): string {
 
 /** Report reasons, as the sheet lists them (SPEC §8.13). */
 export const REPORT_REASONS: { key: string; label: string }[] = [
-  { key: 'wrong_location', label: 'Wrong location' },
+  { key: 'wrong_location', label: 'The pin is in the wrong place' },
+  { key: 'wrong_name', label: 'The name is wrong' },
+  { key: 'closed_or_gone', label: 'Closed, or no longer there' },
+  { key: 'wrong_info', label: 'Something here is out of date' },
   { key: 'private_property', label: 'Private property or trespassing' },
   { key: 'unsafe', label: 'Unsafe' },
   { key: 'offensive', label: 'Offensive' },

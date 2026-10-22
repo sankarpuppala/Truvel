@@ -63,10 +63,10 @@ export function PulseStrip({ pulse }: { pulse: PulseSummary | null | undefined }
  */
 export function SafetyCard({
   place,
-  onShareTrip,
+  onAskFriend,
 }: {
   place: Place;
-  onShareTrip: () => void;
+  onAskFriend: () => void;
 }) {
   const safety = place.safety ?? {};
   const rows = SAFETY_FLAGS.map((flag) => {
@@ -118,9 +118,9 @@ export function SafetyCard({
           <Icon name="i-call" size={18} />
           Emergency <b>112</b>
         </span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onShareTrip}>
-          <Icon name="i-share" size={16} />
-          Share your trip
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onAskFriend}>
+          <Icon name="i-group" size={16} />
+          Ask a friend to check on me
         </button>
       </div>
     </section>

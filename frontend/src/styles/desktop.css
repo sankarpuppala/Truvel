@@ -234,7 +234,7 @@
   .page-place>.scr-body{padding-inline:0;height:100dvh}
   .page-place .pl{max-width:620px;padding:28px var(--gut) 8px}
   .page-place>.checkin-bar{grid-column:2;padding-inline:var(--gut)}
-  .page-place>.devbar{grid-column:2}
+  .page-nearby>.devbar{grid-column:2}
 
   /* You: the Studio cards and the stamp grid both want the width. */
   .page-you .metrics{grid-template-columns:repeat(4,minmax(0,1fr))}

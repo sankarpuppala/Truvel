@@ -129,3 +129,76 @@ def test_official_places_say_posted_by_and_cannot_be_credited_with_visits(client
     assert touch.json().get("recorded") is False
     assert session.exec(select(Touch)).first() is None
     assert session.get(Place, place.id).added_by == official.id
+
+
+# --- duplicates ------------------------------------------------------------ #
+
+def _new_place(client, name: str, lat: float, lng: float, **extra):
+    return client.post(
+        "/api/places",
+        json={"lat": lat, "lng": lng, "name": name, "category": "fort_heritage", **extra},
+    )
+
+
+def test_a_certain_duplicate_is_refused_whatever_the_client_did(client, session):
+    city = make_city(session)
+    make_place(session, city, "Golconda Fort", lat=17.3833, lng=78.4011, category="fort_heritage")
+    make_user(session, "riya", email="riya@example.com")
+    client.post("/api/auth/login", json={"identifier": "riya", "password": PASSWORD})
+
+    same = _new_place(client, "Fort Golconda", 17.3834, 78.4012)
+    assert same.status_code == 409
+    assert same.json()["error"]["code"] == "duplicate_place"
+    assert same.json()["error"]["detail"]["place_id"]
+
+
+def test_a_different_place_beside_it_is_allowed(client, session):
+    city = make_city(session)
+    make_place(session, city, "Golconda Fort", lat=17.3833, lng=78.4011, category="fort_heritage")
+    make_user(session, "riya", email="riya@example.com")
+    client.post("/api/auth/login", json={"identifier": "riya", "password": PASSWORD})
+
+    other = _new_place(client, "Golconda Jail", 17.3836, 78.4014)
+    assert other.status_code == 200
+
+
+# --- reports --------------------------------------------------------------- #
+
+def test_reports_are_grouped_and_visitors_count_for_more(client, session):
+    from app.models import Visit
+
+    city = make_city(session)
+    place = make_place(session, city)
+    other = make_place(session, city, "Other", lat=17.5, lng=78.5)
+    make_user(session, "admin", role="admin", email="a@example.com")
+    for name in ("riya", "arjun", "meera"):
+        make_user(session, name, email=f"{name}@example.com")
+    session.add(Visit(user_id=2, place_id=int(place.id), verified=True))     # riya was there
+    session.commit()
+
+    def report(who: str, target: int, reason: str = "wrong_location", note: str = ""):
+        client.post("/api/auth/login", json={"identifier": who, "password": PASSWORD})
+        out = client.post(
+            "/api/reports",
+            json={"target_type": "place", "target_id": target, "reason": reason, "note": note},
+        )
+        client.post("/api/auth/logout")
+        return out
+
+    report("arjun", int(other.id))
+    report("meera", int(other.id))
+    report("riya", int(place.id), note="pin is on the next lane")
+    assert report("riya", int(place.id), note="again").json()["already"] is True
+
+    client.post("/api/auth/login", json={"identifier": "admin", "password": PASSWORD})
+    cases = client.get("/api/admin/cases").json()["cases"]
+    assert [c["place_id"] for c in cases] == [int(place.id), int(other.id)]  # the visitor first
+    assert cases[0]["reporters_who_visited"] == 1 and cases[0]["reports"] == 1
+    assert cases[1]["reporters"] == 2
+
+    done = client.post(
+        "/api/admin/actions",
+        json={"action": "resolve", "target_type": "place", "target_id": int(place.id)},
+    )
+    assert done.status_code == 200
+    assert len(client.get("/api/admin/cases").json()["cases"]) == 1

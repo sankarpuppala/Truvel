@@ -221,6 +221,23 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-22 (night) — **Product pass.**
+  - The location simulator now lives only on Nearby (it was on every page,
+    including sign-in).
+  - **Open in Maps**: Google snaps a pin to the nearest thing it knows, so the
+    Salar Jung Museum's pin opened "Metal Ware Gallery". Places with a Wikidata
+    item are now sent by name + city; everything else keeps exact coordinates.
+  - **Share your trip** became **Ask a friend to check on me** (a message with a
+    return time and the Truvel page, no Maps link, no location). The top share
+    button shares the Truvel page.
+  - **Reports** are grouped into cases in Admin, ranked by how many reporters have
+    a verified check-in there; new reasons (wrong name, closed, out of date), an
+    optional note, one open report per person per reason, 20 a day.
+  - **Duplicates**: the server now refuses a place that is certainly an existing
+    one (name agrees in any language *and* the pin is within 150 m), so skipping
+    the "Is it one of these?" prompt does not get around it.
+  - Watch > Nearby shows nearby places as cards. `docs/MONETISATION.md` explains
+    how the app could earn, and why none of it is switched on.
 - 2026-10-22 (later) — **@truvel publishes every place; reset and delete built.**
   - `Place.added_by` is `@truvel` for all 16,801 places (and the password is
     `qw12&er34`, 8 characters minimum now). The 50-second bug is avoided by

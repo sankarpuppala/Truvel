@@ -131,6 +131,10 @@ dedupe:
   radius_m: 300
   name_sim_min: 80
   same_category_radius_m: 100
+  # The server refuses a new place that is certainly an existing one (add.py).
+  certain_name_sim: 90
+  certain_raw_sim: 72
+  certain_radius_m: 150
   clip_sim_min: 0.90
   generic_words:
     en: [the, lake, hill, temple, point, view, park, fort, falls, rocks, garden, museum, beach]
@@ -180,6 +184,7 @@ media:
 
 moderation:
   auto_hide_reports: 3
+  reports_per_day: 20
   strikes_to_block: 3
 
 # UI languages: only reviewed ones are enabled (CLAUDE.md invariant 11).

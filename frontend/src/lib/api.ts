@@ -198,7 +198,7 @@ export const api = {
       body: { place_id, content_type, content_id },
     }),
   report: (target_type: string, target_id: number, reason: string, note = '') =>
-    request<{ filed: boolean; hidden: boolean }>('/reports', {
+    request<{ filed: boolean; hidden: boolean; already?: boolean }>('/reports', {
       method: 'POST',
       body: { target_type, target_id, reason, note },
     }),
@@ -316,6 +316,7 @@ export const api = {
     }),
 
   // --- admin ------------------------------------------------------------- //
+  adminCases: () => request<{ cases: Record<string, unknown>[] }>('/admin/cases'),
   adminQueue: () => request<{ reports: Record<string, unknown>[] }>('/admin/queue'),
   adminAction: (body: Record<string, unknown>) =>
     request<Record<string, unknown>>('/admin/actions', { method: 'POST', body }),

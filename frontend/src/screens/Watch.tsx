@@ -15,6 +15,7 @@ import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
 import { EmptyState, Loading } from '../components/common';
 import { Icon, StatusBar } from '../components/Icon';
+import { NearbyCards } from '../components/NearbyCards';
 import { WatchPlayer } from '../components/WatchPlayer';
 import { distance } from '../lib/format';
 import { haptic } from '../lib/geo';
@@ -49,6 +50,12 @@ export function Watch() {
 
   useEffect(() => {
     let cancelled = false;
+    if (tab === 'nearby') {
+      // Nearby is cards of places, not videos (see NearbyCards).
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     api
       .watch(tab, position, 0)
@@ -194,7 +201,11 @@ export function Watch() {
         ))}
       </div>
 
-      {loading ? (
+      {tab === 'nearby' ? (
+        <div className="ncards-wrap">
+          <NearbyCards />
+        </div>
+      ) : loading ? (
         <Loading what="Loading videos" />
       ) : items.length === 0 ? (
         <div style={{ flex: 1, display: 'grid', placeItems: 'center' }}>

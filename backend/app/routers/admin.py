@@ -39,6 +39,89 @@ router = APIRouter(
 )
 
 
+@router.get("/cases")
+def cases(session: DbSession = Depends(get_session)) -> dict:
+    """Open reports grouped by what they are about, strongest evidence first.
+
+    Ten people flagging ten different things is ten small jobs; ten people
+    flagging one thing is one job with a lot of evidence. A report from someone
+    with a verified check-in at the place is worth more than one from a stranger
+    (they were there), so each case says how many of its reporters were.
+    """
+    rows = session.exec(select(Report).where(Report.status == "open")).all()
+    grouped: dict[tuple[str, int], list[Report]] = {}
+    for report in rows:
+        grouped.setdefault((report.target_type, int(report.target_id)), []).append(report)
+
+    out = []
+    for (target_type, target_id), reports in grouped.items():
+        place_id = _place_of(session, target_type, target_id)
+        reporters = {int(r.reporter_id) for r in reports}
+        visited = _verified_visitors(session, place_id, reporters)
+        reasons: dict[str, int] = {}
+        for report in reports:
+            reasons[report.reason] = reasons.get(report.reason, 0) + 1
+        out.append(
+            {
+                "target_type": target_type,
+                "target_id": target_id,
+                "place_id": place_id,
+                "title": _target_title(session, target_type, target_id, place_id),
+                "reasons": reasons,
+                "reports": len(reports),
+                "reporters": len(reporters),
+                "reporters_who_visited": len(visited),
+                "notes": [
+                    {"reason": r.reason, "note": r.note, "visited": int(r.reporter_id) in visited}
+                    for r in reports
+                    if r.note
+                ][:10],
+                "latest": max(r.at for r in reports).isoformat(),
+            }
+        )
+    out.sort(key=lambda c: (-c["reporters_who_visited"], -c["reporters"], c["latest"]))
+    return {"cases": out}
+
+
+def _place_of(session: DbSession, target_type: str, target_id: int) -> int | None:
+    if target_type == "place":
+        return target_id
+    if target_type == "media":
+        media = session.get(Media, target_id)
+        return int(media.place_id) if media is not None and media.place_id else None
+    if target_type == "steps":
+        step = session.get(LastMileStep, target_id)
+        return int(step.place_id) if step is not None else None
+    return None
+
+
+def _verified_visitors(session: DbSession, place_id: int | None, user_ids: set[int]) -> set[int]:
+    if place_id is None or not user_ids:
+        return set()
+    rows = session.exec(
+        select(Visit.user_id).where(
+            Visit.place_id == place_id,
+            Visit.verified == True,  # noqa: E712
+            Visit.simulated == False,  # noqa: E712
+            Visit.user_id.in_(user_ids),
+        )
+    ).all()
+    return {int(r) for r in rows}
+
+
+def _target_title(
+    session: DbSession, target_type: str, target_id: int, place_id: int | None
+) -> str:
+    from .. import services
+
+    name = services.english_name(session, place_id) if place_id else f"#{target_id}"
+    if target_type == "media":
+        return f"A photo or video of {name}"
+    if target_type == "steps":
+        return f"Last-mile directions for {name}"
+    return name
+
+
 @router.get("/queue")
 def queue(
     status: str = "open",
@@ -105,6 +188,24 @@ def act(
 ) -> dict:
     """Apply a moderation decision."""
     now = utcnow()
+
+    if body.action in ("resolve", "dismiss_all"):
+        if not body.target_type or not body.target_id:
+            raise bad_request("Which case?", "no_case")
+        # "resolve" means we acted on it (fixed the pin, corrected the name);
+        # "dismiss_all" means the reports were wrong. Either closes the case.
+        outcome = "actioned" if body.action == "resolve" else "dismissed"
+        for report in session.exec(
+            select(Report).where(
+                Report.status == "open",
+                Report.target_type == body.target_type,
+                Report.target_id == body.target_id,
+            )
+        ).all():
+            report.status = outcome
+            session.add(report)
+        session.commit()
+        return {"ok": True}
 
     if body.action == "dismiss":
         if not body.report_id:

@@ -15,12 +15,15 @@ from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from urllib.parse import quote_plus
+
 from sqlmodel import Session, func, select
 
 from .config import cfg, regional_langs
 from .geo import haversine_km, travel_minutes
 from .models import (
     Attribution,
+    City,
     Like,
     Media,
     Place,
@@ -248,9 +251,20 @@ def lead_media(session: Session, place_id: int) -> Media | None:
     return rows[0] if rows else None
 
 
-def maps_url(lat: float, lng: float) -> str:
-    """The free Google Maps directions link -- the only Google we use (SPEC §6.6)."""
-    return f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}"
+def maps_url(place: Place, name: str = "", city: str = "") -> str:
+    """The free Google Maps directions link -- the only Google we use (SPEC §6.6).
+
+    Coordinates are exact, but Google snaps a pin to the nearest thing it knows,
+    and inside a large site that is the wrong thing: the Salar Jung Museum's pin
+    opened "Metal Ware Gallery", one hall within it. A place with a Wikidata
+    item is a notable, unambiguous thing, so it is sent by name and city, which
+    Google resolves to the place itself. Everything else keeps its coordinates.
+    """
+    if place.wikidata and name:
+        target = quote_plus(", ".join(part for part in (name, city) if part))
+    else:
+        target = f"{place.lat},{place.lng}"
+    return f"https://www.google.com/maps/dir/?api=1&destination={target}"
 
 
 def osm_url(place: Place) -> str:
@@ -312,6 +326,8 @@ def place_payload(
         distance_km = haversine_km(lat, lng, place.lat, place.lng)
 
     finder = session.get(User, place.added_by) if place.added_by else None
+    city = session.get(City, place.city_id) if place.city_id else None
+    city_name = city.name_en if city else ""
     lead = lead_media(session, pid)
 
     payload: dict = {
@@ -398,7 +414,7 @@ def place_payload(
             "tags": place.tags or [],
             "media": [media_payload(m, uploaders.get(m.user_id or -1)) for m in media_rows],
             "pulse": pulse_summary(session, pid, now),
-            "maps_url": maps_url(place.lat, place.lng) if not redact else None,
+            "maps_url": maps_url(place, english_name(session, pid), city_name) if not redact else None,
             "osm_url": osm_url(place) if not redact else None,
             "regional_langs": regional_langs(place.state),
             "added_remotely": place.added_remotely,

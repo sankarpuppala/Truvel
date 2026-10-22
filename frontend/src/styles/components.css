@@ -408,3 +408,13 @@
 .lnote{font-size:13.5px;color:var(--muted);margin:10px 0 0;text-wrap:pretty}
 
 
+
+/* Watch > Nearby: places as cards (dark, like the rest of Watch). */
+.ncards-wrap{flex:1;min-height:0;overflow-y:auto;padding:8px var(--gut,16px) 90px}
+.ncards{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.ncard{display:block;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none}
+.ncard-ph{display:block;width:100%;height:150px;object-fit:cover}
+.ncard-body{padding:10px 12px 12px}
+.ncard-name{font-family:var(--font-display,inherit);font-size:18px;line-height:1.25;margin:0}
+.ncard-meta{margin:4px 0 0;color:var(--muted);font-size:13px}
+.nearby-empty{color:var(--muted);text-align:center;padding:32px 16px}

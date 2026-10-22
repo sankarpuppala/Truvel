@@ -45,6 +45,8 @@ export function PlacePage() {
   const [loading, setLoading] = useState(true);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
+  const [buddyOpen, setBuddyOpen] = useState(false);
+  const [reportNote, setReportNote] = useState('');
   const [nameSheetOpen, setNameSheetOpen] = useState(false);
   const [checkinResult, setCheckinResult] = useState<CheckinResult | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -197,19 +199,41 @@ export function PlacePage() {
     }
   }
 
-  async function shareTrip() {
-    const name = place!.name.primary.text;
-    const url = place!.maps_url ?? `${window.location.origin}/place/${place!.id}`;
-    const text = `I'm going to ${name}. ${url}`;
+  /** Hand text to the phone's share sheet, or copy it where there is none. */
+  async function send(title: string, text: string, url: string) {
     try {
-      if (navigator.share) await navigator.share({ title: name, text, url });
+      if (navigator.share) await navigator.share({ title, text, url });
       else {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(`${text} ${url}`);
         toast('Copied. Send it to someone.');
       }
     } catch {
       /* cancelled */
     }
+  }
+
+  /** The share button: this place's Truvel page, for a friend to look at. */
+  function sharePlace() {
+    const name = place!.name.primary.text;
+    const url = `${window.location.origin}/place/${place!.id}`;
+    void send(name, `Have a look at ${name} on Truvel.`, url);
+  }
+
+  /** "Check on me": a message for one trusted person, with a time. It carries
+   * no location, only the place's Truvel page and when to worry (invariant 1). */
+  function askFriendToCheck(hours: number) {
+    const name = place!.name.primary.text;
+    const by = new Date(Date.now() + hours * 3600_000).toLocaleTimeString('en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    setBuddyOpen(false);
+    void send(
+      `Check on me: ${name}`,
+      `I'm going to ${name}. If you haven't heard from me by ${by}, please call me, ` +
+        `and call 112 if you can't reach me.`,
+      `${window.location.origin}/place/${place!.id}`,
+    );
   }
 
   async function voteSteps(group: string, helpful: boolean) {
@@ -240,10 +264,19 @@ export function PlacePage() {
   }
 
   async function sendReport(reason: string) {
+    if (!me) {
+      toast('Sign in to report a place.', 'bad');
+      return;
+    }
     try {
-      await api.report('place', place!.id, reason);
+      const result = await api.report('place', place!.id, reason, reportNote.trim());
       setReportOpen(false);
-      toast('Reported. We will look at it.');
+      setReportNote('');
+      toast(
+        result.already
+          ? 'You already reported that. Thank you.'
+          : 'Thank you. A person will look at it, and it counts for more if you have been here.',
+      );
     } catch (error) {
       toast(error instanceof ApiError ? error.message : 'That did not work.', 'bad');
     }
@@ -277,7 +310,7 @@ export function PlacePage() {
             <Icon name="i-back" size={22} />
           </button>
           <span className="round-group">
-            <button className="round" aria-label="Share" onClick={() => void shareTrip()}>
+            <button className="round" aria-label="Share" onClick={sharePlace}>
               <Icon name="i-share" size={20} />
             </button>
             {canDelete && (
@@ -506,7 +539,7 @@ export function PlacePage() {
           </section>
 
           {/* 10. Safety and access. Always open (invariant 9). */}
-          <SafetyCard place={place} onShareTrip={() => void shareTrip()} />
+          <SafetyCard place={place} onAskFriend={() => setBuddyOpen(true)} />
 
           {/* 11. Accessibility. */}
           <AccessibilityRows place={place} />
@@ -615,7 +648,46 @@ export function PlacePage() {
         }}
       />
 
+      <BottomSheet
+        open={buddyOpen}
+        onClose={() => setBuddyOpen(false)}
+        title="Ask a friend to check on me"
+      >
+        <p className="plain" style={{ color: 'var(--muted)', marginBottom: 12 }}>
+          Sends one person a message: where you are going, and when to start worrying.
+          It does not include your location.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[
+            { hours: 2, label: 'Back within 2 hours' },
+            { hours: 4, label: 'Back within 4 hours' },
+            { hours: 8, label: 'Back by tonight (8 hours)' },
+          ].map((option) => (
+            <button
+              key={option.hours}
+              type="button"
+              className="cand"
+              onClick={() => askFriendToCheck(option.hours)}
+            >
+              <div>
+                <b>{option.label}</b>
+              </div>
+            </button>
+          ))}
+        </div>
+      </BottomSheet>
+
       <BottomSheet open={reportOpen} onClose={() => setReportOpen(false)} title="Report this place">
+        <label className="field">
+          <span>What should we know? <small className="field-opt">optional</small></span>
+          <textarea
+            value={reportNote}
+            onChange={(event) => setReportNote(event.target.value)}
+            maxLength={300}
+            rows={2}
+            placeholder="For a wrong pin: where it really is, or what is next to it."
+          />
+        </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {REPORT_REASONS.map((reason) => (
             <button

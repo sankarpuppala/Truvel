@@ -562,6 +562,15 @@ def test_ac22_open_in_maps_url_is_exact(client, session):
     )
 
 
+def test_ac22_notable_places_are_sent_by_name_not_pin(client, session):
+    """The pin of the Salar Jung Museum opened one gallery inside it on Google."""
+    city = make_city(session)
+    place = make_place(session, city, "Salar Jung Museum", wikidata="Q1424687")
+    register(client, "nameuser")
+    detail = client.get(f"/api/places/{place.id}").json()
+    assert detail["maps_url"].endswith("destination=Salar+Jung+Museum%2C+Hyderabad")
+
+
 def test_ac22_attribution_is_present_per_source(client, session):
     city = make_city(session)
     osm = make_place(session, city, "From OSM", source="osm")

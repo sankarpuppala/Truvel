@@ -14,21 +14,23 @@ import { Loading } from '../components/common';
 import { Icon, StatusBar } from '../components/Icon';
 import { num, rupees } from '../lib/format';
 
-type Report = {
-  id: number;
+type Case = {
   target_type: string;
   target_id: number;
-  reason: string;
-  note: string;
-  at: string;
-  reporter: string | null;
-  target: Record<string, unknown> | null;
+  place_id: number | null;
+  title: string;
+  reasons: Record<string, number>;
+  reports: number;
+  reporters: number;
+  reporters_who_visited: number;
+  notes: { reason: string; note: string; visited: boolean }[];
+  latest: string;
 };
 
 export function Admin() {
   const navigate = useNavigate();
   const { me, loadingMe, toast } = useApp();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
   const [stats, setStats] = useState<Record<string, unknown> | null>(null);
   const [runResult, setRunResult] = useState<Record<string, unknown> | null>(null);
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -43,8 +45,8 @@ export function Admin() {
   async function load() {
     setLoading(true);
     try {
-      const [queue, statistics] = await Promise.all([api.adminQueue(), api.adminStats()]);
-      setReports(queue.reports as unknown as Report[]);
+      const [queue, statistics] = await Promise.all([api.adminCases(), api.adminStats()]);
+      setCases(queue.cases as unknown as Case[]);
       setStats(statistics);
     } catch (error) {
       toast(error instanceof ApiError ? error.message : 'Could not load the queue.', 'bad');
@@ -108,56 +110,82 @@ export function Admin() {
 
       <div className="scr-body">
         <section className="lsec">
-          <h4>Reports ({reports.length})</h4>
-          {reports.length === 0 ? (
+          <h4>Reports to check ({cases.length})</h4>
+          <p className="plain" style={{ color: 'var(--muted)', fontSize: 13.5 }}>
+            Grouped by what they are about. Someone who has checked in at the place has
+            actually been there, so those reports come first.
+          </p>
+          {cases.length === 0 ? (
             <p className="plain" style={{ color: 'var(--muted)' }}>
               Nothing waiting.
             </p>
           ) : (
-            reports.map((report) => (
-              <div className="cand" key={report.id} style={{ marginBottom: 8, alignItems: 'flex-start' }}>
+            cases.map((item) => (
+              <div
+                className="cand"
+                key={`${item.target_type}-${item.target_id}`}
+                style={{ marginBottom: 8, alignItems: 'flex-start' }}
+              >
                 <div>
-                  <b>
-                    {report.reason.replace(/_/g, ' ')} &middot; {report.target_type} #
-                    {report.target_id}
-                  </b>
+                  <b>{item.title}</b>
                   <span>
-                    by @{report.reporter ?? 'someone'}
-                    {report.note ? ` — ${report.note}` : ''}
+                    {item.reporters} {item.reporters === 1 ? 'person' : 'people'}
+                    {item.reporters_who_visited > 0 &&
+                      `, ${item.reporters_who_visited} who have been there`}
+                    {' · '}
+                    {Object.entries(item.reasons)
+                      .map(([reason, count]) => `${reason.replace(/_/g, ' ')} ×${count}`)
+                      .join(', ')}
                   </span>
+                  {item.notes.map((note, index) => (
+                    <p key={index} className="plain" style={{ fontSize: 13.5, margin: '4px 0 0' }}>
+                      &ldquo;{note.note}&rdquo;{note.visited ? ' — was there' : ''}
+                    </p>
+                  ))}
                   <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    {item.place_id && (
+                      <a className="btn btn-ghost btn-sm" href={`/place/${item.place_id}`}>
+                        Open place
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() =>
+                        void act({
+                          action: 'resolve',
+                          target_type: item.target_type,
+                          target_id: item.target_id,
+                        })
+                      }
+                    >
+                      Fixed
+                    </button>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
                       onClick={() =>
                         void act({
                           action: 'hide',
-                          target_type: report.target_type,
-                          target_id: report.target_id,
+                          target_type: item.target_type,
+                          target_id: item.target_id,
                         })
                       }
                     >
-                      Hide
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() =>
-                        void act({
-                          action: 'approve',
-                          target_type: report.target_type,
-                          target_id: report.target_id,
-                        })
-                      }
-                    >
-                      Approve
+                      Hide it
                     </button>
                     <button
                       type="button"
                       className="btn btn-text btn-sm"
-                      onClick={() => void act({ action: 'dismiss', report_id: report.id })}
+                      onClick={() =>
+                        void act({
+                          action: 'dismiss_all',
+                          target_type: item.target_type,
+                          target_id: item.target_id,
+                        })
+                      }
                     >
-                      Dismiss
+                      Not a problem
                     </button>
                   </div>
                 </div>

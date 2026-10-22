@@ -11,6 +11,7 @@ import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
 import { DeckActions, DeckCard, DeckCardBack, type SwipeAction } from '../components/DeckCard';
 import { EmptyState, Loading } from '../components/common';
+import { DevTools } from '../components/DevTools';
 import { Icon, StatusBar } from '../components/Icon';
 import { num } from '../lib/format';
 import type { DeckResponse, Place } from '../lib/types';
@@ -229,6 +230,10 @@ export function Nearby() {
           />
         )}
       </div>
+
+      {/* The location simulator is development scaffolding and lives only
+          here, where the deck it changes is. It is absent from production. */}
+      <DevTools />
     </>
   );
 }

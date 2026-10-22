@@ -38,6 +38,9 @@ router = APIRouter(tags=["interact"], dependencies=[Depends(require_csrf_header)
 
 REPORT_REASONS = {
     "wrong_location",
+    "wrong_name",
+    "wrong_info",
+    "closed_or_gone",
     "private_property",
     "unsafe",
     "offensive",
@@ -364,6 +367,29 @@ def create_report(
         raise bad_request("Unknown reason.", "bad_reason")
     if body.target_type not in ("place", "media", "steps"):
         raise bad_request("Unknown target.", "bad_target")
+
+    already = session.exec(
+        select(Report).where(
+            Report.reporter_id == user.id,
+            Report.target_type == body.target_type,
+            Report.target_id == body.target_id,
+            Report.reason == body.reason,
+            Report.status == "open",
+        )
+    ).first()
+    if already is not None:
+        # Filing the same thing twice must not look like two people agreeing.
+        return {"filed": True, "hidden": False, "already": True}
+    today = int(
+        session.exec(
+            select(func.count())
+            .select_from(Report)
+            .where(Report.reporter_id == user.id, Report.at >= utcnow() - timedelta(days=1))
+        ).one()
+        or 0
+    )
+    if today >= int(cfg("moderation.reports_per_day", 20)):
+        raise too_many("That's a lot of reports today. We'll work through them.")
 
     session.add(
         Report(

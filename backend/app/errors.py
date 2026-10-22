@@ -56,3 +56,7 @@ def not_found(message: str = "Not found.", code: str = "not_found") -> ApiError:
 
 def too_many(message: str, code: str = "rate_limited") -> ApiError:
     return ApiError(429, code, message)
+
+
+def conflict(message: str, code: str = "conflict", detail: Any = None) -> ApiError:
+    return ApiError(409, code, message, detail)

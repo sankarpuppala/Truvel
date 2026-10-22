@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel, Field
+from rapidfuzz import fuzz
 from sqlalchemy import delete as sa_delete
 from sqlalchemy import update as sa_update
 from sqlmodel import Session as DbSession
@@ -23,9 +24,9 @@ from .. import media_store, services
 from ..auth import can_post, current_user, require_csrf_header
 from ..config import cfg
 from ..db import get_session
-from ..errors import bad_request, forbidden, not_found, too_many
-from ..geo import bbox_around
-from ..integrity.dedupe import find_duplicates
+from ..errors import bad_request, conflict, forbidden, not_found, too_many
+from ..geo import bbox_around, haversine_m
+from ..integrity.dedupe import find_duplicates, name_similarity
 from ..integrity.exif import GPS_MISMATCH, gps_mismatch
 from ..integrity.fraud import rate_limited
 from ..integrity.phash import check_upload
@@ -77,6 +78,63 @@ class CandidatesIn(BaseModel):
     category: str = "other"
 
 
+def _nearby_for_dedupe(session: DbSession, lat: float, lng: float) -> list[dict]:
+    """Places within the dedupe radius, as plain dicts with every name they have."""
+    radius_m = float(cfg("dedupe.radius_m", 300))
+    box = bbox_around(lat, lng, radius_m / 1000.0 * 1.2)
+    places = session.exec(
+        select(Place).where(
+            Place.status != "hidden",
+            Place.lat.between(box[0], box[2]),
+            Place.lng.between(box[1], box[3]),
+        )
+    ).all()
+    return [
+        {
+            "id": int(place.id),
+            "lat": place.lat,
+            "lng": place.lng,
+            "category": place.category,
+            "names": [r.name for r in services.name_rows(session, int(place.id))],
+        }
+        for place in places
+    ]
+
+
+def _refuse_certain_duplicate(session: DbSession, body: "PlaceIn") -> None:
+    """Refuse a place that is the same one again, whatever the client did.
+
+    The "Is it one of these?" prompt (SPEC §9.6) is a courtesy that a modified
+    client can skip, so the server also checks. Only a near-certain match is
+    refused: a name that matches in any language at the `dedupe.certain_name_sim`
+    score, within `dedupe.certain_radius_m`. Anything vaguer is left to the
+    person, because refusing a genuinely different place loses a find.
+    """
+    certain_sim = int(cfg("dedupe.certain_name_sim", 90))
+    certain_m = float(cfg("dedupe.certain_radius_m", 150))
+    certain_raw = int(cfg("dedupe.certain_raw_sim", 72))
+    typed = [body.name, *(n.name for n in body.names)]
+    for place in _nearby_for_dedupe(session, body.lat, body.lng):
+        if haversine_m(body.lat, body.lng, place["lat"], place["lng"]) > certain_m:
+            continue
+        # token_set_ratio alone calls "Golconda Fort" and "Golconda Jail" identical
+        # (both reduce to "golconda"), so a ratio that keeps every word must agree too
+        # (token_sort ignores word order but not missing words).
+        raw = max(
+            fuzz.token_sort_ratio(name.lower().strip(), other.lower().strip())
+            for name in typed
+            for other in place["names"]
+        )
+        if max(name_similarity(name, place["names"]) for name in typed) >= certain_sim and (
+            raw >= certain_raw
+        ):
+            raise conflict(
+                "This place is already on Truvel. Open it and add your photos there.",
+                "duplicate_place",
+                {"place_id": place["id"]},
+            )
+
+
 @router.post("/places/candidates")
 def duplicate_candidates(
     body: CandidatesIn,
@@ -88,28 +146,7 @@ def duplicate_candidates(
     Runs as the pin moves, so it is a bbox query plus in-memory string work: no
     scan of the whole table.
     """
-    radius_m = float(cfg("dedupe.radius_m", 300))
-    box = bbox_around(body.lat, body.lng, radius_m / 1000.0 * 1.2)
-    nearby_places = session.exec(
-        select(Place).where(
-            Place.status != "hidden",
-            Place.lat.between(box[0], box[2]),
-            Place.lng.between(box[1], box[3]),
-        )
-    ).all()
-
-    nearby = []
-    for place in nearby_places:
-        rows = services.name_rows(session, int(place.id))
-        nearby.append(
-            {
-                "id": int(place.id),
-                "lat": place.lat,
-                "lng": place.lng,
-                "category": place.category,
-                "names": [r.name for r in rows],
-            }
-        )
+    nearby = _nearby_for_dedupe(session, body.lat, body.lng)
 
     found = find_duplicates(body.lat, body.lng, body.name, body.category, nearby)
     out = []
@@ -161,6 +198,7 @@ def create_place(
         raise forbidden("Your account can't post right now.", "blocked")
     if body.category not in CATEGORIES:
         raise bad_request("Pick a category from the list.", "bad_category")
+    _refuse_certain_duplicate(session, body)
 
     now = utcnow()
     # On-site add? Within 300 m of the pin at <= 100 m accuracy (SPEC §8.7).

@@ -12,7 +12,6 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { BottomNav } from './components/BottomNav';
-import { DevTools } from './components/DevTools';
 import { SideNav } from './components/SideNav';
 import { Toasts } from './components/common';
 import { Admin } from './screens/Admin';
@@ -88,9 +87,6 @@ export function App() {
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-            {/* The dev simulator sits just above the nav and does not exist in
-                production. */}
-            <DevTools />
             {!hideNav && <BottomNav />}
           </div>
         )}
