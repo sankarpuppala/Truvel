@@ -18,6 +18,7 @@ Three jobs, in order:
     python -m scripts.fetch_photos --city hyderabad
     python -m scripts.fetch_photos --resolve-all          # metadata everywhere
     python -m scripts.fetch_photos --city hyderabad --no-geosearch
+    python -m scripts.fetch_photos --all                  # geosearch every place, any city
 
 Nothing here invents anything: a place either gets a photograph that someone
 licensed for reuse, or it keeps its illustration.
@@ -86,7 +87,7 @@ def add_geosearch_photos(
     searched = 0
     for place in places:
         searched += 1
-        if searched % 25 == 0:
+        if searched % 100 == 0:
             print(f"    ...{searched}/{len(places)} searched, {added} found")
 
         photos = commons.geosearch(
@@ -168,10 +169,15 @@ def coverage(session: Session, city: City | None) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch real photos for places")
     parser.add_argument("--city", default="", help="limit geosearch and caching to one city")
+    parser.add_argument(
+        "--all", action="store_true",
+        help="geosearch every place missing a photo, in any city (most places have none)",
+    )
     parser.add_argument("--resolve-all", action="store_true", help="credit every Commons row")
     parser.add_argument("--resolve-limit", type=int, default=0)
     parser.add_argument("--no-geosearch", action="store_true")
     parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--limit", type=int, default=0, help="stop after this many geosearches")
     args = parser.parse_args()
 
     with Session(engine) as session, httpx.Client(
@@ -196,19 +202,22 @@ def main() -> int:
                 "(no usable licence)"
             )
 
-        if city is not None and not args.no_geosearch:
-            without = list(
-                session.exec(
-                    select(Place)
-                    .where(Place.city_id == city.id, Place.status != "hidden")
-                    .where(
-                        ~select(Media.id)
-                        .where(Media.place_id == Place.id, Media.status == "ok")
-                        .exists()
-                    )
-                ).all()
+        if (city is not None or args.all) and not args.no_geosearch:
+            query = select(Place).where(Place.status != "hidden").where(
+                ~select(Media.id)
+                .where(Media.place_id == Place.id, Media.status == "ok")
+                .exists()
             )
-            print(f"\nLooking for photographs near {len(without)} places with none...")
+            if city is not None:
+                query = query.where(Place.city_id == city.id)
+            without = list(session.exec(query).all())
+            if args.limit:
+                without = without[: args.limit]
+            seconds = len(without) / float(cfg("commons.max_requests_per_second", 2))
+            print(
+                f"\nLooking for photographs near {len(without)} places with none "
+                f"(about {seconds / 60:.0f} min at the configured rate)..."
+            )
             summary = add_geosearch_photos(session, without, client)
             print(f"  {summary['added']} places gained a real photograph")
 

@@ -221,6 +221,19 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 — **More real photographs, everywhere, not just Hyderabad.**
+  `scripts/fetch_photos.py` only ever geosearched one city at a time.
+  `--all` runs it across every place in the country that has none, in id
+  order, at the same throttled rate (2 req/s against the Commons API, nothing
+  paid). One run found real, freely-licensed photographs for 1,131 of the
+  9,631 places that had none — everywhere: **41.7% → 49.4%** (8,301 of
+  16,801). The remaining places are mostly small OSM features (a viewpoint, a
+  well) with no photograph on Commons within 250 m; that is an honest gap, not
+  a bug, and they keep their category illustration (SPEC §12.6).
+  Also fixed: `GET /media/commons/{id}` would 404 forever for a place whose
+  photo was credited but never downloaded (a batch run credits far more than
+  it has time to cache). It now fetches the bytes once, on the first real
+  view, instead of only at credit time.
 - 2026-10-22 (night) — **Product pass.**
   - The location simulator now lives only on Nearby (it was on every page,
     including sign-in).

@@ -111,7 +111,16 @@ def commons_photo(
         raise not_found("That photo is not available.", "no_photo")
     cached = commons.cached_path(media.path_display)
     if cached is None:
-        raise not_found("That photo is not available.", "no_photo")
+        # Already credited but never downloaded (a batch run can credit many
+        # more photos than it has time to cache) -- fetch the bytes now, once,
+        # so the place is not stuck showing its illustration forever.
+        try:
+            photo = commons.fetch_and_cache(media.path_display)
+        except Exception:  # noqa: BLE001 - offline or rate-limited: try again later
+            photo = None
+        if photo is None or photo.cached_path is None:
+            raise not_found("That photo is not available.", "no_photo")
+        cached = commons.cache_dir() / photo.cached_path
 
     response = ranged_response(cached, request)
     # The attribution travels with the bytes, so it cannot be lost downstream.
