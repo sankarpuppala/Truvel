@@ -28,7 +28,7 @@ frontend/test-results/
 frontend/playwright-report/
 
 # The starter archive: its contents are already in the repo.
-pagdandi-starter.zip
+truvel-starter.zip
 
 # Playwright's own scratch output (the kept screenshots live in results/screens/)
 frontend/test-results/

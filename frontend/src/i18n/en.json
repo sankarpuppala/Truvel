@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Pagdandi",
+    "name": "Truvel",
     "tagline": "Every city has places the map doesn't know."
   },
   "nav": {
@@ -11,7 +11,7 @@
     "add": "Add a place, photos or a live report"
   },
   "add": {
-    "sheetTitle": "Add to Pagdandi",
+    "sheetTitle": "Add to Truvel",
     "newPlace": "A new place",
     "newPlaceHint": "Somewhere the app doesn't know yet",
     "media": "Photos or a video of a place",
@@ -212,7 +212,7 @@
     "newHere": "New here? Create an account",
     "haveAccount": "I already have an account",
     "lookAround": "Look around without an account",
-    "licence": "You keep ownership of your photos and videos. By posting, you let Pagdandi show them in the app with your name on them."
+    "licence": "You keep ownership of your photos and videos. By posting, you let Truvel show them in the app with your name on them."
   },
   "common": {
     "loading": "Loading",

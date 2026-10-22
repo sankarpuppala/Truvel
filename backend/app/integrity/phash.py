@@ -103,6 +103,6 @@ def check_upload(
         return PhashVerdict("skip", "You have already added this photo here.", row.get("id"))
     return PhashVerdict(
         "reject",
-        "This photo is already on Pagdandi.",
+        "This photo is already on Truvel.",
         row.get("id"),
     )

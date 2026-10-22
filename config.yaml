@@ -1,4 +1,4 @@
-# Pagdandi configuration — SPEC §16.
+# Truvel configuration — SPEC §16.
 # Every algorithm constant lives here, never hard-coded in the code.
 
 city_default: hyderabad
@@ -55,7 +55,7 @@ wikidata:
   # The Wikidata Query Service and Overpass both require a User-Agent that
   # identifies the tool and gives a contact. Put your own project URL or
   # e-mail here before running a long seed; a generic agent gets HTTP 403.
-  user_agent: "Pagdandi/1.0 (https://example.org/pagdandi; student project) python-httpx/0.28"
+  user_agent: "Truvel/1.0 (https://example.org/truvel; student project) python-httpx/0.28"
 
 commons:
   licence_allowlist: ["CC0", "Public domain", "CC BY", "CC BY-SA"]

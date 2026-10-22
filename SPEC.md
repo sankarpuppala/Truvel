@@ -1,6 +1,6 @@
-# SPEC.md — Pagdandi (v2)
+# SPEC.md — Truvel (v2)
 
-> *Pagdandi* (पगडंडी): the narrow footpath that isn't on the map, the one locals
+> *Truvel* (पगडंडी): the narrow footpath that isn't on the map, the one locals
 > walk. Working name; check it first (Q1).
 
 This is the source of truth. If code and this file disagree, the code is wrong,
@@ -37,7 +37,7 @@ You can:
   because of you**.
 - Check in on site to clear the fog on your city map and stamp your passport.
 
-Pitch: *Every city has places Google Maps doesn't know. Pagdandi is where locals
+Pitch: *Every city has places Google Maps doesn't know. Truvel is where locals
 share them, creators get rewarded for them, and you find them.*
 
 ### Not the goal
@@ -50,7 +50,7 @@ share them, creators get rewarded for them, and you find them.*
 
 ## 2. Users
 
-| User | Wants | Pagdandi gives |
+| User | Wants | Truvel gives |
 |---|---|---|
 | **Weekend explorer** (student, young professional) | Something new within 20–30 km, cheap | Nearby deck, Watch, golden hour, Pulse |
 | **Local who knows spots** | Recognition | "Found by", kadam, Local Legend level |
@@ -64,7 +64,7 @@ share them, creators get rewarded for them, and you find them.*
 
 Checked October 2026.
 
-| Existing | What it does | Where Pagdandi differs |
+| Existing | What it does | Where Truvel differs |
 |---|---|---|
 | Google Maps / Local Guides | Points and levels for reviewing places already on Maps | Doesn't find unmapped places; no last-mile steps; no creator income |
 | YouTube / Instagram | Creators earn from views (YouTube shares 55 % of ad revenue on long-form and 45 % on Shorts with Partner Program members) | Views reward entertainment, not usefulness; no structure (directions, safety, live conditions) |
@@ -90,7 +90,7 @@ copy any one feature. What's hard to copy:
 | **1 — app (must)** | One city seeded deep from OSM + all-India famous places from Wikidata with Commons photos; place names in all scheduled languages with correct fonts; Explore list + map with fog; Place page with Pulse, last-mile steps, safety & accessibility; accounts, likes, saves, follows; Add place / photos / videos with pHash, dedupe, on-site verification; check-in + dev simulator; Pulse reports; Nearby deck (Thompson sampling); Watch feed; You: passport, kadam, streak; creator profiles; fragile-place rules; design system both themes; English UI with i18n framework | Day 5 (Sun 25 Oct) |
 | **1 — engine & evaluation (must)** | Partner Program engine: engaged views, time-decay visit attribution, invalid-traffic rules, simulated pool split, eligibility; Creator Studio; simulations (ranking, bandit, attribution, fraud); pHash robustness; demo data | Day 6 (Mon 26 Oct) |
 | **2 — if time** | UI in Hindi + your regional language (native-reviewed); comments; golden hour; Weekly Trail; Trails (playlists); campus clans; admin queue UI; offline saved places (PWA); CLIP auto-tags + image dedupe; Isolation Forest fraud check; IndicXlit names (Colab batch); Wikivoyage listings | Day 7 (Tue 27 Oct) |
-| **3 — roadmap (document only)** | Real payouts (KYC, TDS, payment partner); local-business placements and sponsored Trails; Pagdandi Plus; UPI tips; RTL UI for Urdu/Kashmiri/Sindhi; remaining UI languages with native review; voice stories with Indic speech recognition; day planner and group vote; festival calendar; trip-safety check-out timer; push notifications; video transcoding; native apps | not built |
+| **3 — roadmap (document only)** | Real payouts (KYC, TDS, payment partner); local-business placements and sponsored Trails; Truvel Plus; UPI tips; RTL UI for Urdu/Kashmiri/Sindhi; remaining UI languages with native review; voice stories with Indic speech recognition; day planner and group vote; festival calendar; trip-safety check-out timer; push notifications; video transcoding; native apps | not built |
 
 Cut order if behind (first cut first): Wikivoyage → IndicXlit → CLIP → Isolation
 Forest → offline → admin UI → clans → Trails → Weekly Trail → golden hour →
@@ -105,7 +105,8 @@ SQLite via SQLModel. Timestamps UTC in the DB, shown in IST. Money as integer
 paise.
 
 ```
-User          id, username (a-z0-9_ 3–20, unique), password_hash (argon2id),
+User          id, username (a-z0-9_ 3–20, unique), email (lowercase, unique),
+              password_hash (argon2id), official (bool — the app's own account),
               display_name, bio (≤ 160), avatar_media_id, created_at,
               role ('user'|'admin'), strikes, demo (bool),
               names_mode ('en_local'|'mine_local'|'en'), names_lang (ISO 639),
@@ -575,7 +576,7 @@ point; view). Show up to 3 candidates; the user decides.
 ### 9.7 Photo integrity
 - `imagehash.phash` (64 bit) for every photo and video poster; compare with all
   stored hashes (BK-tree if slow). Hamming ≤ 8: another user's existing photo →
-  reject "This photo is already on Pagdandi"; same user, same place → skip silently.
+  reject "This photo is already on Truvel"; same user, same place → skip silently.
 - EXIF GPS (read on the client before resizing) > 2 km from the pin → warn and
   flag `gps_mismatch` for review. Absent EXIF is normal (Android's photo picker
   strips location), so it's never required.
@@ -657,7 +658,7 @@ Levels: Wanderer 0 · Pathfinder 200 · Trailblazer 800 · Local Legend 2,500.
    offer.
 2. **Sponsored cards**: clearly labelled, at most 1 in 15 cards in Watch/Nearby.
 3. **Sponsored Trails** by tourism boards or brands.
-4. **Pagdandi Plus**: offline packs, no sponsored cards.
+4. **Truvel Plus**: offline packs, no sponsored cards.
 
 ### 10.3 Pool and split (Tier 1 engine, simulated pool)
 - Monthly **creator pool = 55 % of net revenue** (config; same share YouTube gives
@@ -692,15 +693,33 @@ Levels: Wanderer 0 · Pathfinder 200 · Trailblazer 800 · Local Legend 2,500.
 
 ---
 
+**Ties.** Before anyone has liked anything, every place scores the same on
+every sort. Order then falls back to Wikidata `sitelinks` (how many Wikipedias
+describe the place), then id — a real signal about the place rather than
+invented engagement, and stable between requests. Once there is a single like,
+the ranking function decides and the tiebreak is never reached.
+
 ## 11. API
 
 FastAPI under `/api`; cookie sessions (`HttpOnly`, `SameSite=Lax`, `Secure` on HTTPS);
-mutating requests need `X-Requested-With: pagdandi`. Errors:
+mutating requests need `X-Requested-With: truvel`. Errors:
 `{"error": {"code", "message", "detail"}}`.
+
+**Accounts.** An account is an email address, a handle (`a-z0-9_`, 3–20) and a
+password. The email is how an account is recovered and how a person can be told
+they have been reported; the handle is what other people see. Sign-in accepts
+either. Passwords follow NIST SP 800-63B: at least **10 characters**, at most
+128, checked against a blocklist of the most common choices, and refused if they
+contain the account's own name or email — no forced symbols, which only produce
+`Password1!`. Failed sign-ins are counted per account **and** per address, and
+refused for 15 minutes after 8 failures, so a correct guess at the end of a run
+of wrong ones does not get through either.
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/auth/register` · `/auth/login` · `/auth/logout` | argon2id; generic error on bad login |
+| POST | `/auth/register` | `{email, username, password, display_name}`; argon2id |
+| POST | `/auth/login` | `{identifier, password}` — email **or** handle; generic error; throttled |
+| POST | `/auth/logout` | |
 | GET | `/me` | user, balance, level, streak |
 | GET | `/cities` · `/search?q=` | FTS5 over all PlaceName rows |
 | GET | `/cities/{slug}/places?sort=top\|liked\|gems\|trending\|near&cat=&verified=1&lat=&lng=&page=` | 20 per page |
@@ -1089,7 +1108,7 @@ commit, seeds, `metrics.json` and a figure.
 
 ## 20. Open questions (answer before Phase 0)
 
-- **Q1 Name.** "Pagdandi": no app found with this name in a quick search; a café in
+- **Q1 Name.** "Truvel": no app found with this name in a quick search; a café in
   Pune uses it. Check the Play Store and domains. Backups: *Kona*, *Ankahi*, *Gully Map*.
 - **Q2 Deep city.** Which city gets the full OSM seed (the reference uses Hyderabad).
 - **Q3 Your regional UI language** for Tier 2, and who reviews it (native speaker).

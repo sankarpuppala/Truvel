@@ -95,7 +95,9 @@
     overflow:auto;
   }
   .side-logo{display:flex;align-items:center;gap:10px;color:var(--ink);padding:0 8px}
-  .side-logo span{font:400 32px/1 "Rozha One",Georgia,serif;letter-spacing:-.01em}
+  .side-word{display:flex;flex-direction:column;gap:1px}
+  .side-word{font:400 32px/1 "Rozha One",Georgia,serif;letter-spacing:-.01em}
+  .side-word small{font:500 11.5px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.01em}
   .side-nav{display:flex;flex-direction:column;gap:4px}
   .side-link{
     display:flex;align-items:center;gap:14px;
@@ -244,9 +246,16 @@
   .page-settings .cities{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
   .page-settings .lsec{max-width:760px}
 
-  /* Add and sign in are forms, not full-bleed pages. */
+  /* Add is a form, not a full-bleed page. */
   .page-add .scr-body{padding-inline:max(var(--gut),calc((100% - 760px)/2))}
-  .page-signin .scr-body{padding-inline:max(var(--gut),calc((100% - 520px)/2))}
+
+  /* Signing in is not a place inside the app, so it does not wear the app's
+     navigation: the card sits on its own page, centred. */
+  .shell-signin{grid-template-columns:minmax(0,1fr)}
+  .shell-signin .siderail{display:none}
+  .shell-signin .app{border-left:0}
+  .page-signin .scr-body{display:grid;place-items:center;padding-inline:var(--gut)}
+  .page-signin .auth-page{padding-top:0;padding-bottom:40px}
 
   /* Watch: a 9:16 stage centred on a dark page, the way a vertical video is
      shown on a desktop everywhere. The rail and caption are positioned against

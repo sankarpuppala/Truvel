@@ -1,4 +1,4 @@
-# VIVA.md — Pagdandi (v2)
+# VIVA.md — Truvel (v2)
 
 The questions an examiner is most likely to ask, with plain-English answers.
 Learn the **bold line** first; the rest is backup. Prompt 5 appends 3 questions per
@@ -18,7 +18,7 @@ creators are rewarded mainly for the visits they cause.**
 **Each feature exists somewhere; the combination doesn't.** Google Local Guides
 rewards reviewing places already on Maps. YouTube and Instagram reward views, which
 favour entertainment. Tripoto and Explurger are travel social apps built around
-trip posts. Pagdandi has verified, unmapped places with last-mile directions and
+trip posts. Truvel has verified, unmapped places with last-mile directions and
 live conditions, and its creator rewards are tied to real visits.
 
 **3. What makes people come back?**

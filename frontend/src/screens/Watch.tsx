@@ -158,7 +158,7 @@ export function Watch() {
 
   async function share(item: WatchItem) {
     const url = `${window.location.origin}/place/${item.place.id}`;
-    const text = `${item.place.name.primary.text} on Pagdandi`;
+    const text = `${item.place.name.primary.text} on Truvel`;
     try {
       if (navigator.share) await navigator.share({ title: text, url });
       else {

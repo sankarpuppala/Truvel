@@ -1,4 +1,4 @@
-# PROMPT.md — Pagdandi (v2)
+# PROMPT.md — Truvel (v2)
 
 Copy-paste prompts for Claude Code, in the order you'll use them. `[brackets]` are
 for you to fill in.

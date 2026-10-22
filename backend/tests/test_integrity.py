@@ -186,7 +186,7 @@ def test_ac7_phash_rejects_another_users_photo():
     existing = [{"id": 11, "phash": h, "user_id": 1, "place_id": 5}]
     verdict = check_upload(h, uploader_id=2, place_id=5, existing=existing)
     assert verdict.action == "reject"
-    assert "already on Pagdandi" in verdict.message
+    assert "already on Truvel" in verdict.message
 
 
 def test_ac7_phash_skips_your_own_repost_to_the_same_place():

@@ -122,6 +122,8 @@ export type City = {
 export type Me = {
   id: number;
   username: string;
+  email: string;
+  official: boolean;
   display_name: string;
   bio: string;
   role: 'user' | 'admin';

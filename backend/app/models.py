@@ -25,7 +25,9 @@ def utcnow() -> datetime:
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True)           # a-z0-9_ 3-20
+    email: str = Field(default="", index=True)               # lowercase, unique when set
     password_hash: str
+    official: bool = False                                   # the app's own account
     display_name: str = ""
     bio: str = ""                                            # max 160 chars
     avatar_media_id: Optional[int] = None

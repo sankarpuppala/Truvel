@@ -191,15 +191,28 @@ def city_places(
             return haversine_km(city.centre_lat, city.centre_lng, p.lat, p.lng)
         return haversine_km(lat, lng, p.lat, p.lng)
 
+    def _tiebreak(place: Place) -> tuple[int, int]:
+        """How to order places nothing has been said about yet.
+
+        On a fresh install every place has nought likes and nought viewers, so
+        the Wilson bound is nought for all of them and the sort does nothing.
+        Falling back to how many Wikipedias describe a place puts Golconda Fort
+        above an unnamed viewpoint without inventing any engagement, and the id
+        keeps the order the same between requests. Once anyone likes anything,
+        Wilson decides and this is never reached.
+        """
+        return (-place.sitelinks, int(place.id or 0))
+
     if sort == "top":
         places.sort(
             key=lambda p: (
                 -wilson_lb(likes.get(int(p.id), 0), viewers.get(int(p.id), 0)),
                 -likes.get(int(p.id), 0),
+                *_tiebreak(p),
             )
         )
     elif sort == "liked":
-        places.sort(key=lambda p: -likes.get(int(p.id), 0))
+        places.sort(key=lambda p: (-likes.get(int(p.id), 0), *_tiebreak(p)))
     elif sort == "gems":
         places = [
             p

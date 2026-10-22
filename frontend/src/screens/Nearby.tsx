@@ -114,7 +114,10 @@ export function Nearby() {
     return () => window.removeEventListener('keydown', onKey);
   }, [handle]);
 
-  const cityName = me?.home_city?.name ?? 'Nearby';
+  // Signed out, or an account with no home city yet: the header still needs a
+  // word, but the sentence below it must not read "the centre of Nearby".
+  const homeCity = me?.home_city?.name ?? null;
+  const cityName = homeCity ?? 'Nearby';
   const kadam = me?.kadam ?? 0;
 
   const header = useMemo(
@@ -158,8 +161,9 @@ export function Nearby() {
         <div className="golden" role="note">
           <Icon name="i-info" size={18} />
           <span>
-            Showing places near the centre of {cityName} &mdash; location is switched off, so
-            distances are from there.
+            {homeCity
+              ? `Showing places near the centre of ${homeCity} — location is switched off, so distances are from there.`
+              : 'Location is switched off, so distances are measured from the city centre.'}
           </span>
         </div>
       )}

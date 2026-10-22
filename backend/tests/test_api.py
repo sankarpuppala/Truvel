@@ -14,14 +14,21 @@ KHAJAGUDA = (17.4186, 78.3391)
 
 def register(client, username: str) -> dict:
     response = client.post(
-        "/api/auth/register", json={"username": username, "password": PASSWORD}
+        "/api/auth/register",
+        json={
+            "email": f"{username}@example.com",
+            "username": username,
+            "password": PASSWORD,
+        },
     )
     assert response.status_code == 200, response.text
     return response.json()["user"]
 
 
-def login(client, username: str) -> None:
-    response = client.post("/api/auth/login", json={"username": username, "password": PASSWORD})
+def login(client, identifier: str) -> None:
+    response = client.post(
+        "/api/auth/login", json={"identifier": identifier, "password": PASSWORD}
+    )
     assert response.status_code == 200, response.text
 
 
@@ -53,10 +60,10 @@ def test_login_failure_is_generic(client, session):
     client.post("/api/auth/logout")
 
     wrong_password = client.post(
-        "/api/auth/login", json={"username": "riya", "password": "wrong password here"}
+        "/api/auth/login", json={"identifier": "riya", "password": "wrong password here"}
     )
     no_such_user = client.post(
-        "/api/auth/login", json={"username": "nobody", "password": "wrong password here"}
+        "/api/auth/login", json={"identifier": "nobody", "password": "wrong password here"}
     )
     assert wrong_password.status_code == no_such_user.status_code == 401
     assert wrong_password.json()["error"]["message"] == no_such_user.json()["error"]["message"]
@@ -67,7 +74,7 @@ def test_mutating_request_needs_the_csrf_header(client, session):
     make_city(session)
     response = client.post(
         "/api/auth/register",
-        json={"username": "nocsrf", "password": PASSWORD},
+        json={"email": "nocsrf@example.com", "username": "nocsrf", "password": PASSWORD},
         headers={"X-Requested-With": ""},
     )
     assert response.status_code == 403
@@ -76,10 +83,63 @@ def test_mutating_request_needs_the_csrf_header(client, session):
 
 def test_username_and_password_rules(client, session):
     make_city(session)
-    bad_name = client.post("/api/auth/register", json={"username": "AB", "password": PASSWORD})
-    assert bad_name.status_code in (400, 422)
-    weak = client.post("/api/auth/register", json={"username": "okname", "password": "short"})
-    assert weak.status_code in (400, 422)
+
+    def signup(**overrides):
+        body = {"email": "ok@example.com", "username": "okname", "password": PASSWORD}
+        body.update(overrides)
+        return client.post("/api/auth/register", json=body)
+
+    assert signup(username="AB").status_code in (400, 422)
+    assert signup(password="short").status_code in (400, 422)
+    assert signup(email="not-an-email").status_code in (400, 422)
+    # NIST SP 800-63B: a blocklist, not a symbol rule.
+    assert signup(password="password123").status_code in (400, 422)
+    # And a password must not just be your own name back at you.
+    assert signup(password="okname-okname").status_code in (400, 422)
+
+
+def test_login_accepts_the_email_as_well_as_the_handle(client, session):
+    make_city(session)
+    register(client, "riya")
+    client.post("/api/auth/logout")
+    login(client, "riya@example.com")
+
+
+def test_an_email_is_used_once(client, session):
+    make_city(session)
+    register(client, "riya")
+    client.post("/api/auth/logout")
+    clash = client.post(
+        "/api/auth/register",
+        json={"email": "riya@example.com", "username": "someoneelse", "password": PASSWORD},
+    )
+    assert clash.status_code == 400
+    assert clash.json()["error"]["code"] == "email_taken"
+
+
+def test_login_is_throttled_after_repeated_failures(client, session):
+    """SPEC §11: guessing a password has to get slower, not stay free."""
+    from app import auth
+
+    make_city(session)
+    register(client, "riya")
+    client.post("/api/auth/logout")
+
+    codes = [
+        client.post(
+            "/api/auth/login", json={"identifier": "riya", "password": "wrong one here"}
+        ).status_code
+        for _ in range(auth.LOGIN_MAX_FAILURES + 2)
+    ]
+    assert codes[0] == 401
+    assert codes[-1] == 429
+
+    # The right password is refused too while the brake is on, so a correct
+    # guess at the end of a run of wrong ones does not get through.
+    assert client.post(
+        "/api/auth/login", json={"identifier": "riya", "password": PASSWORD}
+    ).status_code == 429
+    auth._login_failures.clear()
 
 
 def test_error_shape_matches_the_spec(client):

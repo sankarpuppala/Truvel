@@ -15,10 +15,10 @@ import yaml
 
 BASE_DIR = Path(__file__).resolve().parent.parent          # backend/
 ROOT_DIR = BASE_DIR.parent                                 # repository root
-CONFIG_PATH = Path(os.environ.get("PAGDANDI_CONFIG", ROOT_DIR / "config.yaml"))
-MEDIA_DIR = Path(os.environ.get("PAGDANDI_MEDIA_DIR", BASE_DIR / "media"))
-DATA_DIR = Path(os.environ.get("PAGDANDI_DATA_DIR", ROOT_DIR / "data"))
-DB_PATH = Path(os.environ.get("PAGDANDI_DB", BASE_DIR / "pagdandi.db"))
+CONFIG_PATH = Path(os.environ.get("TRUVEL_CONFIG", ROOT_DIR / "config.yaml"))
+MEDIA_DIR = Path(os.environ.get("TRUVEL_MEDIA_DIR", BASE_DIR / "media"))
+DATA_DIR = Path(os.environ.get("TRUVEL_DATA_DIR", ROOT_DIR / "data"))
+DB_PATH = Path(os.environ.get("TRUVEL_DB", BASE_DIR / "truvel.db"))
 
 
 @lru_cache(maxsize=1)
@@ -51,7 +51,7 @@ def dev_allow_fake_location() -> bool:
 
 def is_https() -> bool:
     """Set when the app is served over TLS, so session cookies get Secure."""
-    return os.environ.get("PAGDANDI_HTTPS") == "1"
+    return os.environ.get("TRUVEL_HTTPS") == "1"
 
 
 def regional_langs(state: str | None) -> list[str]:

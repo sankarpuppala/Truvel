@@ -136,7 +136,7 @@ def fetch_metadata(filename: str, client: httpx.Client | None = None) -> Commons
         "iiprop": "url|extmetadata|size",
         "iiurlwidth": str(width),
     }
-    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Pagdandi/1.0"))}
+    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0"))}
     _throttle(float(cfg("commons.max_requests_per_second", 2)))
 
     own_client = client is None
@@ -175,7 +175,7 @@ def fetch_and_cache(filename: str, client: httpx.Client | None = None) -> Common
         photo.cached_path = existing.name
         return photo
 
-    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Pagdandi/1.0"))}
+    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0"))}
     _throttle(float(cfg("commons.max_requests_per_second", 2)))
     own_client = client is None
     client = client or httpx.Client(timeout=60.0, headers=headers, follow_redirects=True)
@@ -220,3 +220,110 @@ def resolve_media(session, media) -> bool:  # noqa: ANN001
     session.add(media)
     session.commit()
     return True
+
+
+def _photo_from_page(page: dict, filename: str) -> CommonsPhoto | None:
+    """One `pages` entry from the API as a CommonsPhoto, licence permitting."""
+    return parse_imageinfo({"query": {"pages": {"x": page}}}, filename)
+
+
+def fetch_metadata_batch(
+    filenames: list[str], client: httpx.Client | None = None
+) -> dict[str, CommonsPhoto]:
+    """Licence and thumbnail for up to 50 files in one request.
+
+    The single-file call is one HTTP round trip per photo, which is 6,996 of
+    them for a seeded database. Commons allows 50 titles per query, so this is
+    the same work in 140 requests instead.
+    """
+    if not filenames:
+        return {}
+
+    width = int(cfg("commons.thumb_width", 1200))
+    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0"))}
+    own_client = client is None
+    client = client or httpx.Client(timeout=60.0, headers=headers)
+    found: dict[str, CommonsPhoto] = {}
+
+    try:
+        for start in range(0, len(filenames), 50):
+            chunk = filenames[start : start + 50]
+            _throttle(float(cfg("commons.max_requests_per_second", 2)))
+            response = client.get(
+                API_URL,
+                params={
+                    "action": "query",
+                    "format": "json",
+                    "titles": "|".join(f"File:{name}" for name in chunk),
+                    "prop": "imageinfo",
+                    "iiprop": "url|extmetadata|size",
+                    "iiurlwidth": str(width),
+                },
+                headers=headers,
+            )
+            response.raise_for_status()
+            pages = (response.json().get("query") or {}).get("pages") or {}
+            for page in pages.values():
+                title = str(page.get("title") or "")
+                name = title.split(":", 1)[1] if ":" in title else title
+                photo = _photo_from_page(page, name)
+                if photo is not None:
+                    found[name] = photo
+    finally:
+        if own_client:
+            client.close()
+    return found
+
+
+def geosearch(
+    lat: float, lng: float, radius_m: int = 300, limit: int = 12,
+    client: httpx.Client | None = None,
+) -> list[CommonsPhoto]:
+    """Freely-licensed photos taken near a point, nearest first.
+
+    Commons records where many photographs were taken, which is how a place
+    with no Wikidata entry can still get a real picture instead of an
+    illustration. The radius is deliberately small: a photo from 300 m away may
+    be of something else entirely, and a wrong photo is worse than none.
+    """
+    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0"))}
+    own_client = client is None
+    client = client or httpx.Client(timeout=60.0, headers=headers)
+    width = int(cfg("commons.thumb_width", 1200))
+
+    try:
+        _throttle(float(cfg("commons.max_requests_per_second", 2)))
+        response = client.get(
+            API_URL,
+            params={
+                "action": "query",
+                "format": "json",
+                "generator": "geosearch",
+                "ggscoord": f"{lat}|{lng}",
+                "ggsradius": str(max(10, min(10_000, radius_m))),
+                "ggslimit": str(limit),
+                "ggsnamespace": "6",          # File:
+                "prop": "imageinfo",
+                "iiprop": "url|extmetadata|size",
+                "iiurlwidth": str(width),
+            },
+            headers=headers,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError):
+        return []
+    finally:
+        if own_client:
+            client.close()
+
+    pages = (payload.get("query") or {}).get("pages") or {}
+    # The generator returns them in distance order; dicts keep insertion order.
+    photos: list[CommonsPhoto] = []
+    for page in pages.values():
+        title = str(page.get("title") or "")
+        name = title.split(":", 1)[1] if ":" in title else title
+        photo = _photo_from_page(page, name)
+        if photo is not None and photo.url:
+            photos.append(photo)
+    return photos

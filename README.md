@@ -1,6 +1,8 @@
-# Pagdandi
+# Truvel — Discover Hidden India
 
-> *Pagdandi* (पगडंडी): the narrow footpath that isn't on the map, the one locals walk.
+> Every city has places the map doesn't know. The dashed footpath through the
+> logo is the one locals walk; *pagdandi*, the word the project was named for
+> before it was Truvel, is still what the whole design is built around.
 
 A travel + social + creator web app for India. People discover places — famous
 ones from OpenStreetMap and Wikidata with Wikimedia Commons photos, hidden ones
@@ -29,7 +31,6 @@ cd backend
 py -3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python -m scripts.demo_data --reset --viewers 240 --month 2026-10   # demo content
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -41,16 +42,42 @@ npm run dev                  # http://localhost:5173
 npm run dev -- --host        # your phone, same Wi-Fi: https://<laptop-ip>:5173
 ```
 
-Sign in as **`riya_s`** with the password **`pagdandi demo`** — that account owns
-the Passport and Studio the design reference draws.
+### What is in the database
 
-For real data instead of (as well as) the demo content:
+Everything, and only what came from a source that can be named:
 
 ```powershell
 python -m scripts.seed_osm --city hyderabad       # ~300 places, 1,400 areas
 python -m scripts.seed_wikidata --verify          # check the class QIDs first
 python -m scripts.seed_wikidata                   # ~17,000 places across India
+python -m scripts.fetch_photos --city hyderabad --resolve-all
+python -m scripts.official_account --reset        # one account, zero engagement
 ```
+
+There is **one account**, `@truvel`, and every place is published by it. Nothing
+has been liked, visited or watched, because nobody has used the app yet. That is
+the honest state of a product before launch, and it is what the last command
+guarantees: it deletes every account, every like, view, visit, tip, live report
+and last-mile direction, and every place that was invented rather than imported.
+
+It prints a generated password once. Write it down — it is stored as an argon2id
+hash and cannot be read back. Change `hello@truvel.app` to an address you own.
+
+The copy of the database in this repository uses
+`marigold-footpath-granite-2026`, which the end-to-end tests also use
+(`TRUVEL_PASSWORD` overrides it). **It is a local development credential and is
+in version control: change it before this is reachable by anyone else.**
+
+**To get a populated app back** — for a demo, or to see the Studio and the
+Partner Program with numbers in them:
+
+```powershell
+python -m scripts.demo_data --reset --viewers 240 --month 2026-10
+```
+
+That is invented data and says so on every screen it touches. `--reset` rebuilds
+the schema, so it removes the official account too; re-run `official_account`
+afterwards if you want it back.
 
 To demonstrate check-in indoors, start the server with the location simulator
 and build the frontend with the dev tools — **both** are required, and a
@@ -191,8 +218,23 @@ embeddings in SPEC §9.11 would address.
 
 ### Data coverage (SPEC §17 item 7)
 
-**16,971 places** across **34 states and union territories**, 41.3 % with a
-photo. Names per language, from OpenStreetMap `name:*` tags and Wikidata labels:
+**16,967 places** across **34 states and union territories**. **7,063 of them
+(41.6 %) have a real photograph**, and in Hyderabad — the city seeded in depth —
+**245 of 430 (57 %)** do.
+
+Every one of those photographs is a Wikimedia Commons file under CC0, public
+domain, CC BY or CC BY-SA, shown with its author, its licence and a link to its
+file page. 69 candidates were thrown away for having no usable licence. Two
+sources feed this: Wikidata's own `P18` image, and a Commons **geosearch** within
+250 m of the pin, which is how a temple with no Wikidata entry still gets a
+picture of itself. A photo from further away is likely to be of something else,
+so there is no photo rather than a wrong one.
+
+The remaining places show their category illustration (SPEC §12.6), which is the
+designed behaviour and not a gap: for a great many Indian places no freely
+licensed photograph exists, and inventing one is not an option.
+
+Names per language, from OpenStreetMap `name:*` tags and Wikidata labels:
 
 | | | | |
 |---|---:|---|---:|
@@ -244,29 +286,37 @@ criterion it satisfies (`test_ac16_shares_always_sum_to_one`).
 
 ### The rules the code will not break
 
-1. **A user's coordinates are never stored.** Check-in sends one position; the
+1. **Signing in follows NIST SP 800-63B, not folklore.** Passwords are at least
+   10 characters, checked against a blocklist of the most common choices, and
+   refused if they contain your own name or email — no forced symbols, which
+   only produce `Password1!`. They are hashed with argon2id. Sign-in takes an
+   email or a handle and gives one error for both a wrong address and a wrong
+   password, so it cannot be used to find out who has an account. Eight failures
+   lock an account *and* an address out for fifteen minutes, the right password
+   included, so a correct guess at the end of a run of wrong ones is no use.
+2. **A user's coordinates are never stored.** Check-in sends one position; the
    server turns it into a distance and an accuracy and discards the rest.
    `Visit`, `Pulse` and `Touch` have no coordinate columns, and a test asserts
    that against the table definitions.
-2. **Stored photos carry no EXIF** — every image is re-encoded, never copied.
-3. **Kadam and earnings exist only as ledger rows.** There is no balance column
+3. **Stored photos carry no EXIF** — every image is re-encoded, never copied.
+4. **Kadam and earnings exist only as ledger rows.** There is no balance column
    to drift; a balance is `sum(KadamEntry.delta)`.
-4. **Fragile places** never return exact coordinates or last-mile directions
+5. **Fragile places** never return exact coordinates or last-mile directions
    before the user saves and pledges — enforced server-side, tested through the
    API rather than the UI.
-5. **Attribution is kept**: OpenStreetMap (ODbL), Wikidata (CC0), Commons
+6. **Attribution is kept**: OpenStreetMap (ODbL), Wikidata (CC0), Commons
    (author + licence + link per photo, allowlisted licences only), OpenFreeMap.
-6. **The frontend talks to no third party** except `tiles.openfreemap.org`.
+7. **The frontend talks to no third party** except `tiles.openfreemap.org`.
    Commons photos are proxied and cached by our own server. A Playwright test
    watches every request and fails on anything else.
-7. **Maps of India hide international boundary layers** and never draw state or
+8. **Maps of India hide international boundary layers** and never draw state or
    country borders (SPEC §14).
-8. **The safety card is never hidden**, always shows 112, and nothing in the
+9. **The safety card is never hidden**, always shows 112, and nothing in the
    ranking rewards risky content.
-9. **A UI language ships only after a native speaker has reviewed it.** English
+10. **A UI language ships only after a native speaker has reviewed it.** English
    is the only one switched on; Hindi and Telugu are listed as *in review* and
    cannot be selected.
-10. **Every rupee carries a Simulated label**, checked by a DOM test over the
+11. **Every rupee carries a Simulated label**, checked by a DOM test over the
     whole Studio.
 
 ---

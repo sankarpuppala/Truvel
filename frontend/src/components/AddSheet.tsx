@@ -45,7 +45,7 @@ export function AddSheet({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Add to Pagdandi">
+    <BottomSheet open={open} onClose={onClose} title="Add to Truvel">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {OPTIONS.map((option) => (
           <button

@@ -1,4 +1,4 @@
-# PLAN.md — Pagdandi (v2)
+# PLAN.md — Truvel (v2)
 
 Eight working days, Wed 21 – Wed 28 October 2026. Submit Thursday 29 October.
 One phase per Claude Code session. Each phase: Plan Mode → approve → implement →
@@ -209,11 +209,77 @@ summaries. Every figure here is reproducible by re-running the command named.
 
 
 ## Ideas parked
-- (Add here instead of building.)
+- **Sign in with Google.** Built as a plain email + password flow. Google sign-in
+  has to be a server-side OAuth redirect (invariant 7 forbids loading Google's
+  script in the page), and it needs a free OAuth client ID that only the account
+  owner can create in Google Cloud Console. Add `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET` to `.env` and the button can be wired to
+  `/auth/google` and `/auth/google/callback` in about an hour.
+- **Password reset by email.** Needs somewhere to send mail from. Until then the
+  sign-in page says so rather than showing a link that goes nowhere.
+- **Delete your own upload.** There is no `DELETE /media/{id}`, so a creator who
+  posts the wrong photo cannot take it back. The e2e tests clean up with
+  `scripts/remove_test_media.py` instead of the product growing a route for them.
+- **Merge large features.** `scripts/merge_duplicates.py` joins records within
+  150 m. A 1 km lake whose OSM polygon centre and Wikidata pin are 500 m apart
+  (Durgam Cheruvu) and a national park split into two OSM fragments 3 km apart
+  survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
 - 2026-10-20 — v1 spec, plan, design reference.
 - 2026-10-20 — v2: languages, all-India open data, Watch, Pulse, Partner Program, Studio.
+- 2026-10-22 — **Renamed to Truvel, and the demo population removed.**
+  The app is now *Truvel — Discover Hidden India*. `Pagdandi` survives only in
+  `results/**/config.yaml`, which record the config each simulation actually ran
+  under and must not be rewritten, and in this log.
+  - **One account.** `scripts/official_account.py --reset` deletes every account
+    and everything anyone did: 252 users, their likes, views, visits, tips, live
+    reports, last-mile directions and earnings, the 44 generated photos and
+    videos, and the 4 places that were invented outright. What is left is 16,967
+    places from OpenStreetMap and Wikidata, published by `@truvel`, with every
+    counter at zero. `demo_data.py` still works, so a populated app is one
+    command away for the viva.
+  - **Real photographs.** `scripts/fetch_photos.py` credits Commons images in
+    batches of 50 (6,996 of them had a filename but no licence, so they could
+    not legally be shown and the app was falling back to illustrations), and
+    finds new ones by Commons geosearch within 250 m of the pin. Hyderabad went
+    from **25.3 % to 57.0 %** photographed; everywhere, 41.6 %. 69 candidates
+    were discarded for having no usable licence.
+  - **Accounts are email + password** (SPEC §5, §11): NIST SP 800-63B rules —
+    10 characters, a blocklist, no forced symbols — argon2id, sign-in by email
+    or handle, one error for both failure modes, and a 15-minute lockout after
+    8 failures counted per account *and* per address.
+  - **Duplicates merged.** Both datasets overlap, so Golconda Fort was three
+    records (Wikidata Q1134499, Wikidata Q17986822, an OSM element) and 20 names
+    in Hyderabad appeared more than once. `scripts/merge_duplicates.py` applies
+    SPEC §9.6 but is stricter than the prompt a person sees: the SPEC's
+    `token_set_ratio` scores 100 whenever one name is a subset of the other, so
+    "Golconda Fort" and "Golconda Jail" matched. It now also needs a plain
+    character ratio of 72 on **English names only** (a shared Tamil village name
+    had merged two different temples) and category compatibility (a park beside
+    a lake is two places). 16,967 → 16,804 places; the survivor keeps every name,
+    photo and bit of engagement the others had. Golconda Fort is one place with
+    10 languages and 3 photographs.
+  - **A 50-second bug.** Setting `added_by` on all 16,967 imported places made
+    `/me/passport` take 50 s and `/studio` 14 s — queries for "places this
+    creator found" returned everything — and would have credited `@truvel` as
+    the discoverer of every place for Partner payouts. `added_by` means "a person
+    found this", so imported places have none; the official account is the
+    publisher, and the attribution line already says where each place comes
+    from. 50 s → 321 ms.
+  - **Watch's empty state was invisible** (1.23:1 contrast): it used the light
+    theme's ink on a surface that is dark in both themes. Fixed; axe found it.
+  - **Ranking ties** now fall back to Wikidata `sitelinks`, because on a fresh
+    install every Wilson bound is nought and the sort did nothing.
+  - Fixed while checking: the password field's reveal button sat inside its
+    `<label>`, so the input's accessible name was "Password Show"; and the
+    Nearby banner read "the centre of Nearby" for anyone without a home city.
+  - **Consequences, stated plainly:** Watch is empty (every video was demo
+    data, and Commons has photographs, not video); Explore's Top, the Studio,
+    the Partner Program and the Passport all show zeros; and "Hidden gems" is
+    empty, because a hidden gem is by definition a place a local added and
+    nobody has added one yet. All of that is true rather than broken.
+
 - 2026-10-21 — **P0–P8 built in one pass.** Backend (FastAPI + SQLModel + FTS5,
   43 routes), frontend (Vite + React + TS, nine screens matching the design
   reference in both themes), all SPEC §9/§10 algorithms as pure functions with

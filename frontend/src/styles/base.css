@@ -142,7 +142,7 @@ html,body{overflow-x:hidden}
 .loading{padding:40px 16px;text-align:center;color:var(--muted);font-size:14.5px}
 
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.field>span{font-size:13px;font-weight:600;color:var(--muted)}
+.field>span,.field>label{font-size:13px;font-weight:600;color:var(--muted)}
 .field input,.field textarea,.field select{
   min-height:46px;border-radius:14px;border:1.5px solid var(--line);
   background:var(--surface);padding:0 12px;font-size:15px;
@@ -174,3 +174,50 @@ html,body{overflow-x:hidden}
 
 /* A down-arrow made from the up-arrow symbol, for Watch's "next" button. */
 .flip-y{transform:scaleY(-1)}
+
+/* --- the sign-in page (SPEC §11) ----------------------------------------- */
+.auth-page{max-width:420px;margin-inline:auto;width:100%;padding-top:24px;gap:0}
+.auth-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.auth-word{font:400 42px/1 'Rozha One',Georgia,serif;margin:0;letter-spacing:-.01em}
+.auth-tag{margin:2px 0 0;color:var(--muted);font-size:14.5px}
+.auth-seg{margin-bottom:20px;max-width:none}
+.auth-seg button{flex:1}
+
+/* A rule you can read before you break it, not an error after you did. */
+.field-help,.field-opt{color:var(--muted);font-size:12.5px;font-weight:500}
+.field-opt{font-weight:500;text-transform:none}
+.field-bad{color:var(--danger);font-size:12.5px;font-weight:600}
+.field input[aria-invalid="true"]{border-color:var(--danger)}
+
+.field-pw{position:relative;display:flex}
+.field-pw input{flex:1;padding-right:66px}
+.field-reveal{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  min-height:34px;padding:0 10px;border-radius:9px;
+  font-size:13px;font-weight:600;color:var(--lake);
+}
+.field-reveal:hover{background:var(--sunk)}
+
+.pw-rules{list-style:none;margin:-4px 0 14px;padding:0;display:flex;flex-direction:column;gap:5px}
+.pw-rules li{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+.pw-rules li.ok{color:var(--moss);font-weight:600}
+
+.auth-error{
+  display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;
+  padding:10px 12px;border-radius:14px;font-size:14px;line-height:1.4;
+  background:color-mix(in srgb,var(--danger) 10%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--danger) 40%,transparent);
+  color:var(--ink);
+}
+.auth-error .ic{color:var(--danger);flex:none;margin-top:1px}
+.auth-note{margin:16px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.auth-alt{margin:18px 0 0;text-align:center;font-size:14px}
+.auth-alt a{color:var(--lake);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Watch is dark in both themes (SPEC §12.1), so anything shown *on* it has to
+ * use colours chosen for a dark surface. The shared empty state takes the page's
+ * ink and muted colours, which are near-black in the light theme: on Watch that
+ * was 1.23:1, which is to say invisible. */
+.scr-watch{--ink:#EEE9DE;--muted:#B9C1BA;--line:#2D3530;--surface:#1A201C;--sunk:#222925}
+.scr-watch .btn-primary{--on-primary:#111512;--laterite:#F08B63}

@@ -1,7 +1,7 @@
 /** The one place the app talks to the server.
  *
  * Two rules live here so no screen has to remember them:
- *  - every mutating request carries `X-Requested-With: pagdandi`, which is the
+ *  - every mutating request carries `X-Requested-With: truvel`, which is the
  *    CSRF defence the server requires (SPEC §11);
  *  - errors come back as `{error: {code, message, detail}}` and are turned into
  *    an `ApiError` whose `message` is already written for a person to read.
@@ -50,7 +50,7 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   const method = options.method ?? 'GET';
   const headers: Record<string, string> = {};
   // Required on anything that changes state; harmless on a GET.
-  if (method !== 'GET') headers['X-Requested-With'] = 'pagdandi';
+  if (method !== 'GET') headers['X-Requested-With'] = 'truvel';
 
   let body: BodyInit | undefined;
   if (options.form) {
@@ -109,13 +109,15 @@ export const api = {
   config: () => request<AppConfig>('/config'),
 
   // --- accounts --------------------------------------------------------- //
-  register: (username: string, password: string, display_name = '') =>
-    request<{ user: Me }>('/auth/register', {
-      method: 'POST',
-      body: { username, password, display_name },
-    }),
-  login: (username: string, password: string) =>
-    request<{ user: Me }>('/auth/login', { method: 'POST', body: { username, password } }),
+  register: (body: {
+    email: string;
+    username: string;
+    password: string;
+    display_name?: string;
+  }) => request<{ user: Me }>('/auth/register', { method: 'POST', body }),
+  /** `identifier` is an email address or a handle; the server works out which. */
+  login: (identifier: string, password: string) =>
+    request<{ user: Me }>('/auth/login', { method: 'POST', body: { identifier, password } }),
   logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
   me: () => request<{ user: Me }>('/me'),
 

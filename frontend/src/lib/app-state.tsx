@@ -45,7 +45,7 @@ type State = {
 
 const AppContext = createContext<State | null>(null);
 
-const THEME_KEY = 'pagdandi.theme';
+const THEME_KEY = 'truvel.theme';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);

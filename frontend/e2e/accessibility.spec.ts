@@ -9,10 +9,9 @@
  * order sensible) are handled by the design rules in SPEC §13 instead.
  */
 import AxeBuilder from '@axe-core/playwright';
+import { placeId, postTestVideo, signIn } from './account';
 import { expect, test, type Page } from '@playwright/test';
 
-const PASSWORD = 'pagdandi demo';
-const USER = 'riya_s';
 
 const SCREENS: { name: string; path: string }[] = [
   { name: 'Nearby', path: '/' },
@@ -26,13 +25,6 @@ const SCREENS: { name: string; path: string }[] = [
   { name: 'Sign in', path: '/signin' },
 ];
 
-async function signIn(page: Page) {
-  await page.goto('/signin');
-  await page.getByLabel('Username').fill(USER);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: /^Sign in$/ }).click();
-  await expect(page).toHaveURL(/\/$/);
-}
 
 test.describe('AC-21: axe-core finds no serious or critical issues', () => {
   for (const screen of SCREENS) {
@@ -77,6 +69,12 @@ test.describe('AC-21: the app works without a pointer', () => {
 
   test('Watch is operable with buttons and arrow keys', async ({ page }) => {
     await signIn(page);
+    // Two videos, because "next" has nothing to move to with only one.
+    // Captions carry the theme, so each project makes different posters and the
+    // duplicate check (SPEC §9.7) does not reject the second run as a copy.
+    const theme = test.info().project.name;
+    await postTestVideo(page, await placeId(page, 'Golconda Fort'), `Test clip one ${theme}`);
+    await postTestVideo(page, await placeId(page, 'Hussain Sagar'), `Test clip two ${theme}`);
     await page.goto('/watch');
     await page.waitForTimeout(1500);
 

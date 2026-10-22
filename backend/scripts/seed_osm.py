@@ -140,7 +140,7 @@ def fetch(query: str, cache_key: str, refresh: bool = False) -> dict[str, Any]:
     if cache_file.exists() and not refresh:
         return json.loads(cache_file.read_text(encoding="utf-8"))
 
-    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Pagdandi/1.0"))}
+    headers = {"User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0"))}
     last_error: Exception | None = None
     for url in OVERPASS_URLS:
         for attempt in range(1, ATTEMPTS_PER_MIRROR + 1):

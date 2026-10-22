@@ -76,7 +76,7 @@ const EMPTY: Draft = {
   steps: [''],
 };
 
-const RULES_KEY = 'pagdandi.contentRulesSeen';
+const RULES_KEY = 'truvel.contentRulesSeen';
 
 export function AddPlace() {
   const navigate = useNavigate();

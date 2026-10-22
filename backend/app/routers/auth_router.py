@@ -14,10 +14,24 @@ from ..models import City, User
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-class Credentials(BaseModel):
+class Registration(BaseModel):
+    """What it takes to open an account (SPEC §11).
+
+    An email address is how an account is recovered and how we can ever tell a
+    person they have been reported; the handle is what other people see.
+    """
+
+    email: str = Field(max_length=254)
     username: str = Field(min_length=3, max_length=20)
-    password: str = Field(min_length=8, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
     display_name: str = Field(default="", max_length=60)
+
+
+class Credentials(BaseModel):
+    """Sign in with either the email address or the handle."""
+
+    identifier: str = Field(min_length=1, max_length=254)
+    password: str = Field(min_length=1, max_length=200)
 
 
 def user_payload(session: DbSession, user: User) -> dict:
@@ -27,6 +41,8 @@ def user_payload(session: DbSession, user: User) -> dict:
     return {
         "id": user.id,
         "username": user.username,
+        "email": user.email,
+        "official": user.official,
         "display_name": user.display_name or user.username,
         "bio": user.bio,
         "role": user.role,
@@ -47,17 +63,19 @@ def user_payload(session: DbSession, user: User) -> dict:
 
 @router.post("/register")
 def register(
-    body: Credentials,
+    body: Registration,
     response: Response,
     session: DbSession = Depends(get_session),
     _: None = Depends(auth.require_csrf_header),
 ) -> dict:
     username = auth.validate_username(body.username)
-    auth.validate_password(body.password)
+    email = auth.validate_email(body.email)
+    auth.validate_password(body.password, email=email, username=username)
 
-    existing = session.exec(select(User).where(User.username == username)).first()
-    if existing is not None:
-        raise bad_request("That username is taken.", "username_taken")
+    if session.exec(select(User).where(User.username == username)).first() is not None:
+        raise bad_request("That handle is taken.", "username_taken")
+    if session.exec(select(User).where(User.email == email)).first() is not None:
+        raise bad_request("An account already uses that email address.", "email_taken")
 
     # New accounts start in the default city so the deck and Explore have
     # somewhere to open (SPEC §8.2 location-denied fallback).
@@ -67,6 +85,7 @@ def register(
 
     user = User(
         username=username,
+        email=email,
         password_hash=auth.hash_password(body.password),
         display_name=(body.display_name or "").strip()[:60] or username,
         home_city_id=city.id if city else None,
@@ -82,16 +101,26 @@ def register(
 @router.post("/login")
 def login(
     body: Credentials,
+    request: Request,
     response: Response,
     session: DbSession = Depends(get_session),
     _: None = Depends(auth.require_csrf_header),
 ) -> dict:
-    username = (body.username or "").strip().lower()
-    user = session.exec(select(User).where(User.username == username)).first()
-    # One generic error for both "no such user" and "wrong password", so the
-    # endpoint cannot be used to enumerate accounts (SPEC §11).
+    identifier = (body.identifier or "").strip().lower()
+    client = request.client.host if request.client else "unknown"
+    keys = [f"id:{identifier}", f"ip:{client}"]
+    auth.check_login_allowed(keys)
+
+    column = User.email if "@" in identifier else User.username
+    user = session.exec(select(User).where(column == identifier)).first()
+
+    # One generic error for both "no such account" and "wrong password", so the
+    # endpoint cannot be used to find out who has an account (SPEC §11).
     if user is None or not auth.verify_password(user.password_hash, body.password):
-        raise unauthorized("That username and password do not match.")
+        auth.record_login_failure(keys)
+        raise unauthorized("That email and password do not match.")
+
+    auth.clear_login_failures(keys)
     auth.start_session(session, response, user)
     return {"user": user_payload(session, user)}
 

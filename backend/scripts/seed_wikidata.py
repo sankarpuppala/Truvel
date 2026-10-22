@@ -83,7 +83,7 @@ def cache_dir() -> Path:
 def headers() -> dict[str, str]:
     """A descriptive User-Agent is required by the query service's policy."""
     return {
-        "User-Agent": str(cfg("wikidata.user_agent", "Pagdandi/1.0")),
+        "User-Agent": str(cfg("wikidata.user_agent", "Truvel/1.0")),
         "Accept": "application/sparql-results+json",
     }
 

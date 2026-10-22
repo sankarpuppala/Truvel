@@ -18,7 +18,7 @@ directory and it uses those; they are not committed (CLAUDE.md "Git"). With no
 directory it falls back to generated images, which exercise the code but are a
 weaker test than real photographs, and the output says so.
 
-    python sim/phash_sim.py --photos "C:/Users/you/Pictures/pagdandi"
+    python sim/phash_sim.py --photos "C:/Users/you/Pictures/truvel"
 """
 from __future__ import annotations
 

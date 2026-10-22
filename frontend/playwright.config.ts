@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 // 390 x 844 is the size the design reference is drawn for (SPEC §12, AC-20).
 export default defineConfig({
   testDir: './e2e',
+  globalTeardown: './e2e/teardown.ts',
   timeout: 60_000,
   fullyParallel: false,
   // One worker: the backend is a single SQLite file on a laptop, and parallel

@@ -67,7 +67,7 @@ from app.models import (
 )
 from app.partner.attribution import TouchRow, attribute
 
-PASSWORD = "pagdandi demo"          # every demo account, so the viva can log in
+PASSWORD = "truvel demo"          # every demo account, so the viva can log in
 RNG = random.Random(20261020)       # fixed seed: the demo is reproducible
 
 # --------------------------------------------------------------------------- #
@@ -653,7 +653,11 @@ def build(session: Session, now: datetime, viewers_n: int = 60) -> dict:
     for index, (username, display, bio, _creator) in enumerate(USERS):
         user = session.exec(select(User).where(User.username == username)).first()
         if user is None:
-            user = User(username=username, password_hash=hash_password(PASSWORD))
+            user = User(
+                username=username,
+                email=f"{username}@demo.invalid",   # RFC 2606: cannot reach anyone
+                password_hash=hash_password(PASSWORD),
+            )
         user.display_name = display
         user.bio = bio
         user.demo = True
@@ -1222,6 +1226,7 @@ def build_audience(
         if user is None:
             user = User(
                 username=username,
+                email=f"{username}@demo.invalid",
                 password_hash=hash_password(PASSWORD),
                 display_name=f"Viewer {i:03d}",
                 demo=True,

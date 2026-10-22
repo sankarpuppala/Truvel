@@ -55,7 +55,7 @@ export function App() {
   const hideNav = NO_NAV.some((prefix) => path.startsWith(prefix)) || path.includes('/steps/new');
 
   return (
-    <div className="shell">
+    <div className={`shell shell-${pageName(path)}`}>
       <SideNav />
       <div className={`app ${fullBleed ? 'app-fixed' : ''} app-${pageName(path)}`.trim()}>
         <Toasts />

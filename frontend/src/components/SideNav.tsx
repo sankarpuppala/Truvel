@@ -29,8 +29,8 @@ export function SideNav() {
 
   return (
     <>
-      <aside className="siderail" aria-label="Pagdandi">
-        <NavLink to="/" className="side-logo" aria-label="Pagdandi, home">
+      <aside className="siderail" aria-label="Truvel">
+        <NavLink to="/" className="side-logo" aria-label="Truvel, home">
           <svg width="40" height="40" viewBox="0 0 58 58" aria-hidden="true">
             <path
               d="M8 50C16 44 14 36 22 32S36 30 38 22 44 10 50 8"
@@ -46,7 +46,10 @@ export function SideNav() {
             />
             <circle cx="50" cy="11" r="2.3" fill="var(--paper)" />
           </svg>
-          <span>Pagdandi</span>
+          <span className="side-word">
+            Truvel
+            <small>Discover Hidden India</small>
+          </span>
         </NavLink>
 
         <nav className="side-nav" aria-label="Main">

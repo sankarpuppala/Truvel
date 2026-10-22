@@ -34,14 +34,14 @@ from .routers import (
 )
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
-log = logging.getLogger("pagdandi")
+log = logging.getLogger("truvel")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Create tables and the media directory before serving the first request."""
     init_db()
     media_root()
-    log.info("Pagdandi up. db=%s", DB_PATH)
+    log.info("Truvel up. db=%s", DB_PATH)
     if dev_allow_fake_location():
         # Loud, because this must never be on in a build anyone else uses.
         log.warning("DEV_ALLOW_FAKE_LOCATION=1 -- the location simulator is ENABLED")
@@ -49,7 +49,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Pagdandi",
+    title="Truvel",
     version="1.0",
     lifespan=lifespan,
     description=(

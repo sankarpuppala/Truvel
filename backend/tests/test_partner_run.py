@@ -236,7 +236,7 @@ def test_ac19_studio_numbers_match_the_database(client, session):
 
     client.post(
         "/api/auth/login",
-        json={"username": "studiocreator", "password": "correct horse battery"},
+        json={"identifier": "studiocreator", "password": "correct horse battery"},
     )
     studio = client.get("/api/studio?period=28").json()
 

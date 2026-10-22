@@ -12,10 +12,10 @@ from pathlib import Path
 
 import pytest
 
-_TMP = Path(tempfile.mkdtemp(prefix="pagdandi-test-"))
-os.environ.setdefault("PAGDANDI_DB", str(_TMP / "test.db"))
-os.environ.setdefault("PAGDANDI_MEDIA_DIR", str(_TMP / "media"))
-os.environ.setdefault("PAGDANDI_DATA_DIR", str(_TMP / "data"))
+_TMP = Path(tempfile.mkdtemp(prefix="truvel-test-"))
+os.environ.setdefault("TRUVEL_DB", str(_TMP / "test.db"))
+os.environ.setdefault("TRUVEL_MEDIA_DIR", str(_TMP / "media"))
+os.environ.setdefault("TRUVEL_DATA_DIR", str(_TMP / "data"))
 
 from app.db import engine, init_db  # noqa: E402
 from app.models import SQLModel  # noqa: E402
@@ -46,13 +46,27 @@ def client(session):
     from app.main import app
 
     with TestClient(app) as c:
-        c.headers.update({"X-Requested-With": "pagdandi"})
+        c.headers.update({"X-Requested-With": "truvel"})
         yield c
 
 
 @pytest.fixture()
 def tmp_media():
-    return Path(os.environ["PAGDANDI_MEDIA_DIR"])
+    return Path(os.environ["TRUVEL_MEDIA_DIR"])
+
+
+@pytest.fixture(autouse=True)
+def _clear_login_throttle():
+    """The login brake is module-level state, so it must not leak between tests.
+
+    Every test shares one client address, so failures recorded by one test
+    would otherwise count against the next one.
+    """
+    from app import auth
+
+    auth._login_failures.clear()
+    yield
+    auth._login_failures.clear()
 
 
 def make_user(session, username: str, **kwargs):

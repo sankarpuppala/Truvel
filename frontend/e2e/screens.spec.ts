@@ -9,18 +9,10 @@
  *  - no horizontal scrolling at 360 px (AC-20);
  *  - every element showing a rupee figure carries a Simulated label (AC-23).
  */
+import { signIn } from './account';
 import { expect, test, type Page } from '@playwright/test';
 
-const PASSWORD = 'pagdandi demo';
-const USER = 'riya_s';
 
-async function signIn(page: Page) {
-  await page.goto('/signin');
-  await page.getByLabel('Username').fill(USER);
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByRole('button', { name: /^Sign in$/ }).click();
-  await expect(page).toHaveURL(/\/$/);
-}
 
 async function shot(page: Page, name: string) {
   // Written under ../results/ so the committed screenshots sit beside the
@@ -81,7 +73,9 @@ test.describe('the nine screens', () => {
     await expect(page.locator('.safety')).toBeVisible();
     await expect(page.locator('.safety')).toContainText('112');
     await expect(page.locator('.checkin-bar')).toBeVisible();
-    await expect(page.locator('.attrib')).toContainText('OpenStreetMap');
+    // Invariant 6: the source line is always there. A place with photographs
+    // gets a second line crediting each one, so `.attrib` can match two nodes.
+    await expect(page.locator('.attrib').first()).toContainText('OpenStreetMap');
     await shot(page, '5-place');
   });
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — Pagdandi
+# CLAUDE.md — Truvel
 
 Project memory. Read this, then `SPEC.md` and the current phase in `PLAN.md`, at
 the start of every session before touching any file.
@@ -85,7 +85,7 @@ Partner engine + evaluation by Day 6. No Tier 2 work before the Tier 1 gate pass
 ## Repository layout
 
 ```
-pagdandi/
+truvel/
   CLAUDE.md  SPEC.md  PLAN.md  PROMPT.md  README.md  config.yaml
   docs/  design-reference.html  VIVA.md  REPORT.md (Phase 9)
   backend/
