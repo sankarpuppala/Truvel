@@ -708,18 +708,28 @@ mutating requests need `X-Requested-With: truvel`. Errors:
 **Accounts.** An account is an email address, a handle (`a-z0-9_`, 3–20) and a
 password. The email is how an account is recovered and how a person can be told
 they have been reported; the handle is what other people see. Sign-in accepts
-either. Passwords follow NIST SP 800-63B: at least **10 characters**, at most
+either. Passwords follow NIST SP 800-63B: at least **8 characters**, at most
 128, checked against a blocklist of the most common choices, and refused if they
 contain the account's own name or email — no forced symbols, which only produce
 `Password1!`. Failed sign-ins are counted per account **and** per address, and
 refused for 15 minutes after 8 failures, so a correct guess at the end of a run
 of wrong ones does not get through either.
 
+**The official account.** Imported places are *posted by* `@truvel`
+(`User.official`), not found by a person. It is a publisher: `kadam.award()` pays
+it nothing, touches are never credited to it, it is left out of the Partner
+Program and Studio rankings, and its place pages say "Posted by" instead of
+"Found by". The Hidden gems tab (§9.2) lists, after places that have earned a
+place through verified visits, little-known places (`fame = hidden`, no Wikidata
+item) that have a credited photograph, so the tab is not empty before anyone has
+visited anything; those are labelled as not yet visited.
+
 | Method | Path | Notes |
 |---|---|---|
 | POST | `/auth/register` | `{email, username, password, display_name}`; argon2id |
 | POST | `/auth/login` | `{identifier, password}` — email **or** handle; generic error; throttled |
 | POST | `/auth/logout` | |
+| POST | `/auth/forgot` · `/auth/reset` | `{email}` always answers the same; `{token, password}` — link valid 1 hour, once; ends every other session |
 | GET | `/me` | user, balance, level, streak |
 | GET | `/cities` · `/search?q=` | FTS5 over all PlaceName rows |
 | GET | `/cities/{slug}/places?sort=top\|liked\|gems\|trending\|near&cat=&verified=1&lat=&lng=&page=` | 20 per page |
@@ -739,6 +749,7 @@ of wrong ones does not get through either.
 | GET | `/watch?tab=foryou\|nearby\|following&lat=&lng=&cursor=` | §9.5 |
 | POST | `/watch/{media_id}/view` | `{watched_s, duration_s}` heartbeat on leave; server decides engaged/completed |
 | POST/DELETE | `/media/{id}/like` | |
+| DELETE | `/media/{id}` | your own upload (or an admin); removes the files. Kadam already earned stays in the ledger |
 | POST/DELETE | `/users/{id}/follow` · GET `/users/{handle}` | profile |
 | POST | `/places/{id}/pulse` · GET `/places/{id}/pulse` | §8.8 |
 | POST | `/touch` | `{place_id, content_type, content_id}`; server sets creator and time |

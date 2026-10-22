@@ -119,6 +119,13 @@ export const api = {
   login: (identifier: string, password: string) =>
     request<{ user: Me }>('/auth/login', { method: 'POST', body: { identifier, password } }),
   logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
+  /** Always succeeds, whether or not the address has an account. */
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean }>('/auth/forgot', { method: 'POST', body: { email } }),
+  resetPassword: (token: string, password: string) =>
+    request<{ user: Me }>('/auth/reset', { method: 'POST', body: { token, password } }),
+  deleteMedia: (mediaId: number) =>
+    request<{ ok: boolean }>(`/media/${mediaId}`, { method: 'DELETE' }),
   me: () => request<{ user: Me }>('/me'),
 
   // --- places and explore ------------------------------------------------ //

@@ -64,9 +64,15 @@ It prints a generated password once. Write it down — it is stored as an argon2
 hash and cannot be read back. Change `hello@truvel.app` to an address you own.
 
 The copy of the database in this repository uses
-`marigold-footpath-granite-2026`, which the end-to-end tests also use
+`qw12&er34`, which the end-to-end tests also use
 (`TRUVEL_PASSWORD` overrides it). **It is a local development credential and is
 in version control: change it before this is reachable by anyone else.**
+
+**Password reset email.** `/auth/forgot` sends a one-hour link through any SMTP
+account you already have: set `TRUVEL_SMTP_HOST`, `TRUVEL_SMTP_PORT` (587),
+`TRUVEL_SMTP_USER`, `TRUVEL_SMTP_PASSWORD`, `TRUVEL_SMTP_FROM`, and
+`TRUVEL_PUBLIC_URL` (the address the link should point at). With none set, the
+message is written to the server log instead, which is enough for development.
 
 **To get a populated app back** — for a demo, or to see the Studio and the
 Partner Program with numbers in them:
@@ -287,7 +293,7 @@ criterion it satisfies (`test_ac16_shares_always_sum_to_one`).
 ### The rules the code will not break
 
 1. **Signing in follows NIST SP 800-63B, not folklore.** Passwords are at least
-   10 characters, checked against a blocklist of the most common choices, and
+   8 characters, checked against a blocklist of the most common choices, and
    refused if they contain your own name or email — no forced symbols, which
    only produce `Password1!`. They are hashed with argon2id. Sign-in takes an
    email or a handle and gives one error for both a wrong address and a wrong

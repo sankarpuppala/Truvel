@@ -1,9 +1,8 @@
 """Remove media that the end-to-end tests posted, and their files on disk.
 
 The tests upload real (tiny) videos through the real endpoint to have something
-to watch. There is deliberately no endpoint for a person to delete their own
-upload yet (see PLAN.md, ideas parked), so the tests clean up here instead of
-the product growing a route just for them.
+to watch. `DELETE /media/{id}` needs a signed-in owner, so this removes the test clips
+straight from the database and disk, leaving the catalogue as a run found it.
 
     python -m scripts.remove_test_media            # captions starting "Test clip"
 """

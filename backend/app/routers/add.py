@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from pydantic import BaseModel, Field
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import update as sa_update
 from sqlmodel import Session as DbSession
 from sqlmodel import func, select
 
@@ -27,7 +29,18 @@ from ..integrity.dedupe import find_duplicates
 from ..integrity.exif import GPS_MISMATCH, gps_mismatch
 from ..integrity.fraud import rate_limited
 from ..integrity.phash import check_upload
-from ..models import Media, Place, PlaceName, Report, User, utcnow
+from ..models import (
+    LastMileStep,
+    Media,
+    MediaLike,
+    MediaView,
+    Place,
+    PlaceName,
+    Pulse,
+    Report,
+    User,
+    utcnow,
+)
 
 router = APIRouter(tags=["add"], dependencies=[Depends(require_csrf_header)])
 
@@ -362,3 +375,38 @@ async def upload_media(
         )
         session.commit()
     return {"media": services.media_payload(media, user), "warning": warning}
+
+
+@router.delete("/media/{media_id}")
+def delete_media(
+    media_id: int,
+    session: DbSession = Depends(get_session),
+    user: User = Depends(current_user),
+) -> dict:
+    """Remove your own photo or video, and its files from disk.
+
+    Only the person who uploaded it (or an admin) may. Commons photos are not
+    ours to delete. Kadam already earned stays in the ledger: the ledger is
+    append-only (invariant 4), so deleting a post never rewrites history.
+    """
+    media = session.get(Media, media_id)
+    if media is None or media.source != "upload":
+        raise not_found("That upload is not here.", "no_media")
+    if media.user_id != user.id and user.role != "admin":
+        raise forbidden("You can only delete your own uploads.", "not_yours")
+
+    # Children first: bulk deletes run in the order written.
+    for related in (MediaLike, MediaView):
+        session.exec(sa_delete(related).where(related.media_id == media_id))
+    for model, column in ((Pulse, Pulse.media_id), (LastMileStep, LastMileStep.media_id)):
+        session.exec(sa_update(model).where(column == media_id).values(media_id=None))
+    session.exec(sa_update(User).where(User.avatar_media_id == media_id).values(avatar_media_id=None))
+
+    root = media_store.media_root()
+    for rel in (media.path_display, media.path_poster, media.path_thumb):
+        target = root / rel if rel else None
+        if target is not None and target.is_file():
+            target.unlink()
+    session.exec(sa_delete(Media).where(Media.id == media_id))
+    session.commit()
+    return {"ok": True}

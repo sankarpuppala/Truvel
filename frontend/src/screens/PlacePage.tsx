@@ -95,6 +95,31 @@ export function PlacePage() {
     place.distance_km !== undefined &&
     place.distance_km * 1000 <= Math.max(place.radius_m, 150);
 
+  const canDelete =
+    !!me && !!current && current.source === 'upload' && current.creator?.id === me.id;
+
+  async function deleteCurrentPhoto() {
+    if (!current) return;
+    if (!window.confirm('Delete this photo? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(current.id);
+      setPhotoFailed(false);
+      setPhotoIndex(0);
+      setPlace((previous) =>
+        previous
+          ? {
+              ...previous,
+              media: previous.media?.filter((item) => item.id !== current.id),
+              photo_count: Math.max(0, previous.photo_count - 1),
+            }
+          : previous,
+      );
+      toast('Photo deleted');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'That did not delete.', 'bad');
+    }
+  }
+
   async function toggleLike() {
     if (!me) {
       toast('Sign in to like places.', 'bad');
@@ -255,6 +280,15 @@ export function PlacePage() {
             <button className="round" aria-label="Share" onClick={() => void shareTrip()}>
               <Icon name="i-share" size={20} />
             </button>
+            {canDelete && (
+              <button
+                className="round"
+                aria-label="Delete this photo"
+                onClick={() => void deleteCurrentPhoto()}
+              >
+                <Icon name="i-trash" size={20} />
+              </button>
+            )}
             <button className="round" aria-label="Report" onClick={() => setReportOpen(true)}>
               <Icon name="i-flag" size={20} />
             </button>
@@ -362,7 +396,7 @@ export function PlacePage() {
                 <>
                   <span className="avatar">{initials(place.found_by.display_name)}</span>
                   <span>
-                    Found by{' '}
+                    {place.found_by.official ? 'Posted by' : 'Found by'}{' '}
                     <Link to={`/u/${place.found_by.username}`}>
                       <b>@{place.found_by.username}</b>
                     </Link>

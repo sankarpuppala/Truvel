@@ -1,15 +1,28 @@
 """Register, log in, log out (SPEC §11)."""
 from __future__ import annotations
 
+import os
+import secrets
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 from sqlmodel import Session as DbSession
 from sqlmodel import select
 
-from .. import auth, kadam
+from .. import auth, kadam, mailer
 from ..db import get_session
 from ..errors import bad_request, unauthorized
-from ..models import City, User
+from ..models import City, PasswordReset, Session, User, utcnow
+
+RESET_HOURS = 1
+MAIL_BODY = """\
+Someone asked to reset the password for @{username}.
+
+Choose a new one here (the link works for {hours} hour, once):
+{link}
+
+If that was not you, ignore this email and nothing changes."""
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -134,3 +147,81 @@ def logout(
 ) -> dict:
     auth.end_session(session, request, response)
     return {"ok": True}
+
+
+class ForgotIn(BaseModel):
+    email: str = Field(min_length=1, max_length=254)
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/forgot")
+def forgot_password(
+    body: ForgotIn,
+    request: Request,
+    session: DbSession = Depends(get_session),
+    _: None = Depends(auth.require_csrf_header),
+) -> dict:
+    """Email a reset link. Always answers the same, so it cannot reveal who has an account."""
+    email = (body.email or "").strip().lower()
+    client = request.client.host if request.client else "unknown"
+    keys = [f"reset:{email}", f"reset-ip:{client}"]
+    auth.check_login_allowed(keys)
+    auth.record_login_failure(keys)          # each request counts, so it cannot be used to spam
+
+    user = session.exec(select(User).where(User.email == email)).first()
+    if user is not None and not user.official:
+        token = secrets.token_urlsafe(32)
+        now = utcnow()
+        session.add(
+            PasswordReset(
+                id=auth._hash_token(token),
+                user_id=int(user.id),
+                created_at=now,
+                expires_at=now + timedelta(hours=RESET_HOURS),
+            )
+        )
+        session.commit()
+        base = os.environ.get("TRUVEL_PUBLIC_URL", "http://localhost:5173").rstrip("/")
+        link = f"{base}/reset?token={token}"
+        mailer.send(
+            user.email,
+            "Reset your Truvel password",
+            MAIL_BODY.format(username=user.username, hours=RESET_HOURS, link=link),
+        )
+    return {"ok": True}
+
+
+@router.post("/reset")
+def reset_password(
+    body: ResetIn,
+    response: Response,
+    session: DbSession = Depends(get_session),
+    _: None = Depends(auth.require_csrf_header),
+) -> dict:
+    """Set a new password from an emailed link, and sign every other device out."""
+    row = session.get(PasswordReset, auth._hash_token(body.token))
+    now = utcnow()
+    if row is None or row.used or row.expires_at < now:
+        raise bad_request(
+            "That reset link has expired or was already used. Ask for a new one.",
+            "bad_reset_token",
+        )
+    user = session.get(User, row.user_id)
+    if user is None:
+        raise bad_request("That reset link is not valid.", "bad_reset_token")
+
+    auth.validate_password(body.password, email=user.email, username=user.username)
+    user.password_hash = auth.hash_password(body.password)
+    row.used = True
+    session.add(user)
+    session.add(row)
+    for old in session.exec(select(Session).where(Session.user_id == user.id)).all():
+        session.delete(old)
+    session.commit()
+
+    auth.start_session(session, response, user)
+    return {"user": user_payload(session, user)}

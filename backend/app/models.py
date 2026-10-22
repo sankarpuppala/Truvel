@@ -351,3 +351,13 @@ class Session(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id", index=True)
     created_at: datetime = Field(default_factory=utcnow)
     expires_at: datetime = Field(default_factory=utcnow, index=True)
+
+
+class PasswordReset(SQLModel, table=True):
+    """A one-hour link to choose a new password. `id` is the SHA-256 of the token."""
+
+    id: str = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime = Field(default_factory=utcnow)
+    used: bool = False

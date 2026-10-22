@@ -215,17 +215,29 @@ summaries. Every figure here is reproducible by re-running the command named.
   owner can create in Google Cloud Console. Add `GOOGLE_CLIENT_ID` and
   `GOOGLE_CLIENT_SECRET` to `.env` and the button can be wired to
   `/auth/google` and `/auth/google/callback` in about an hour.
-- **Password reset by email.** Needs somewhere to send mail from. Until then the
-  sign-in page says so rather than showing a link that goes nowhere.
-- **Delete your own upload.** There is no `DELETE /media/{id}`, so a creator who
-  posts the wrong photo cannot take it back. The e2e tests clean up with
-  `scripts/remove_test_media.py` instead of the product growing a route for them.
 - **Merge large features.** `scripts/merge_duplicates.py` joins records within
   150 m. A 1 km lake whose OSM polygon centre and Wikidata pin are 500 m apart
   (Durgam Cheruvu) and a national park split into two OSM fragments 3 km apart
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-22 (later) — **@truvel publishes every place; reset and delete built.**
+  - `Place.added_by` is `@truvel` for all 16,801 places (and the password is
+    `qw12&er34`, 8 characters minimum now). The 50-second bug is avoided by
+    design, not by leaving the column empty: `User.official` makes the account a
+    publisher — no kadam, no touch credit, not a Partner creator, no Studio
+    ranking — and `/me/passport` and `/users/{handle}` count and page "places
+    found" instead of loading them all. `/me/passport` 243 ms, `/studio` 65 ms.
+  - 3 photo-less OpenStreetMap viewpoints removed; 104 photographed,
+    little-known places marked `fame = hidden`, and Hidden gems lists them after
+    any place that has earned its spot (no videos exist: Commons has none that
+    the app can play). `scripts/publish_as_official.py` does all of it.
+  - **Password reset** (`/auth/forgot`, `/auth/reset`, `/forgot`, `/reset`): one
+    hour, one use, ends other sessions, same answer for unknown emails. Mail goes
+    out through SMTP if `TRUVEL_SMTP_*` is set; otherwise it is written to the
+    server log.
+  - **Delete your own upload** (`DELETE /media/{id}`, trash button on your own
+    photo): removes files and the rows that point at it; kadam stays in the ledger.
 - 2026-10-20 — v1 spec, plan, design reference.
 - 2026-10-20 — v2: languages, all-India open data, Watch, Pulse, Partner Program, Studio.
 - 2026-10-22 — **Renamed to Truvel, and the demo population removed.**
@@ -246,7 +258,7 @@ summaries. Every figure here is reproducible by re-running the command named.
     from **25.3 % to 57.0 %** photographed; everywhere, 41.6 %. 69 candidates
     were discarded for having no usable licence.
   - **Accounts are email + password** (SPEC §5, §11): NIST SP 800-63B rules —
-    10 characters, a blocklist, no forced symbols — argon2id, sign-in by email
+    8 characters, a blocklist, no forced symbols — argon2id, sign-in by email
     or handle, one error for both failure modes, and a 15-minute lockout after
     8 failures counted per account *and* per address.
   - **Duplicates merged.** Both datasets overlap, so Golconda Fort was three

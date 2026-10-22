@@ -24,6 +24,7 @@ import { Nearby } from './screens/Nearby';
 import { PlacePage } from './screens/PlacePage';
 import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
+import { ForgotPassword, ResetPassword } from './screens/Recover';
 import { SignIn } from './screens/SignIn';
 import { Watch } from './screens/Watch';
 import { WriteSteps } from './screens/WriteSteps';
@@ -31,7 +32,7 @@ import { You } from './screens/You';
 
 /** Screens that fill the viewport themselves and hide the standard chrome. */
 const FULL_BLEED = ['/watch'];
-const NO_NAV = ['/signin', '/add/', '/settings', '/admin'];
+const NO_NAV = ['/signin', '/forgot', '/reset', '/add/', '/settings', '/admin'];
 
 /** A class per screen, so the desktop stylesheet can lay each one out on its
  *  own terms (a map wants the whole window; a deck wants a narrow column). */
@@ -42,7 +43,7 @@ function pageName(path: string): string {
   if (path.startsWith('/you') || path.startsWith('/u/')) return 'you';
   if (path.startsWith('/settings')) return 'settings';
   if (path.startsWith('/add/')) return 'add';
-  if (path.startsWith('/signin')) return 'signin';
+  if (['/signin', '/forgot', '/reset'].some((prefix) => path.startsWith(prefix))) return 'signin';
   if (path.startsWith('/admin')) return 'admin';
   return 'other';
 }
@@ -82,6 +83,8 @@ export function App() {
               <Route path="/u/:handle" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/signin" element={<SignIn />} />
+              <Route path="/forgot" element={<ForgotPassword />} />
+              <Route path="/reset" element={<ResetPassword />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -186,7 +186,7 @@ export function DeckCard({
         <div className="card-text">
           {place.found_by && (
             <div className="by">
-              Found by <b>@{place.found_by.username}</b>
+              {place.found_by.official ? 'Posted by' : 'Found by'} <b>@{place.found_by.username}</b>
             </div>
           )}
           <NameBlock name={place.name} primaryClass="pname" secondaryClass="lname" as="h3" />

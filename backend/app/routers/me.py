@@ -142,11 +142,11 @@ def passport(
             }
         )
 
-    found = list(
-        session.exec(
-            select(Place).where(Place.added_by == uid, Place.status != "hidden").order_by(Place.created_at.desc())
-        ).all()
+    found_query = select(Place).where(Place.added_by == uid, Place.status != "hidden")
+    places_found = int(
+        session.exec(select(func.count()).select_from(found_query.subquery())).one() or 0
     )
+    found = list(session.exec(found_query.order_by(Place.created_at.desc()).limit(24)).all())
     caused = services.visits_caused(session, uid)
 
     saved_rows = list(
@@ -201,6 +201,7 @@ def passport(
         "streak": weekly_streak(session, uid, now),
         "stamps": stamps,
         "found": [services.place_payload(session, p, user, now=now) for p in found],
+        "places_found": places_found,
         "visits_caused": round(caused, 1),
         "want_to_go": want_to_go,
         "ledger": ledger_out,

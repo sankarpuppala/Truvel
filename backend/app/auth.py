@@ -39,7 +39,7 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
 
 # NIST SP 800-63B: length and a blocklist of known-bad choices do the work.
 # Forced symbols and digits only push people towards "Password1!".
-MIN_PASSWORD = 10
+MIN_PASSWORD = 8
 MAX_PASSWORD = 128
 COMMON_PASSWORDS = {
     "password", "password1", "password123", "123456", "1234567", "12345678",

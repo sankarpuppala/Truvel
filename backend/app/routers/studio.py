@@ -322,9 +322,12 @@ def studio(
                 "thumb": f"/media/{m.path_thumb}" if m.path_thumb else None,
             }
         )
-    for place in session.exec(
+    # The official account publishes thousands of places and is not a creator,
+    # so it has no per-place creator stats to rank.
+    own_places = [] if user.official else session.exec(
         select(Place).where(Place.added_by == uid, Place.status != "hidden")
-    ).all():
+    ).all()
+    for place in own_places:
         page_views = int(
             session.exec(
                 select(func.count()).select_from(View).where(View.place_id == place.id)
@@ -422,6 +425,9 @@ def _all_creator_scores(session: DbSession, since: datetime, now: datetime) -> d
         for uid in session.exec(
             select(Place.added_by).where(Place.added_by != None)  # noqa: E711
         ).all()
+    }
+    creator_ids -= {
+        int(u) for u in session.exec(select(User.id).where(User.official == True)).all()  # noqa: E712
     }
     scores: dict[int, float] = {}
     for cid in creator_ids:

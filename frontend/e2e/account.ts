@@ -11,7 +11,7 @@ import { expect, type Page } from '@playwright/test';
 
 export const ACCOUNT = '@truvel';
 export const HANDLE = 'truvel';
-export const PASSWORD = process.env.TRUVEL_PASSWORD ?? 'marigold-footpath-granite-2026';
+export const PASSWORD = process.env.TRUVEL_PASSWORD ?? 'qw12&er34';
 
 export async function signIn(page: Page): Promise<void> {
   await page.goto('/signin');

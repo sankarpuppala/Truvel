@@ -58,6 +58,8 @@ def creator_ids(session: Session) -> set[int]:
             select(Place.added_by).where(Place.added_by != None)  # noqa: E711
         ).all()
     }
+    # The official account publishes places; it is not a creator and earns nothing.
+    ids -= {int(u) for u in session.exec(select(User.id).where(User.official == True)).all()}  # noqa: E712
     return ids
 
 

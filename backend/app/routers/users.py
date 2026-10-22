@@ -32,13 +32,11 @@ def profile(
         session.exec(select(func.count()).select_from(Follow).where(Follow.creator_id == cid)).one()
         or 0
     )
-    found = list(
-        session.exec(
-            select(Place)
-            .where(Place.added_by == cid, Place.status != "hidden")
-            .order_by(Place.created_at.desc())
-        ).all()
+    found_query = select(Place).where(Place.added_by == cid, Place.status != "hidden")
+    places_found = int(
+        session.exec(select(func.count()).select_from(found_query.subquery())).one() or 0
     )
+    found = list(session.exec(found_query.order_by(Place.created_at.desc()).limit(12)).all())
     videos = list(
         session.exec(
             select(Media)
@@ -90,10 +88,10 @@ def profile(
         "followers": followers,
         "following": following,
         "is_self": viewer is not None and int(viewer.id) == cid,
-        "places_found": len(found),
+        "places_found": places_found,
         "visits_caused": round(caused, 1),
         "partner": partner,
-        "found": [services.place_payload(session, p, viewer, now=now) for p in found[:12]],
+        "found": [services.place_payload(session, p, viewer, now=now) for p in found],
         "videos": [services.media_payload(m, creator) for m in videos],
         "created_at": creator.created_at.isoformat(),
     }

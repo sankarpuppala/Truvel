@@ -22,7 +22,7 @@ import { Icon, StatusBar } from '../components/Icon';
 import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
 
-const MIN_PASSWORD = 10;
+const MIN_PASSWORD = 8;
 /** Mirrors `EMAIL_RE` in auth.py: one @, something either side, a dot after. */
 const EMAIL_RE = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
@@ -315,8 +315,7 @@ export function SignIn() {
             </p>
           ) : (
             <p className="auth-note">
-              Forgotten your password? This version has no reset email yet, so ask the
-              admin to set a new one.
+              <Link to="/forgot">Forgot your password?</Link>
             </p>
           )}
 

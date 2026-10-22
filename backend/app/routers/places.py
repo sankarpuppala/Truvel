@@ -113,6 +113,18 @@ def _events_for_trending(
     return events
 
 
+def _photographed(session: DbSession, ids: list[int]) -> set[int]:
+    """Which of these places have a photograph that is credited and allowed."""
+    if not ids:
+        return set()
+    rows = session.exec(
+        select(Media.place_id)
+        .where(Media.status == "ok", Media.licence != "", Media.place_id.in_(ids))
+        .distinct()
+    ).all()
+    return {int(r) for r in rows}
+
+
 def _counts(session: DbSession, place_ids: list[int]) -> tuple[dict[int, int], dict[int, int], dict[int, int]]:
     """likes, viewers and verified visits per place, in three grouped queries."""
     if not place_ids:
@@ -214,16 +226,31 @@ def city_places(
     elif sort == "liked":
         places.sort(key=lambda p: (-likes.get(int(p.id), 0), *_tiebreak(p)))
     elif sort == "gems":
-        places = [
+        earned = [
             p
             for p in places
             if is_gem_eligible(p.status, bool(p.fragile), visits.get(int(p.id), 0))
         ]
-        places.sort(
+        earned.sort(
             key=lambda p: -gem_score(
                 likes.get(int(p.id), 0), viewers.get(int(p.id), 0), p.fame
             )
         )
+        # Cold start: until people have visited, list the little-known places
+        # that have a real photograph, after the ones that have earned a place.
+        # Nothing about them is invented; they simply have no visits yet.
+        earned_ids = {int(p.id) for p in earned}
+        photographed = _photographed(session, ids)
+        waiting = [
+            p
+            for p in places
+            if int(p.id) not in earned_ids
+            and p.fame == "hidden"
+            and not p.fragile
+            and int(p.id) in photographed
+        ]
+        waiting.sort(key=lambda p: int(p.id))
+        places = earned + waiting
     elif sort == "trending":
         events = _events_for_trending(session, ids, now)
         places.sort(key=lambda p: -trending_score(events.get(int(p.id), []), now))

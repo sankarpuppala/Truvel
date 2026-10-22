@@ -217,6 +217,11 @@ def award(
     """
     if reason not in REASONS:
         raise ValueError(f"unknown kadam reason: {reason}")
+    # The official account publishes places; it is not a person who found them,
+    # so it earns nothing (invariant 3: no shortcut that pays kadam).
+    holder = session.get(User, user_id)
+    if holder is not None and holder.official:
+        return 0
     now = now or utcnow()
     requested = amount_for(reason) if amount is None else int(amount)
 

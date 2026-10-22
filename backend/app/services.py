@@ -338,7 +338,12 @@ def place_payload(
         "live": is_live(session, pid, now),
         "lead_media": media_payload(lead) if lead else None,
         "found_by": (
-            {"id": finder.id, "username": finder.username, "display_name": finder.display_name}
+            {
+                "id": finder.id,
+                "username": finder.username,
+                "display_name": finder.display_name,
+                "official": bool(finder.official),
+            }
             if finder
             else None
         ),

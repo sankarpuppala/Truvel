@@ -68,7 +68,7 @@ def like_place(
     place = session.get(Place, place_id)
     if place is None or place.status == "hidden":
         raise not_found("That place is not here.", "no_place")
-    if place.added_by == user.id:
+    if place.added_by == user.id and not user.official:
         raise forbidden("You can't like your own place.", "self_like")
 
     now = utcnow()
@@ -327,6 +327,10 @@ def record_touch(
 
     if creator_id is None or creator_id == user.id:
         # Nothing to credit (seeded place with no finder, or their own content).
+        return {"recorded": False}
+    publisher = session.get(User, int(creator_id))
+    if publisher is None or publisher.official:
+        # The official account publishes; visits are not credited to it.
         return {"recorded": False}
 
     session.add(
