@@ -221,6 +221,24 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (yet later) — **Explore's search stopped silently becoming an
+  all-India search, and 9 more real cities are being seeded.**
+  - Typing in Explore's search box while browsing Hyderabad replaced the list
+    with `/search`'s global results (any place in India), dropping the scope
+    entirely. The scoped list now re-queries `/cities|states|localities/{slug}/
+    places` with the typed text as `q` (that endpoint already supported it);
+    the global search still runs, but only to offer "browse somewhere else"
+    (jump to Goa, to Tirupati), never to replace the current list.
+  - Fixed the 123 Wikidata-backfilled places whose `locality` had resolved to
+    "India" itself (a very sparsely tagged item's one-hop P131 landing on the
+    country) -- cleared, and `seed_wikidata.py` now filters that case.
+  - **Settings' "Your city" could never show a second option**: only
+    Hyderabad was ever seeded, though the frontend already listed scripts for
+    nine more (`CITY_SCRIPTS` in Settings.tsx) -- clearly unfinished, not
+    designed to be one city. Added their bboxes to `config.yaml` and ran
+    `seed_osm.py` for Chennai, Bengaluru, Kochi, Mumbai, Kolkata, Ahmedabad,
+    Amritsar, Bhubaneswar and Guwahati (the same tool, same Overpass
+    politeness pattern as Hyderabad's own seed); numbers once it finishes.
 - 2026-10-23 (later still) — **Search a state, and admin tied to the official account.**
   - Searching "Goa" found only the handful of places with "Goa" literally in
     their name (the `City` table has only Hyderabad, so a state had nowhere to

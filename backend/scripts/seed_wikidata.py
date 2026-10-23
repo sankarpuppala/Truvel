@@ -218,9 +218,9 @@ def upsert_item(session: Session, row: dict, category: str) -> tuple[Place | Non
     sitelinks = int((row.get("sitelinks") or {}).get("value", 0) or 0)
     state = (row.get("stateLabel") or {}).get("value") or None
     locality = (row.get("localityLabel") or {}).get("value") or None
-    if locality and state and locality == state:
-        # The one-hop P131 landed straight on the state (a sparsely tagged
-        # item): that is not a town to browse, it is the state we already have.
+    if locality and ((state and locality == state) or locality in ("India", "Bharat")):
+        # The one-hop P131 landed on the state, or on the country itself (a
+        # very sparsely tagged item): neither is a town to browse.
         locality = None
     image = (row.get("image") or {}).get("value") or ""
     heritage = bool((row.get("heritage") or {}).get("value"))

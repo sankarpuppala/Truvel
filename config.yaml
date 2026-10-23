@@ -198,3 +198,48 @@ cities:
     state: Telangana
     bbox: [17.20, 78.20, 17.62, 78.70]
     centre: [17.3850, 78.4867]
+  chennai:
+    name: Chennai
+    state: Tamil Nadu
+    bbox: [12.83, 80.04, 13.25, 80.31]
+    centre: [13.0827, 80.2707]
+  bengaluru:
+    name: Bengaluru
+    state: Karnataka
+    bbox: [12.83, 77.45, 13.14, 77.75]
+    centre: [12.9716, 77.5946]
+  kochi:
+    name: Kochi
+    state: Kerala
+    bbox: [9.80, 76.15, 10.08, 76.40]
+    centre: [9.9312, 76.2673]
+  mumbai:
+    name: Mumbai
+    state: Maharashtra
+    bbox: [18.89, 72.77, 19.30, 72.98]
+    centre: [19.0760, 72.8777]
+  kolkata:
+    name: Kolkata
+    state: West Bengal
+    bbox: [22.45, 88.25, 22.67, 88.48]
+    centre: [22.5726, 88.3639]
+  ahmedabad:
+    name: Ahmedabad
+    state: Gujarat
+    bbox: [22.90, 72.45, 23.15, 72.70]
+    centre: [23.0225, 72.5714]
+  amritsar:
+    name: Amritsar
+    state: Punjab
+    bbox: [31.55, 74.78, 31.73, 74.98]
+    centre: [31.6340, 74.8723]
+  bhubaneswar:
+    name: Bhubaneswar
+    state: Odisha
+    bbox: [20.18, 85.70, 20.40, 85.95]
+    centre: [20.2961, 85.8245]
+  guwahati:
+    name: Guwahati
+    state: Assam
+    bbox: [26.05, 91.60, 26.25, 91.90]
+    centre: [26.1445, 91.7362]

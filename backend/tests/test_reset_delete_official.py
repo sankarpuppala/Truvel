@@ -276,3 +276,17 @@ def test_searching_a_locality_surfaces_it_and_browsing_it_works(client, session)
 def test_unknown_locality_404s(client, session):
     make_city(session)
     assert client.get("/api/localities/atlantis/places").status_code == 404
+
+
+def test_searching_within_a_city_stays_scoped_to_it(client, session):
+    """The Explore search box must not quietly become an all-India search."""
+    city = make_city(session)
+    make_place(session, city, "Birla Mandir Temple", lat=17.4, lng=78.46)
+    make_place(
+        session, None, "Birla Mandir, Jaipur", state="Rajasthan", lat=26.9, lng=75.8,
+    )
+
+    out = client.get(f"/api/cities/{city.slug}/places?q=birla").json()
+    names = {p["name"]["primary"]["text"] for p in out["places"]}
+    assert names == {"Birla Mandir Temple"}
+    assert "Birla Mandir, Jaipur" not in names

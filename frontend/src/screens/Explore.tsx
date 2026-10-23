@@ -34,17 +34,19 @@ export function Explore() {
   const scoped = Boolean(stateSlug || localitySlug);
 
   const [query, setQuery] = useState('');
+  // Debounced: what the scoped list and the "browse elsewhere" suggestions
+  // actually search for, so every keystroke does not re-fetch.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [city, setCity] = useState<City | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [explainer, setExplainer] = useState('');
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [searchResults, setSearchResults] = useState<{
+  const [suggestions, setSuggestions] = useState<{
     cities: City[];
     states: City[];
     localities: City[];
-    places: Place[];
   } | null>(null);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export function Explore() {
       verified: verifiedOnly,
       at: position,
       page,
+      q: debouncedQuery.length >= 2 ? debouncedQuery : undefined,
     };
     const request = stateSlug
       ? api.statePlaces(stateSlug, options)
@@ -105,34 +108,40 @@ export function Explore() {
     category,
     verifiedOnly,
     page,
+    debouncedQuery,
     position?.lat,
     position?.lng,
     toast,
   ]);
 
-  // Search runs as you type, after a short pause.
+  // Runs as you type, after a short pause: narrows the current city/state/
+  // town's own list (via the scoped `q` above) and, separately, offers a
+  // whole other place to browse ("Goa", "Tirupati") if the text matches one.
   useEffect(() => {
-    if (query.trim().length < 2) {
-      setSearchResults(null);
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions(null);
+      setDebouncedQuery('');
       return undefined;
     }
     const timer = window.setTimeout(() => {
+      setPage(1);
+      setDebouncedQuery(trimmed);
       void api
-        .search(query.trim(), position)
+        .search(trimmed, position)
         .then((response) =>
-          setSearchResults({
+          setSuggestions({
             cities: response.cities,
             states: response.states,
             localities: response.localities,
-            places: response.places,
           }),
         )
-        .catch(() => setSearchResults(null));
+        .catch(() => setSuggestions(null));
     }, 220);
     return () => window.clearTimeout(timer);
   }, [query, position?.lat, position?.lng]);
 
-  const rows = searchResults?.places ?? places;
+  const rows = places;
 
   const header = useMemo(
     () => (
@@ -194,207 +203,198 @@ export function Explore() {
     );
   }
 
+  const hasSuggestions =
+    !!suggestions &&
+    (suggestions.states.length > 0 ||
+      suggestions.localities.length > 0 ||
+      suggestions.cities.length > 0);
+
   return (
     <>
       <StatusBar />
       {header}
 
-      {searchResults ? (
-        <div className="scr-body">
-          {(searchResults.states.length > 0 ||
-            searchResults.localities.length > 0 ||
-            searchResults.cities.length > 0) && (
-            <div style={{ padding: '4px 16px 0' }}>
-              <h4
-                style={{
-                  font: '700 13px/1.3 Mukta,sans-serif',
-                  letterSpacing: '.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--muted)',
-                  margin: '8px 0',
-                }}
-              >
-                Places to browse
-              </h4>
-              {searchResults.states.map((entry) => (
-                <button
-                  key={`state-${entry.slug}`}
-                  type="button"
-                  className="cand"
-                  style={{ width: '100%', marginBottom: 6 }}
-                  onClick={() => {
-                    setQuery('');
-                    setPage(1);
-                    update({ state: entry.slug, city: null, locality: null, view: 'list' });
-                  }}
-                >
-                  <div>
-                    <b>{entry.name}</b>
-                    <span>{num(entry.place_count)} places across the state</span>
-                  </div>
-                  <Icon name="i-chevr" size={18} />
-                </button>
-              ))}
-              {searchResults.localities.map((entry) => (
-                <button
-                  key={`locality-${entry.slug}`}
-                  type="button"
-                  className="cand"
-                  style={{ width: '100%', marginBottom: 6 }}
-                  onClick={() => {
-                    setQuery('');
-                    setPage(1);
-                    update({ locality: entry.slug, city: null, state: null, view: 'list' });
-                  }}
-                >
-                  <div>
-                    <b>{entry.name}</b>
-                    <span>
-                      {entry.state ? `${entry.state} · ` : ''}
-                      {num(entry.place_count)} places
-                    </span>
-                  </div>
-                  <Icon name="i-chevr" size={18} />
-                </button>
-              ))}
-              {searchResults.cities.map((entry) => (
-                <button
-                  key={entry.slug}
-                  type="button"
-                  className="cand"
-                  style={{ width: '100%', marginBottom: 6 }}
-                  onClick={() => {
-                    setQuery('');
-                    setPage(1);
-                    update({ city: entry.slug, state: null, locality: null });
-                  }}
-                >
-                  <div>
-                    <b>{entry.name}</b>
-                    <span>
-                      {entry.state} &middot; {num(entry.place_count)} places
-                    </span>
-                  </div>
-                  <Icon name="i-chevr" size={18} />
-                </button>
-              ))}
-            </div>
-          )}
-          {rows.length > 0 ? (
-            <ol className="rows" style={{ flex: 'none' }}>
-              {rows.map((place) => (
-                <PlaceRow key={place.id} place={place} showRank={false} />
-              ))}
-            </ol>
+      <div className="ex-head">
+        <h3 className="ex-city">{city?.name ?? '—'}</h3>
+        <div className="ex-sub">
+          {city ? (
+            <>
+              {num(city.place_count)} places &middot; {num(city.community_count)} found by locals
+            </>
           ) : (
-            <EmptyState
-              icon="i-search"
-              title="Nothing matched"
-              body="Try a shorter word, or the name in another script."
-            />
+            ' '
           )}
         </div>
-      ) : (
-        <>
-          <div className="ex-head">
-            <h3 className="ex-city">{city?.name ?? '—'}</h3>
-            <div className="ex-sub">
-              {city ? (
-                <>
-                  {num(city.place_count)} places &middot; {num(city.community_count)} found by
-                  locals
-                </>
-              ) : (
-                ' '
-              )}
-            </div>
-          </div>
+      </div>
 
-          <Tabs
-            label="Sort the list"
-            value={sort}
-            onChange={(key) => {
+      <Tabs
+        label="Sort the list"
+        value={sort}
+        onChange={(key) => {
+          setPage(1);
+          update({ sort: key });
+        }}
+        options={SORTS}
+      />
+
+      <p className="why">
+        <Icon name="i-info" size={15} />
+        {explainer}
+      </p>
+
+      <div className="chips" style={{ overflowX: 'auto', paddingBottom: 6 }}>
+        {FILTER_CHIPS.map((chip) => (
+          <Chip
+            key={chip.key}
+            label={chip.label}
+            icon={chip.icon}
+            on={category === chip.key}
+            onClick={() => {
               setPage(1);
-              update({ sort: key });
+              update({ cat: chip.key === 'all' ? null : chip.key });
             }}
-            options={SORTS}
           />
+        ))}
+        <Chip
+          label="Verified only"
+          icon="i-check"
+          on={verifiedOnly}
+          onClick={() => update({ verified: verifiedOnly ? null : '1' })}
+        />
+      </div>
 
-          <p className="why">
-            <Icon name="i-info" size={15} />
-            {explainer}
-          </p>
-
-          <div className="chips" style={{ overflowX: 'auto', paddingBottom: 6 }}>
-            {FILTER_CHIPS.map((chip) => (
-              <Chip
-                key={chip.key}
-                label={chip.label}
-                icon={chip.icon}
-                on={category === chip.key}
+      <div className="scr-body">
+        {/* A match elsewhere in India -- offered, never substituted for the
+            current city/state/town's own (now query-filtered) list below. */}
+        {hasSuggestions && (
+          <div style={{ padding: '0 16px 10px' }}>
+            <h4
+              style={{
+                font: '700 13px/1.3 Mukta,sans-serif',
+                letterSpacing: '.1em',
+                textTransform: 'uppercase',
+                color: 'var(--muted)',
+                margin: '8px 0',
+              }}
+            >
+              Browse somewhere else
+            </h4>
+            {suggestions!.states.map((entry) => (
+              <button
+                key={`state-${entry.slug}`}
+                type="button"
+                className="cand"
+                style={{ width: '100%', marginBottom: 6 }}
                 onClick={() => {
+                  setQuery('');
                   setPage(1);
-                  update({ cat: chip.key === 'all' ? null : chip.key });
+                  update({ state: entry.slug, city: null, locality: null, view: 'list' });
                 }}
-              />
+              >
+                <div>
+                  <b>{entry.name}</b>
+                  <span>{num(entry.place_count)} places across the state</span>
+                </div>
+                <Icon name="i-chevr" size={18} />
+              </button>
             ))}
-            <Chip
-              label="Verified only"
-              icon="i-check"
-              on={verifiedOnly}
-              onClick={() => update({ verified: verifiedOnly ? null : '1' })}
-            />
+            {suggestions!.localities.map((entry) => (
+              <button
+                key={`locality-${entry.slug}`}
+                type="button"
+                className="cand"
+                style={{ width: '100%', marginBottom: 6 }}
+                onClick={() => {
+                  setQuery('');
+                  setPage(1);
+                  update({ locality: entry.slug, city: null, state: null, view: 'list' });
+                }}
+              >
+                <div>
+                  <b>{entry.name}</b>
+                  <span>
+                    {entry.state ? `${entry.state} · ` : ''}
+                    {num(entry.place_count)} places
+                  </span>
+                </div>
+                <Icon name="i-chevr" size={18} />
+              </button>
+            ))}
+            {suggestions!.cities.map((entry) => (
+              <button
+                key={entry.slug}
+                type="button"
+                className="cand"
+                style={{ width: '100%', marginBottom: 6 }}
+                onClick={() => {
+                  setQuery('');
+                  setPage(1);
+                  update({ city: entry.slug, state: null, locality: null });
+                }}
+              >
+                <div>
+                  <b>{entry.name}</b>
+                  <span>
+                    {entry.state} &middot; {num(entry.place_count)} places
+                  </span>
+                </div>
+                <Icon name="i-chevr" size={18} />
+              </button>
+            ))}
           </div>
+        )}
 
-          <div className="scr-body">
-            {loading ? (
-              <Loading what="Ranking places" />
-            ) : rows.length === 0 ? (
-              <EmptyState
-                icon="i-pin"
-                title={
-                  (city?.place_count ?? 0) < 5
-                    ? 'This city is mostly unmapped'
-                    : 'Nothing here yet'
-                }
-                body={
-                  (city?.place_count ?? 0) < 5
-                    ? 'Be its first pathfinder.'
-                    : 'Try another sort, or clear the filters.'
-                }
-                action={
-                  <Link className="btn btn-primary btn-sm" to="/add/place">
-                    Add a place
-                  </Link>
-                }
-              />
-            ) : (
-              <>
-                <ol className="rows" style={{ flex: 'none' }}>
-                  {rows.map((place) => (
-                    <PlaceRow key={place.id} place={place} />
-                  ))}
-                </ol>
-                {total > places.length + (page - 1) * 20 && (
-                  <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setPage((value) => value + 1)}
-                    >
-                      Show more
-                    </button>
-                  </div>
-                )}
-                <p className="attrib" style={{ padding: '4px 16px 10px' }}>
-                  Map data &copy; OpenStreetMap contributors &middot; famous places from Wikidata
-                  (CC0)
-                </p>
-              </>
+        {loading ? (
+          <Loading what="Ranking places" />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={debouncedQuery ? 'i-search' : 'i-pin'}
+            title={
+              debouncedQuery
+                ? 'Nothing matched here'
+                : (city?.place_count ?? 0) < 5
+                  ? 'This city is mostly unmapped'
+                  : 'Nothing here yet'
+            }
+            body={
+              debouncedQuery
+                ? `No place in ${city?.name ?? 'this list'} matches "${debouncedQuery}". Try the search above for places elsewhere too.`
+                : (city?.place_count ?? 0) < 5
+                  ? 'Be its first pathfinder.'
+                  : 'Try another sort, or clear the filters.'
+            }
+            action={
+              debouncedQuery ? undefined : (
+                <Link className="btn btn-primary btn-sm" to="/add/place">
+                  Add a place
+                </Link>
+              )
+            }
+          />
+        ) : (
+          <>
+            <ol className="rows" style={{ flex: 'none' }}>
+              {rows.map((place) => (
+                <PlaceRow key={place.id} place={place} />
+              ))}
+            </ol>
+            {total > places.length + (page - 1) * 20 && (
+              <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Show more
+                </button>
+              </div>
             )}
-          </div>
-        </>
-      )}
+            <p className="attrib" style={{ padding: '4px 16px 10px' }}>
+              Map data &copy; OpenStreetMap contributors &middot; famous places from Wikidata (CC0)
+            </p>
+          </>
+        )}
+      </div>
     </>
   );
 }
