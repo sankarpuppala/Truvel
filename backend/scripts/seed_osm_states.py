@@ -1,11 +1,16 @@
-"""Seed the smaller, lesser-known places OSM knows about, one state at a time.
+"""Seed the famous places OSM knows about that Wikidata's sweep missed, state by state.
 
 `seed_osm.py` goes deep on one named city (a bbox). `seed_wikidata.py` goes
-wide across every notable place in India, but "notable" means it has enough
-Wikipedia coverage to be in Wikidata -- a real viewpoint, waterfall or temple
-that nobody has written an article about is invisible to it. This script finds
-those: the same Overpass categories as `seed_osm.py`, over one Indian *state*
-at a time instead of one city's bbox.
+wide across every notable place in India via Wikidata, but a place can be
+genuinely well known locally and still have no Wikidata item. This script
+finds those: the same Overpass categories as `seed_osm.py`, over one Indian
+*state* at a time instead of one city's bbox.
+
+**It only adds a place with a real notability signal** -- an OSM `wikipedia`
+tag, or a `wikidata` id -- not every named rock and footbridge in a state
+(`--include-unfamous` turns that filter off; the first run of this script,
+before the filter existed, added 1,043 places that did not clear this bar and
+`undo_state_seed.py` removed them -- see PLAN.md).
 
 A state is queried by its OSM administrative boundary, by ISO3166-2 code
 (`area["ISO3166-2"="IN-TG"]`) -- Overpass resolves the shape itself, so this
@@ -155,7 +160,7 @@ def upsert_state_place(session: Session, state: str, category: str, element: dic
     return place
 
 
-def seed_state(state: str, refresh: bool = False) -> dict[str, Any]:
+def seed_state(state: str, refresh: bool = False, famous_only: bool = True) -> dict[str, Any]:
     iso = STATE_CODES[state]
     slug = state.lower().replace(" ", "-")
     print(f"\n=== {state} ({iso}) ===")
@@ -184,6 +189,13 @@ def seed_state(state: str, refresh: bool = False) -> dict[str, Any]:
                     area = bbox_area_ha(element)
                     if area is None or area < MIN_PARK_AREA_HA:
                         continue
+                # By default, only a place with a real notability signal: an
+                # OSM `wikipedia` tag (fame_for() -> "famous") or a `wikidata`
+                # id. A plain `name` tag is not fame -- half of India's rocks
+                # and footbridges have one, and a wall of those is not what
+                # "kinda famous" means. --include-unfamous turns this off.
+                if famous_only and fame_for(tags) != "famous" and not tags.get("wikidata"):
+                    continue
                 was_new = (
                     session.exec(
                         select(Place.id).where(
@@ -225,7 +237,12 @@ def main() -> int:
         "--from", dest="from_state", default="", help="with --all, resume from this state"
     )
     parser.add_argument("--refresh", action="store_true")
+    parser.add_argument(
+        "--include-unfamous", action="store_true",
+        help="also add plain named places with no wikipedia tag or wikidata id (off by default)",
+    )
     args = parser.parse_args()
+    famous_only = not args.include_unfamous
 
     if args.all:
         states = list(STATE_CODES)
@@ -237,7 +254,7 @@ def main() -> int:
         total_new = 0
         for index, state in enumerate(states, 1):
             print(f"\n[{index}/{len(states)}]", end="")
-            summary = seed_state(state, args.refresh)
+            summary = seed_state(state, args.refresh, famous_only)
             total_new += summary["new"]
             time.sleep(2)
         print(f"\n\nAll states done. {total_new} new places in total.")
@@ -249,7 +266,7 @@ def main() -> int:
     if args.state not in STATE_CODES:
         print(f"Unknown state {args.state!r}. Known: {', '.join(STATE_CODES)}")
         return 1
-    seed_state(args.state, args.refresh)
+    seed_state(args.state, args.refresh, famous_only)
     return 0
 
 

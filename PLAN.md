@@ -221,6 +221,18 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (later) — **State-wide OSM import, corrected to famous places only.**
+  `scripts/seed_osm_states.py` finds places OSM knows about that Wikidata's
+  sweep missed, one Indian state at a time (an Overpass `area["ISO3166-2"=...]`
+  filter, not a boundary we draw -- invariant 12). Its first run, before it had
+  a fame filter, added 1,409 places across Goa and Andhra Pradesh; most were
+  plain named OSM features (a rock, a gallery with no other record) rather
+  than anything "kinda famous", which is not what the catalogue should be.
+  `scripts/undo_state_seed.py` removed the 1,043 of those with neither an OSM
+  `wikipedia` tag nor a `wikidata` id, keeping the 366 that had one. The script
+  now applies that same filter by default, so a future run cannot repeat this.
+  The remaining 26 states were not run -- the task turned out to be photos for
+  the places already here, not adding more places.
 - 2026-10-23 — **More real photographs, everywhere, not just Hyderabad.**
   `scripts/fetch_photos.py` only ever geosearched one city at a time.
   `--all` runs it across every place in the country that has none, in id
