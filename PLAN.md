@@ -221,6 +221,15 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (even later) — **Card A6: repo hygiene, CI workflow, commit skill.**
+  Removed the tracked `pagdandi-starter.zip` (its contents are already in the
+  repo) and generalized `.gitignore`'s starter-archive rule to `*-starter.zip`;
+  dropped the stale "Working name" line from the SPEC.md epigraph now that the
+  name is settled; added `.github/workflows/ci.yml` (ruff + pytest on 3.12,
+  `npm ci`/lint/test on Node 20, no Playwright yet); recreated
+  `.claude/skills/commit/SKILL.md` per PROMPT.md Prompt 3. Backend
+  `pytest -q` (227 passed) and frontend `npm run lint` + `npm run test`
+  (26 passed) all green locally before committing.
 - 2026-10-23 (later still) — **Search a state, and admin tied to the official account.**
   - Searching "Goa" found only the handful of places with "Goa" literally in
     their name (the `City` table has only Hyderabad, so a state had nowhere to

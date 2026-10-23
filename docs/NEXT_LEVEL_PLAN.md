@@ -115,7 +115,7 @@ No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on sit
   can't explain, revert that file and move on. The deadline beats tidiness.
 - **Done when:** each target ≤ ~60 lines; `pytest -q` green, same count.
 
-### A6 Repo hygiene + CI + commit skill `[ ]`
+### A6 Repo hygiene + CI + commit skill `[x]`
 - **Do:** `git rm pagdandi-starter.zip`; fix `.gitignore` (`*-starter.zip`);
   propose a one-line SPEC title/epigraph fix for the Truvel/Pagdandi naming (wait);
   add `.github/workflows/ci.yml` (ruff + pytest on Python 3.12; `npm ci`,
