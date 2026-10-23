@@ -1,7 +1,9 @@
 # CLAUDE.md — Truvel
 
-Project memory. Read this, then `SPEC.md` and the current phase in `PLAN.md`, at
-the start of every session before touching any file.
+Project memory. Read this, then `docs/CONTEXT_MAP.md`, then only the SPEC.md line
+ranges and the PLAN.md phase (or `docs/NEXT_LEVEL_PLAN.md` card) your task needs,
+before touching any file. Never open `docs/design-reference.html` (549 KB of
+embedded fonts); use the PNGs in `results/screens/`.
 
 ## What this is
 
