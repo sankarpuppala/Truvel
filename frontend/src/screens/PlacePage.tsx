@@ -26,6 +26,7 @@ import { Icon, Scene } from '../components/Icon';
 import { NameBlock } from '../components/NameBlock';
 import { PlaceThumb } from '../components/PlaceRow';
 import { categoryIcon, categoryLabel, categoryScene, REPORT_REASONS } from '../lib/categories';
+import { languageLabel } from '../lib/languages';
 import { clock, date, distance, num } from '../lib/format';
 import { getPosition, haptic, LocationError } from '../lib/geo';
 import type { CheckinResult, Place, StepVersion } from '../lib/types';
@@ -722,7 +723,7 @@ export function PlacePage() {
               (lang, index, all) =>
                 all.indexOf(lang) === index ? (
                   <option key={lang} value={lang}>
-                    {lang}
+                    {languageLabel(lang)}
                   </option>
                 ) : null,
             )}

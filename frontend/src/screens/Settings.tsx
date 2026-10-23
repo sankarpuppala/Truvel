@@ -14,37 +14,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api, ApiError } from '../lib/api';
+import { LANGUAGES } from '../lib/languages';
 import { useApp } from '../lib/app-state';
 import { Loading, Segmented } from '../components/common';
 import { Icon, StatusBar } from '../components/Icon';
 import type { City } from '../lib/types';
-
-/** Autonyms from SPEC §7.1 -- each language's name, in its own script. */
-const LANGUAGES: { code: string; autonym: string; english: string; rtl?: boolean }[] = [
-  { code: 'en', autonym: 'English', english: 'English' },
-  { code: 'hi', autonym: 'हिन्दी', english: 'Hindi' },
-  { code: 'te', autonym: 'తెలుగు', english: 'Telugu' },
-  { code: 'ta', autonym: 'தமிழ்', english: 'Tamil' },
-  { code: 'kn', autonym: 'ಕನ್ನಡ', english: 'Kannada' },
-  { code: 'ml', autonym: 'മലയാളം', english: 'Malayalam' },
-  { code: 'mr', autonym: 'मराठी', english: 'Marathi' },
-  { code: 'bn', autonym: 'বাংলা', english: 'Bengali' },
-  { code: 'gu', autonym: 'ગુજરાતી', english: 'Gujarati' },
-  { code: 'pa', autonym: 'ਪੰਜਾਫ਼ੀ', english: 'Punjabi' },
-  { code: 'or', autonym: 'ଓଡ଼ିଆ', english: 'Odia' },
-  { code: 'as', autonym: 'অসমীয়া', english: 'Assamese' },
-  { code: 'ur', autonym: 'اردو', english: 'Urdu', rtl: true },
-  { code: 'ks', autonym: 'كٰشُر', english: 'Kashmiri', rtl: true },
-  { code: 'sd', autonym: 'سنڌي', english: 'Sindhi', rtl: true },
-  { code: 'gom', autonym: 'कोंकणी', english: 'Konkani' },
-  { code: 'mai', autonym: 'मैथिली', english: 'Maithili' },
-  { code: 'doi', autonym: 'डोगरी', english: 'Dogri' },
-  { code: 'brx', autonym: 'बर’', english: 'Bodo' },
-  { code: 'ne', autonym: 'नेपाली', english: 'Nepali' },
-  { code: 'sa', autonym: 'संस्कृतम्', english: 'Sanskrit' },
-  { code: 'sat', autonym: 'ᱥᱟᱱᱛᱟᱲᱤ', english: 'Santali' },
-  { code: 'mni', autonym: 'ꯃꯤꯇꯩꯂꯣꯟ', english: 'Manipuri' },
-];
 
 /** City names in their own scripts, as the reference shows them. */
 const CITY_SCRIPTS: Record<string, { text: string; lang: string; rtl?: boolean }> = {
