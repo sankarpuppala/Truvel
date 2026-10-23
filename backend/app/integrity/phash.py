@@ -74,7 +74,7 @@ class PhashVerdict:
 def check_upload(
     new_hash: str,
     uploader_id: int | None,
-    place_id: int,
+    place_id: int | None,
     existing: list[dict],
     max_hamming: int | None = None,
 ) -> PhashVerdict:

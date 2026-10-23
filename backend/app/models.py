@@ -112,7 +112,11 @@ class PlaceName(SQLModel, table=True):
 
 class Media(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    place_id: int = Field(foreign_key="place.id", index=True)
+    # Null while "Add a place" step 1 has photos but no place yet
+    # (POST /places attaches it afterwards); never 0, which would be a
+    # foreign-key violation the moment it was inserted (invariant: never a
+    # shortcut that quietly breaks a constraint).
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id", index=True)
     user_id: Optional[int] = Field(default=None, foreign_key="user.id", index=True)
     kind: str = "photo"                                       # photo | video
     path_display: str = ""

@@ -221,6 +221,28 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (latest still) — **"Add a place" couldn't take a photo at all;
+  nine more cities finished seeding.**
+  - "Add a place" uploads step 1's photos before the place exists
+    (`POST /places/{id}/media` explicitly accepts `place_id=0` for this,
+    `POST /places` attaches them afterwards) -- but the row was inserted with
+    `place_id=0`, not a real place, which has always violated the foreign key
+    the moment SQLite's `PRAGMA foreign_keys=ON` checked it. No test ever
+    exercised this path, so it had likely never worked. `Media.place_id` is
+    now genuinely nullable (`NULL` while unattached, never the FK-violating
+    `0`); `db.py` rebuilds the existing table once, since SQLite has no
+    `ALTER COLUMN` to drop a `NOT NULL` (rename, recreate from the model, copy
+    the 8,483 rows across, drop the old one -- verified idempotent and
+    row-count-preserving). Verified against the live server: upload, then
+    create the place, then the photo is attached.
+  - Chennai, Bengaluru, Kochi, Mumbai, Kolkata, Ahmedabad, Amritsar,
+    Bhubaneswar and Guwahati finished seeding (1,530 places; Settings' "Your
+    city" now has 10 real options, not 1). `merge_duplicates.py` found 537
+    records shared with the existing Wikidata import in the same areas
+    (Golconda Fort, Victoria Memorial, ...) and merged them: 18,857 -> 18,320
+    places. The photo-fetch pass for everywhere-missing-a-photo also finished:
+    +104 (mostly used up on the new cities' places); 8,408 of 18,744 had one
+    before the merge (44.9%).
 - 2026-10-23 (latest) — **Nearby says where you are, and the deck no longer
   hides in-radius places forever.**
   - Nearby's header always read "Hyderabad" (the saved home city), never

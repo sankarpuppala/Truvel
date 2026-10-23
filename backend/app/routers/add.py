@@ -271,7 +271,7 @@ def create_place(
     # Attach media uploaded in step 1, which had no place id yet.
     for media_id in body.media_ids[:12]:
         media = session.get(Media, media_id)
-        if media is not None and media.user_id == user.id and media.place_id == 0:
+        if media is not None and media.user_id == user.id and media.place_id is None:
             media.place_id = int(place.id)
             media.shot_here = on_site
             session.add(media)
@@ -362,14 +362,18 @@ async def upload_media(
             select(Media).where(Media.phash != None, Media.status == "ok")  # noqa: E711
         ).all()
     ]
-    verdict = check_upload(new_hash, int(user.id), place_id, existing)
+    # 0 on the wire means "no place yet" (step 1 of Add a place); stored and
+    # compared as NULL, never 0 -- 0 is not a place id and would violate the
+    # foreign key the moment it was inserted.
+    attached_to = place_id or None
+    verdict = check_upload(new_hash, int(user.id), attached_to, existing)
     if verdict.action == "reject":
         raise bad_request(verdict.message, "duplicate_photo", {"media_id": verdict.matched_media_id})
     if verdict.action == "skip":
         return {"media": None, "skipped": True, "message": verdict.message}
 
     media = Media(
-        place_id=place_id,
+        place_id=attached_to,
         user_id=int(user.id),
         kind="video" if kind == "video" else "photo",
         caption=caption,

@@ -367,3 +367,68 @@ def test_deck_page_is_stable_when_radius_is_unchanged(client, session):
     first = client.get(f"/api/deck?lat={KHAJAGUDA[0]}&lng={KHAJAGUDA[1]}&radius_km=10").json()
     again = client.get(f"/api/deck?lat={KHAJAGUDA[0]}&lng={KHAJAGUDA[1]}&radius_km=10").json()
     assert [c["id"] for c in first["cards"]] == [c["id"] for c in again["cards"]]
+
+
+# --- uploading a photo before the place exists (Add a place, step 1) ------- #
+
+def _jpeg_bytes(colour=(80, 110, 60)) -> bytes:
+    import io as _io
+
+    from PIL import Image
+
+    img = Image.new("RGB", (640, 480), colour)
+    for x in range(0, 640, 40):
+        for y in range(0, 480, 40):
+            shade = ((x + y) // 40) % 2
+            img.paste((200, 200, 200) if shade else (20, 20, 20), (x, y, x + 20, y + 20))
+    buf = _io.BytesIO()
+    img.save(buf, format="JPEG", quality=92)
+    return buf.getvalue()
+
+
+def test_you_can_upload_a_photo_before_the_place_exists(client, session):
+    """Add a place step 1: a photo with no place yet (SPEC §8.6). This used to
+    insert place_id=0, which is not a place and always violated the foreign
+    key -- "something went wrong" on every upload."""
+    make_user(session, "founder", email="founder@example.com")
+    client.post("/api/auth/login", json={"identifier": "founder", "password": PASSWORD})
+
+    up = client.post(
+        "/api/places/0/media",
+        files={"file": ("photo.jpg", _jpeg_bytes(), "image/jpeg")},
+        data={"kind": "photo", "caption": "A rock"},
+    )
+    assert up.status_code == 200, up.text
+    media_id = up.json()["media"]["id"]
+    assert session.get(Media, media_id).place_id is None
+
+    created = client.post(
+        "/api/places",
+        json={
+            "lat": 17.41, "lng": 78.41, "name": "A New Rock",
+            "category": "hill_trek", "media_ids": [media_id],
+        },
+    )
+    assert created.status_code == 200, created.text
+    place_id = created.json()["place"]["id"]
+    session.expire_all()
+    assert session.get(Media, media_id).place_id == place_id
+
+
+def test_a_second_photo_with_no_place_yet_is_not_a_duplicate_of_the_first(client, session):
+    """Two different, unattached uploads must not collide on place_id=None."""
+    make_user(session, "founder2", email="founder2@example.com")
+    client.post("/api/auth/login", json={"identifier": "founder2", "password": PASSWORD})
+
+    first = client.post(
+        "/api/places/0/media",
+        files={"file": ("a.jpg", _jpeg_bytes((10, 20, 30)), "image/jpeg")},
+        data={"kind": "photo", "caption": "First"},
+    )
+    second = client.post(
+        "/api/places/0/media",
+        files={"file": ("b.jpg", _jpeg_bytes((200, 210, 220)), "image/jpeg")},
+        data={"kind": "photo", "caption": "Second"},
+    )
+    assert first.status_code == 200 and second.status_code == 200
+    assert first.json()["media"]["id"] != second.json()["media"]["id"]

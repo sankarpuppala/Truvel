@@ -74,9 +74,37 @@ FTS_SETUP = [
 ]
 
 
+def _fix_media_place_id_nullable(conn) -> None:  # noqa: ANN001
+    """`media.place_id` must allow NULL (a photo uploaded before its place
+    exists yet, SPEC §8.6 step 1), but SQLite has no `ALTER COLUMN`, so an
+    existing table built with the old `NOT NULL` has to be rebuilt: rename,
+    recreate from the current model, copy the rows across, drop the old one.
+    This runs before `create_all`, which never alters an existing table.
+    """
+    row = conn.execute(
+        text("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'media'")
+    ).first()
+    if row is None or "place_id INTEGER NOT NULL" not in (row[0] or ""):
+        return  # no media table yet (create_all makes it right), or already fixed
+    conn.execute(text("ALTER TABLE media RENAME TO media_old"))
+    # SQLite does not rename a table's indexes along with it, so the old ones
+    # (still pointing at media_old, under the names the new table wants) have
+    # to go before the new table can recreate them.
+    for index in conn.execute(
+        text("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'media_old'")
+    ).fetchall():
+        conn.execute(text(f'DROP INDEX "{index[0]}"'))
+    SQLModel.metadata.tables["media"].create(conn)
+    columns = ", ".join(c.name for c in SQLModel.metadata.tables["media"].columns)
+    conn.execute(text(f"INSERT INTO media ({columns}) SELECT {columns} FROM media_old"))
+    conn.execute(text("DROP TABLE media_old"))
+
+
 def init_db() -> None:
     """Create tables, the FTS index and its triggers. Safe to call repeatedly."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with engine.begin() as conn:
+        _fix_media_place_id_nullable(conn)
     SQLModel.metadata.create_all(engine)
     with engine.begin() as conn:
         # SQLModel creates tables but never alters an existing one, and the
