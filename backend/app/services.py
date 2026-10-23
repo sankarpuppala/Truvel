@@ -334,7 +334,11 @@ def place_payload(
         "id": pid,
         "name": name_block(session, place, user),
         "category": place.category,
-        "area": place.area,
+        # The nearest neighbourhood (only ever set for a deeply-seeded city)
+        # if there is one, else the nearest town or district Wikidata records
+        # (SPEC §6.2's `locality`) -- so a place shows where it actually is,
+        # not just the state, and not only for the handful of large cities.
+        "area": place.area or place.locality or "",
         "state": place.state,
         "lat": out_lat,
         "lng": out_lng,

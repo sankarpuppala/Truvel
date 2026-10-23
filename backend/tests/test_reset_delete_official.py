@@ -290,3 +290,19 @@ def test_searching_within_a_city_stays_scoped_to_it(client, session):
     names = {p["name"]["primary"]["text"] for p in out["places"]}
     assert names == {"Birla Mandir Temple"}
     assert "Birla Mandir, Jaipur" not in names
+
+
+def test_place_location_falls_back_to_locality_not_just_area(client, session):
+    """Most places have no neighbourhood (only a deeply-seeded city does); the
+    nearest town Wikidata records should still show, not just the state."""
+    city = make_city(session)
+    with_area = make_place(session, city, "Has Area", area="Banjara Hills")
+    with_locality = make_place(session, None, "Has Locality", locality="Tirupati")
+    with_neither = make_place(session, None, "Has Neither")
+
+    a = client.get(f"/api/places/{with_area.id}").json()
+    b = client.get(f"/api/places/{with_locality.id}").json()
+    c = client.get(f"/api/places/{with_neither.id}").json()
+    assert a["area"] == "Banjara Hills"
+    assert b["area"] == "Tirupati"
+    assert c["area"] == ""
