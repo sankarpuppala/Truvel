@@ -125,17 +125,20 @@ ORDER BY ?stateLabel
 
 
 def items_query(class_qid: str, languages: list[str]) -> str:
-    """Items of one class in India, with labels, image, sitelinks and state.
+    """Items of one class in India, with labels, image, sitelinks, state and locality.
 
     `P131*` walks the administrative hierarchy to any depth, so a temple inside
-    a district inside a state still resolves to the state. `OPTIONAL` keeps an
-    item that has no image or no resolvable state.
+    a district inside a state still resolves to the state. `?locality` is the
+    single nearest step of that same chain -- usually the city or town the
+    item is actually in ("Tirupati"), which is what search needs to let
+    someone browse a town the way it already lets them browse a state;
+    `OPTIONAL` keeps an item that has no image, state or locality.
     """
     codes = ["en"] + [code for code in languages if code != "en"]
     lang_list = ",".join(codes)
     label_langs = ",".join(f'"{code}"' for code in codes)
     return f"""
-SELECT ?item ?coord ?image ?sitelinks ?state ?stateLabel ?heritage ?voyage
+SELECT ?item ?coord ?image ?sitelinks ?state ?stateLabel ?locality ?localityLabel ?heritage ?voyage
        (GROUP_CONCAT(DISTINCT CONCAT(?labelLang, "\\u001f", ?label); separator="\\u001e") AS ?labels)
 WHERE {{
   ?item wdt:P31/wdt:P279* wd:{class_qid} ;
@@ -149,13 +152,14 @@ WHERE {{
     VALUES ?stateCls {{ {" ".join(STATE_CLASSES)} }}
     ?state wdt:P31 ?stateCls .
   }}
+  OPTIONAL {{ ?item wdt:P131 ?locality. }}
   OPTIONAL {{ ?voyage schema:about ?item ; schema:isPartOf <https://en.wikivoyage.org/>. }}
   ?item rdfs:label ?label .
   BIND(LANG(?label) AS ?labelLang)
   FILTER(?labelLang IN ({label_langs}))
   SERVICE wikibase:label {{ bd:serviceParam wikibase:language "{lang_list}". }}
 }}
-GROUP BY ?item ?coord ?image ?sitelinks ?state ?stateLabel ?heritage ?voyage
+GROUP BY ?item ?coord ?image ?sitelinks ?state ?stateLabel ?locality ?localityLabel ?heritage ?voyage
 """
 
 
@@ -213,6 +217,11 @@ def upsert_item(session: Session, row: dict, category: str) -> tuple[Place | Non
 
     sitelinks = int((row.get("sitelinks") or {}).get("value", 0) or 0)
     state = (row.get("stateLabel") or {}).get("value") or None
+    locality = (row.get("localityLabel") or {}).get("value") or None
+    if locality and state and locality == state:
+        # The one-hop P131 landed straight on the state (a sparsely tagged
+        # item): that is not a town to browse, it is the state we already have.
+        locality = None
     image = (row.get("image") or {}).get("value") or ""
     heritage = bool((row.get("heritage") or {}).get("value"))
     voyage = (row.get("voyage") or {}).get("value") or ""
@@ -233,6 +242,8 @@ def upsert_item(session: Session, row: dict, category: str) -> tuple[Place | Non
     place.status = "verified"
     if state and not place.state:
         place.state = state
+    if locality and not place.locality:
+        place.locality = locality
     city = city_for(session, place.lat, place.lng)
     if city is not None:
         place.city_id = int(city.id)
@@ -337,7 +348,9 @@ def seed(classes: list[str], refresh: bool = False, limit_classes: int | None = 
             category = CLASS_CATEGORIES.get(qid, "other")
             print(f"Class {qid} -> {category}")
             try:
-                payload = run_sparql(items_query(qid, languages), f"class-{qid}", refresh)
+                # v2: the query now also asks for ?locality, so a v1 cache file
+                # (same class, an older query) must not be reused silently.
+                payload = run_sparql(items_query(qid, languages), f"class-{qid}-v2", refresh)
             except Exception as exc:  # noqa: BLE001 - one class failing is survivable
                 print(f"  ! {type(exc).__name__}: {exc} (skipping)")
                 summary["per_class"][qid] = "failed"

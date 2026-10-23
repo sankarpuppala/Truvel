@@ -79,6 +79,13 @@ def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(engine)
     with engine.begin() as conn:
+        # SQLModel creates tables but never alters an existing one, and the
+        # project has no migration tool on purpose (CLAUDE.md: no Postgres, no
+        # Alembic). One `ADD COLUMN` is cheaper than the tool that would
+        # manage it, same pattern as `scripts/official_account.py`.
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(place)")).fetchall()}
+        if "locality" not in columns:
+            conn.execute(text("ALTER TABLE place ADD COLUMN locality TEXT"))
         for stmt in FTS_SETUP:
             conn.execute(text(stmt))
         # Backfill anything inserted before the triggers existed.

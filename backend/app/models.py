@@ -89,6 +89,10 @@ class Place(SQLModel, table=True):
     safety: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     activities: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     area: str = ""                                            # neighbourhood label
+    # The nearest city/town Wikidata records (its one-hop P131, SPEC §6.2) or
+    # OSM's `addr:city`/`is_in` tag -- not a state, a real place to browse by
+    # (e.g. "Tirupati"). Blank where neither source gave one.
+    locality: Optional[str] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

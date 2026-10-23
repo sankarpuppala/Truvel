@@ -246,3 +246,33 @@ def test_admin_controls_are_for_the_official_account_only(client, session):
     client.post("/api/auth/logout")
     client.post("/api/auth/login", json={"identifier": "truvel2", "password": PASSWORD})
     assert client.get("/api/admin/cases").status_code == 200
+
+
+def test_searching_a_locality_surfaces_it_and_browsing_it_works(client, session):
+    city = make_city(session)
+    make_place(
+        session, city, "Tirumala Venkateswara Temple", state="Andhra Pradesh",
+        locality="Tirupati", lat=13.68, lng=79.35,
+    )
+    make_place(
+        session, city, "Govindaraja Temple, Tirupati", state="Andhra Pradesh",
+        locality="Tirupati", lat=13.65, lng=79.42,
+    )
+    make_place(
+        session, city, "Something in Chennai", state="Tamil Nadu",
+        locality="Chennai", lat=13.08, lng=80.27,
+    )
+
+    result = client.get("/api/search?q=tirupati").json()
+    assert [loc["name"] for loc in result["localities"]] == ["Tirupati"]
+    assert result["localities"][0]["place_count"] == 2
+
+    out = client.get("/api/localities/tirupati/places").json()
+    assert out["total"] == 2
+    names = {p["name"]["primary"]["text"] for p in out["places"]}
+    assert names == {"Tirumala Venkateswara Temple", "Govindaraja Temple, Tirupati"}
+
+
+def test_unknown_locality_404s(client, session):
+    make_city(session)
+    assert client.get("/api/localities/atlantis/places").status_code == 404

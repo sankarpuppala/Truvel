@@ -124,6 +124,53 @@ def state_payload(session: DbSession, state: str) -> dict:
     }
 
 
+def locality_slug(locality: str) -> str:
+    return locality.lower().replace(" ", "-")
+
+
+def _known_localities(session: DbSession) -> list[str]:
+    """Every distinct, non-empty `locality` a place carries (SPEC §6.2)."""
+    return [
+        str(s)
+        for s in session.exec(
+            select(Place.locality).distinct().where(Place.locality != None)  # noqa: E711
+        ).all()
+        if s
+    ]
+
+
+def locality_payload(session: DbSession, locality: str) -> dict:
+    """The same shape as `city_payload`, for a town Wikidata named but we never
+    seeded as a `City` -- "Tirupati" should be as browsable as "Hyderabad" is,
+    not just findable by typing a word that happens to be in a place's name.
+
+    Two different towns sharing a name (rare, but India is large) would be
+    merged under one slug here; a real `City` row never has that problem,
+    which is the honest reason this stays a fallback and not a replacement.
+    """
+    total = session.exec(
+        select(func.count())
+        .select_from(Place)
+        .where(Place.locality == locality, Place.status != "hidden")
+    ).one()
+    state = session.exec(
+        select(Place.state).where(Place.locality == locality, Place.state != None)  # noqa: E711
+    ).first()
+    return {
+        "id": None,
+        "slug": locality_slug(locality),
+        "name": locality,
+        "state": state or "",
+        "centre": None,
+        "bbox": None,
+        "regional_langs": regional_langs(state) if state else [],
+        "names": {},
+        "place_count": int(total or 0),
+        "community_count": 0,
+        "neighbourhood_count": 0,
+    }
+
+
 def _rank_places(
     session: DbSession,
     places: list[Place],
@@ -417,6 +464,52 @@ def state_places(
     return {"city": state_payload(session, state), **result}
 
 
+@router.get("/localities/{slug}/places")
+def locality_places(
+    slug: str,
+    sort: str = Query("top"),
+    cat: str | None = None,
+    verified: int = 0,
+    lat: float | None = None,
+    lng: float | None = None,
+    page: int = 1,
+    q: str | None = None,
+    session: DbSession = Depends(get_session),
+    user: User | None = Depends(current_user_optional),
+) -> dict:
+    """One page of ranked places in a town ("Tirupati") that has no `City` row.
+
+    The twin of `state_places`, one administrative step down: a place's
+    `locality` column (SPEC §6.2) is Wikidata's nearest P131 step, which is
+    usually the actual city or town rather than the whole state.
+    """
+    if sort not in SORTS:
+        sort = "top"
+    localities = {locality_slug(loc): loc for loc in _known_localities(session)}
+    locality = localities.get(slug)
+    if locality is None:
+        raise not_found("No such place to browse.", "no_locality")
+
+    places = list(
+        session.exec(_scoped_query(Place.locality == locality, sort, cat, verified)).all()
+    )
+    if q:
+        allowed = set(fts_query(session, q, limit=500))
+        places = [p for p in places if int(p.id) in allowed]
+
+    centre = None
+    if places:
+        centre = (
+            sum(p.lat for p in places) / len(places),
+            sum(p.lng for p in places) / len(places),
+        )
+    result = _rank_places(
+        session, places, sort=sort, lat=lat, lng=lng, centre=centre, page=page,
+        now=utcnow(), user=user,
+    )
+    return {"city": locality_payload(session, locality), **result}
+
+
 @router.get("/search")
 def search(
     q: str = Query(min_length=1),
@@ -425,19 +518,24 @@ def search(
     session: DbSession = Depends(get_session),
     user: User | None = Depends(current_user_optional),
 ) -> dict:
-    """Search cities, states and places by any name in any script (SPEC §7.4).
+    """Search cities, states, towns and places by any name in any script (SPEC §7.4).
 
-    "Goa" should find the state of Goa to browse, not just the handful of
-    places whose own name happens to contain the word "Goa" -- that second
-    kind of match is still useful (someone really is looking for "Goa Fort"),
-    so both are returned and the state comes first.
+    "Goa" should find the state of Goa to browse, and "Tirupati" should find
+    the town of Tirupati, not just the handful of places whose own name
+    happens to contain that word -- that second kind of match is still useful
+    (someone really is looking for "Goa Fort"), so all of these are returned,
+    with a whole place to browse offered before individual places.
     """
+    needle = q.strip().lower()
     cities = list(
         session.exec(
             select(City).where(City.name_en.ilike(f"%{q}%")).order_by(City.name_en).limit(5)
         ).all()
     )
-    states = [s for s in _known_states(session) if q.strip().lower() in s.lower()][:5]
+    states = [s for s in _known_states(session) if needle in s.lower()][:5]
+    localities = [
+        loc for loc in _known_localities(session) if needle in loc.lower() and loc not in states
+    ][:5]
     place_ids = fts_query(session, q, limit=30)
     places = []
     if place_ids:
@@ -461,6 +559,7 @@ def search(
         "query": q,
         "cities": [city_payload(session, c) for c in cities],
         "states": [state_payload(session, s) for s in states],
+        "localities": [locality_payload(session, loc) for loc in localities],
         "areas": [{"id": h.id, "name": h.name, "city_id": h.city_id} for h in hoods],
         "places": places,
     }

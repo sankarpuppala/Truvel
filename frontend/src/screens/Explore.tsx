@@ -26,7 +26,12 @@ export function Explore() {
   const category = params.get('cat') ?? 'all';
   const verifiedOnly = params.get('verified') === '1';
   const stateSlug = params.get('state');
-  const citySlug = stateSlug ? null : (params.get('city') ?? me?.home_city?.slug ?? 'hyderabad');
+  const localitySlug = params.get('locality');
+  const citySlug =
+    stateSlug || localitySlug
+      ? null
+      : (params.get('city') ?? me?.home_city?.slug ?? 'hyderabad');
+  const scoped = Boolean(stateSlug || localitySlug);
 
   const [query, setQuery] = useState('');
   const [city, setCity] = useState<City | null>(null);
@@ -38,6 +43,7 @@ export function Explore() {
   const [searchResults, setSearchResults] = useState<{
     cities: City[];
     states: City[];
+    localities: City[];
     places: Place[];
   } | null>(null);
 
@@ -69,7 +75,9 @@ export function Explore() {
     };
     const request = stateSlug
       ? api.statePlaces(stateSlug, options)
-      : api.cityPlaces(citySlug ?? 'hyderabad', options);
+      : localitySlug
+        ? api.localityPlaces(localitySlug, options)
+        : api.cityPlaces(citySlug ?? 'hyderabad', options);
     request
       .then((response) => {
         if (cancelled) return;
@@ -89,7 +97,18 @@ export function Explore() {
     return () => {
       cancelled = true;
     };
-  }, [stateSlug, citySlug, sort, category, verifiedOnly, page, position?.lat, position?.lng, toast]);
+  }, [
+    stateSlug,
+    localitySlug,
+    citySlug,
+    sort,
+    category,
+    verifiedOnly,
+    page,
+    position?.lat,
+    position?.lng,
+    toast,
+  ]);
 
   // Search runs as you type, after a short pause.
   useEffect(() => {
@@ -101,7 +120,12 @@ export function Explore() {
       void api
         .search(query.trim(), position)
         .then((response) =>
-          setSearchResults({ cities: response.cities, states: response.states, places: response.places }),
+          setSearchResults({
+            cities: response.cities,
+            states: response.states,
+            localities: response.localities,
+            places: response.places,
+          }),
         )
         .catch(() => setSearchResults(null));
     }, 220);
@@ -134,7 +158,7 @@ export function Explore() {
             </button>
           )}
         </div>
-        {!stateSlug && (
+        {!scoped && (
           <Segmented
             label="List or map"
             value={view}
@@ -147,12 +171,13 @@ export function Explore() {
         )}
       </div>
     ),
-    [query, update, view, stateSlug],
+    [query, update, view, scoped],
   );
 
-  // A state has no bbox or fog to draw (see FogMap): the map toggle is
-  // hidden above, and this guards a stale ?view=map left in the URL.
-  if (view === 'map' && !stateSlug) {
+  // A state or town browsed by its column rather than a seeded City has no
+  // bbox or fog to draw (see FogMap): the map toggle is hidden above, and
+  // this guards a stale ?view=map left in the URL.
+  if (view === 'map' && !scoped) {
     return (
       <>
         <FogMap
@@ -176,7 +201,9 @@ export function Explore() {
 
       {searchResults ? (
         <div className="scr-body">
-          {(searchResults.states.length > 0 || searchResults.cities.length > 0) && (
+          {(searchResults.states.length > 0 ||
+            searchResults.localities.length > 0 ||
+            searchResults.cities.length > 0) && (
             <div style={{ padding: '4px 16px 0' }}>
               <h4
                 style={{
@@ -187,11 +214,7 @@ export function Explore() {
                   margin: '8px 0',
                 }}
               >
-                {searchResults.states.length > 0 && searchResults.cities.length > 0
-                  ? 'States & cities'
-                  : searchResults.states.length > 0
-                    ? 'States'
-                    : 'Cities'}
+                Places to browse
               </h4>
               {searchResults.states.map((entry) => (
                 <button
@@ -202,12 +225,34 @@ export function Explore() {
                   onClick={() => {
                     setQuery('');
                     setPage(1);
-                    update({ state: entry.slug, city: null, view: 'list' });
+                    update({ state: entry.slug, city: null, locality: null, view: 'list' });
                   }}
                 >
                   <div>
                     <b>{entry.name}</b>
                     <span>{num(entry.place_count)} places across the state</span>
+                  </div>
+                  <Icon name="i-chevr" size={18} />
+                </button>
+              ))}
+              {searchResults.localities.map((entry) => (
+                <button
+                  key={`locality-${entry.slug}`}
+                  type="button"
+                  className="cand"
+                  style={{ width: '100%', marginBottom: 6 }}
+                  onClick={() => {
+                    setQuery('');
+                    setPage(1);
+                    update({ locality: entry.slug, city: null, state: null, view: 'list' });
+                  }}
+                >
+                  <div>
+                    <b>{entry.name}</b>
+                    <span>
+                      {entry.state ? `${entry.state} · ` : ''}
+                      {num(entry.place_count)} places
+                    </span>
                   </div>
                   <Icon name="i-chevr" size={18} />
                 </button>
@@ -221,7 +266,7 @@ export function Explore() {
                   onClick={() => {
                     setQuery('');
                     setPage(1);
-                    update({ city: entry.slug, state: null });
+                    update({ city: entry.slug, state: null, locality: null });
                   }}
                 >
                   <div>
