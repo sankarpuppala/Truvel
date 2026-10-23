@@ -231,7 +231,11 @@ def current_user(user: User | None = Depends(current_user_optional)) -> User:
 
 
 def require_admin(user: User = Depends(current_user)) -> User:
-    if user.role != "admin":
+    """Admin controls are for the one official account, not a role anyone
+    could be given later. `official` is the authoritative flag (CLAUDE.md:
+    the official account is a publisher with special standing); `role` is
+    kept only as a display label, never as a gate."""
+    if not user.official:
         raise forbidden("Admins only.", "not_admin")
     return user
 

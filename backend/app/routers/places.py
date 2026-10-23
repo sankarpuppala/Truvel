@@ -76,6 +76,190 @@ def city_payload(session: DbSession, city: City) -> dict:
     }
 
 
+def state_slug(state: str) -> str:
+    return state.lower().replace(" ", "-")
+
+
+def _known_states(session: DbSession) -> list[str]:
+    """Every distinct, non-empty `state` a place carries."""
+    return [
+        str(s)
+        for s in session.exec(
+            select(Place.state).distinct().where(Place.state != None)  # noqa: E711
+        ).all()
+        if s
+    ]
+
+
+def state_payload(session: DbSession, state: str) -> dict:
+    """The same shape as `city_payload`, for a state that has no `City` row.
+
+    Most of India is not one of the handful of cities we seed deeply -- a
+    place's `state` column (set at import time, SPEC §6.2/§6.1) is what lets
+    someone browse "Goa" or "Kerala" as a whole without us inventing a bbox or
+    a fog map for an area that size.
+    """
+    total = session.exec(
+        select(func.count())
+        .select_from(Place)
+        .where(Place.state == state, Place.status != "hidden")
+    ).one()
+    community = session.exec(
+        select(func.count())
+        .select_from(Place)
+        .where(Place.state == state, Place.source == "community", Place.status != "hidden")
+    ).one()
+    return {
+        "id": None,
+        "slug": state_slug(state),
+        "name": state,
+        "state": state,
+        "centre": None,
+        "bbox": None,
+        "regional_langs": regional_langs(state),
+        "names": {},
+        "place_count": int(total or 0),
+        "community_count": int(community or 0),
+        "neighbourhood_count": 0,
+    }
+
+
+def _rank_places(
+    session: DbSession,
+    places: list[Place],
+    *,
+    sort: str,
+    lat: float | None,
+    lng: float | None,
+    centre: tuple[float, float] | None,
+    page: int,
+    now: datetime,
+    user: User | None,
+) -> dict:
+    """Sort, paginate and build payloads for one candidate set.
+
+    Shared by `city_places` and `state_places`: the five sorts (SPEC
+    §9.1-9.3) do not care whether the candidates came from one city's bbox or
+    a whole state's `state` column, only from the list they are given.
+    """
+    ids = [int(p.id) for p in places]
+    likes, viewers, visits = _counts(session, ids)
+
+    def distance_of(p: Place) -> float:
+        if lat is not None and lng is not None:
+            return haversine_km(lat, lng, p.lat, p.lng)
+        if centre is not None:
+            return haversine_km(centre[0], centre[1], p.lat, p.lng)
+        return 0.0
+
+    def _tiebreak(place: Place) -> tuple[int, int]:
+        """How to order places nothing has been said about yet.
+
+        On a fresh install every place has nought likes and nought viewers, so
+        the Wilson bound is nought for all of them and the sort does nothing.
+        Falling back to how many Wikipedias describe a place puts Golconda Fort
+        above an unnamed viewpoint without inventing any engagement, and the id
+        keeps the order the same between requests. Once anyone likes anything,
+        Wilson decides and this is never reached.
+        """
+        return (-place.sitelinks, int(place.id or 0))
+
+    if sort == "top":
+        places.sort(
+            key=lambda p: (
+                -wilson_lb(likes.get(int(p.id), 0), viewers.get(int(p.id), 0)),
+                -likes.get(int(p.id), 0),
+                *_tiebreak(p),
+            )
+        )
+    elif sort == "liked":
+        places.sort(key=lambda p: (-likes.get(int(p.id), 0), *_tiebreak(p)))
+    elif sort == "gems":
+        earned = [
+            p
+            for p in places
+            if is_gem_eligible(p.status, bool(p.fragile), visits.get(int(p.id), 0))
+        ]
+        earned.sort(
+            key=lambda p: -gem_score(
+                likes.get(int(p.id), 0), viewers.get(int(p.id), 0), p.fame
+            )
+        )
+        # Cold start: until people have visited, list the little-known places
+        # that have a real photograph, after the ones that have earned a place.
+        # Nothing about them is invented; they simply have no visits yet.
+        earned_ids = {int(p.id) for p in earned}
+        photographed = _photographed(session, ids)
+        waiting = [
+            p
+            for p in places
+            if int(p.id) not in earned_ids
+            and p.fame == "hidden"
+            and not p.fragile
+            and int(p.id) in photographed
+        ]
+        waiting.sort(key=lambda p: int(p.id))
+        places = earned + waiting
+    elif sort == "trending":
+        events = _events_for_trending(session, ids, now)
+        places.sort(key=lambda p: -trending_score(events.get(int(p.id), []), now))
+    else:  # near
+        places.sort(key=distance_of)
+
+    total = len(places)
+    page = max(1, page)
+    window = places[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
+
+    out = []
+    for rank, place in enumerate(window, start=(page - 1) * PAGE_SIZE + 1):
+        payload = services.place_payload(session, place, user, lat=lat, lng=lng, now=now)
+        payload["rank"] = rank
+        payload["wilson"] = round(
+            wilson_lb(likes.get(int(place.id), 0), viewers.get(int(place.id), 0)), 4
+        )
+        payload["is_gem"] = (
+            is_gem_eligible(place.status, bool(place.fragile), visits.get(int(place.id), 0))
+            and place.fame in ("hidden", "known")
+            and payload["wilson"] >= 0.3
+        )
+        if lat is None or lng is None:
+            payload["distance_km"] = round(distance_of(place), 2)
+        out.append(payload)
+
+    # Trending badge: the top 3 of the trending sort, so the badge agrees with
+    # the tab rather than being a second definition.
+    trending_ids: set[int] = set()
+    if ids:
+        events = _events_for_trending(session, ids, now)
+        ranked = sorted(ids, key=lambda pid: -trending_score(events.get(pid, []), now))
+        trending_ids = {pid for pid in ranked[:3] if trending_score(events.get(pid, []), now) > 0}
+    for payload in out:
+        payload["is_trending"] = payload["id"] in trending_ids
+
+    return {
+        "sort": sort,
+        "explainer": SORT_EXPLAINERS[sort],
+        "total": total,
+        "page": page,
+        "page_size": PAGE_SIZE,
+        "places": out,
+    }
+
+
+def _scoped_query(base: Place, sort: str, cat: str | None, verified: int):
+    query = select(Place).where(base, Place.status != "hidden")
+    if cat and cat != "all":
+        query = query.where(Place.category == cat)
+    if verified:
+        query = query.where(Place.status == "verified")
+    # Top, Hidden gems and Trending only recommend verified places (AC-15).
+    if sort in ("top", "gems", "trending"):
+        query = query.where(Place.status == "verified")
+    if sort == "gems":
+        query = query.where(Place.fragile == False)  # noqa: E712
+    return query
+
+
 @router.get("/cities")
 def list_cities(session: DbSession = Depends(get_session)) -> dict:
     cities = session.exec(select(City).order_by(City.name_en)).all()
@@ -177,125 +361,60 @@ def city_places(
     if city is None:
         raise not_found("No such city.", "no_city")
 
-    now = utcnow()
-    query = select(Place).where(Place.city_id == city.id, Place.status != "hidden")
-    if cat and cat != "all":
-        query = query.where(Place.category == cat)
-    if verified:
-        query = query.where(Place.status == "verified")
-    # Top, Hidden gems and Trending only recommend verified places (AC-15).
-    if sort in ("top", "gems", "trending"):
-        query = query.where(Place.status == "verified")
-    if sort == "gems":
-        query = query.where(Place.fragile == False)  # noqa: E712
-
-    places = list(session.exec(query).all())
-
+    places = list(session.exec(_scoped_query(Place.city_id == city.id, sort, cat, verified)).all())
     if q:
         allowed = set(fts_query(session, q, limit=500))
         places = [p for p in places if int(p.id) in allowed]
 
-    ids = [int(p.id) for p in places]
-    likes, viewers, visits = _counts(session, ids)
+    result = _rank_places(
+        session, places, sort=sort, lat=lat, lng=lng,
+        centre=(city.centre_lat, city.centre_lng), page=page, now=utcnow(), user=user,
+    )
+    return {"city": city_payload(session, city), **result}
 
-    def distance_of(p: Place) -> float:
-        if lat is None or lng is None:
-            return haversine_km(city.centre_lat, city.centre_lng, p.lat, p.lng)
-        return haversine_km(lat, lng, p.lat, p.lng)
 
-    def _tiebreak(place: Place) -> tuple[int, int]:
-        """How to order places nothing has been said about yet.
+@router.get("/states/{slug}/places")
+def state_places(
+    slug: str,
+    sort: str = Query("top"),
+    cat: str | None = None,
+    verified: int = 0,
+    lat: float | None = None,
+    lng: float | None = None,
+    page: int = 1,
+    q: str | None = None,
+    session: DbSession = Depends(get_session),
+    user: User | None = Depends(current_user_optional),
+) -> dict:
+    """One page of ranked places across a whole state (SPEC §8.4).
 
-        On a fresh install every place has nought likes and nought viewers, so
-        the Wilson bound is nought for all of them and the sort does nothing.
-        Falling back to how many Wikipedias describe a place puts Golconda Fort
-        above an unnamed viewpoint without inventing any engagement, and the id
-        keeps the order the same between requests. Once anyone likes anything,
-        Wilson decides and this is never reached.
-        """
-        return (-place.sitelinks, int(place.id or 0))
+    Truvel only seeds a handful of cities deeply; everywhere else, a place's
+    `state` column is the only scope there is to browse by, so search surfaces
+    it and this is where tapping it lands (see `search()` below).
+    """
+    if sort not in SORTS:
+        sort = "top"
+    states = {state_slug(s): s for s in _known_states(session)}
+    state = states.get(slug)
+    if state is None:
+        raise not_found("No such state.", "no_state")
 
-    if sort == "top":
-        places.sort(
-            key=lambda p: (
-                -wilson_lb(likes.get(int(p.id), 0), viewers.get(int(p.id), 0)),
-                -likes.get(int(p.id), 0),
-                *_tiebreak(p),
-            )
+    places = list(session.exec(_scoped_query(Place.state == state, sort, cat, verified)).all())
+    if q:
+        allowed = set(fts_query(session, q, limit=500))
+        places = [p for p in places if int(p.id) in allowed]
+
+    centre = None
+    if places:
+        centre = (
+            sum(p.lat for p in places) / len(places),
+            sum(p.lng for p in places) / len(places),
         )
-    elif sort == "liked":
-        places.sort(key=lambda p: (-likes.get(int(p.id), 0), *_tiebreak(p)))
-    elif sort == "gems":
-        earned = [
-            p
-            for p in places
-            if is_gem_eligible(p.status, bool(p.fragile), visits.get(int(p.id), 0))
-        ]
-        earned.sort(
-            key=lambda p: -gem_score(
-                likes.get(int(p.id), 0), viewers.get(int(p.id), 0), p.fame
-            )
-        )
-        # Cold start: until people have visited, list the little-known places
-        # that have a real photograph, after the ones that have earned a place.
-        # Nothing about them is invented; they simply have no visits yet.
-        earned_ids = {int(p.id) for p in earned}
-        photographed = _photographed(session, ids)
-        waiting = [
-            p
-            for p in places
-            if int(p.id) not in earned_ids
-            and p.fame == "hidden"
-            and not p.fragile
-            and int(p.id) in photographed
-        ]
-        waiting.sort(key=lambda p: int(p.id))
-        places = earned + waiting
-    elif sort == "trending":
-        events = _events_for_trending(session, ids, now)
-        places.sort(key=lambda p: -trending_score(events.get(int(p.id), []), now))
-    else:  # near
-        places.sort(key=distance_of)
-
-    total = len(places)
-    page = max(1, page)
-    window = places[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
-
-    out = []
-    for rank, place in enumerate(window, start=(page - 1) * PAGE_SIZE + 1):
-        payload = services.place_payload(session, place, user, lat=lat, lng=lng, now=now)
-        payload["rank"] = rank
-        payload["wilson"] = round(
-            wilson_lb(likes.get(int(place.id), 0), viewers.get(int(place.id), 0)), 4
-        )
-        payload["is_gem"] = (
-            is_gem_eligible(place.status, bool(place.fragile), visits.get(int(place.id), 0))
-            and place.fame in ("hidden", "known")
-            and payload["wilson"] >= 0.3
-        )
-        if lat is None or lng is None:
-            payload["distance_km"] = round(distance_of(place), 2)
-        out.append(payload)
-
-    # Trending badge: the top 3 of the trending sort, so the badge agrees with
-    # the tab rather than being a second definition.
-    trending_ids: set[int] = set()
-    if ids:
-        events = _events_for_trending(session, ids, now)
-        ranked = sorted(ids, key=lambda pid: -trending_score(events.get(pid, []), now))
-        trending_ids = {pid for pid in ranked[:3] if trending_score(events.get(pid, []), now) > 0}
-    for payload in out:
-        payload["is_trending"] = payload["id"] in trending_ids
-
-    return {
-        "city": city_payload(session, city),
-        "sort": sort,
-        "explainer": SORT_EXPLAINERS[sort],
-        "total": total,
-        "page": page,
-        "page_size": PAGE_SIZE,
-        "places": out,
-    }
+    result = _rank_places(
+        session, places, sort=sort, lat=lat, lng=lng, centre=centre, page=page,
+        now=utcnow(), user=user,
+    )
+    return {"city": state_payload(session, state), **result}
 
 
 @router.get("/search")
@@ -306,12 +425,19 @@ def search(
     session: DbSession = Depends(get_session),
     user: User | None = Depends(current_user_optional),
 ) -> dict:
-    """Search cities and places by any name in any script (SPEC §7.4)."""
+    """Search cities, states and places by any name in any script (SPEC §7.4).
+
+    "Goa" should find the state of Goa to browse, not just the handful of
+    places whose own name happens to contain the word "Goa" -- that second
+    kind of match is still useful (someone really is looking for "Goa Fort"),
+    so both are returned and the state comes first.
+    """
     cities = list(
         session.exec(
             select(City).where(City.name_en.ilike(f"%{q}%")).order_by(City.name_en).limit(5)
         ).all()
     )
+    states = [s for s in _known_states(session) if q.strip().lower() in s.lower()][:5]
     place_ids = fts_query(session, q, limit=30)
     places = []
     if place_ids:
@@ -334,6 +460,7 @@ def search(
     return {
         "query": q,
         "cities": [city_payload(session, c) for c in cities],
+        "states": [state_payload(session, s) for s in states],
         "areas": [{"id": h.id, "name": h.name, "city_id": h.city_id} for h in hoods],
         "places": places,
     }

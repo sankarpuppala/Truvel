@@ -170,7 +170,7 @@ def test_reports_are_grouped_and_visitors_count_for_more(client, session):
     city = make_city(session)
     place = make_place(session, city)
     other = make_place(session, city, "Other", lat=17.5, lng=78.5)
-    make_user(session, "admin", role="admin", email="a@example.com")
+    make_user(session, "admin", role="admin", official=True, email="a@example.com")
     for name in ("riya", "arjun", "meera"):
         make_user(session, name, email=f"{name}@example.com")
     session.add(Visit(user_id=2, place_id=int(place.id), verified=True))     # riya was there
@@ -202,3 +202,47 @@ def test_reports_are_grouped_and_visitors_count_for_more(client, session):
     )
     assert done.status_code == 200
     assert len(client.get("/api/admin/cases").json()["cases"]) == 1
+
+
+# --- state-wide browsing ----------------------------------------------------- #
+
+def test_searching_a_state_name_surfaces_it_to_browse(client, session):
+    city = make_city(session)
+    make_place(session, city, "Mallikarjuna Temple, Goa", state="Goa", lat=15.5, lng=73.9)
+    make_place(session, city, "Goa Science Centre", state="Goa", lat=15.49, lng=73.91)
+    make_place(session, city, "Basilica of Bom Jesus", state="Goa", lat=15.5007, lng=73.9119)
+
+    result = client.get("/api/search?q=Goa").json()
+    assert [s["name"] for s in result["states"]] == ["Goa"]
+    assert result["states"][0]["place_count"] == 3
+
+
+def test_a_state_can_be_browsed_like_a_city_including_places_with_no_goa_in_the_name(client, session):
+    city = make_city(session)
+    make_place(session, city, "Mallikarjuna Temple, Goa", state="Goa", lat=15.5, lng=73.9)
+    make_place(session, city, "Basilica of Bom Jesus", state="Goa", lat=15.5007, lng=73.9119)
+    make_place(session, city, "Something in Telangana", state="Telangana", lat=17.4, lng=78.4)
+
+    out = client.get("/api/states/goa/places?sort=liked").json()
+    assert out["city"]["name"] == "Goa"
+    assert out["total"] == 2
+    names = {p["name"]["primary"]["text"] for p in out["places"]}
+    assert "Basilica of Bom Jesus" in names          # no "Goa" in its name at all
+    assert "Something in Telangana" not in names
+
+
+def test_unknown_state_404s(client, session):
+    make_city(session)
+    assert client.get("/api/states/atlantis/places").status_code == 404
+
+
+def test_admin_controls_are_for_the_official_account_only(client, session):
+    """A `role="admin"` account that is not `official` must not reach them."""
+    make_user(session, "wannabe", role="admin", email="wannabe@example.com")
+    client.post("/api/auth/login", json={"identifier": "wannabe", "password": PASSWORD})
+    assert client.get("/api/admin/cases").status_code == 403
+
+    make_user(session, "truvel2", official=True, email="truvel2@example.com")
+    client.post("/api/auth/logout")
+    client.post("/api/auth/login", json={"identifier": "truvel2", "password": PASSWORD})
+    assert client.get("/api/admin/cases").status_code == 200

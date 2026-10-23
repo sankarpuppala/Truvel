@@ -39,7 +39,7 @@ export function Admin() {
 
   useEffect(() => {
     if (loadingMe) return;
-    if (!me || me.role !== 'admin') navigate('/');
+    if (!me || !me.official) navigate('/');
   }, [loadingMe, me, navigate]);
 
   async function load() {
@@ -56,9 +56,9 @@ export function Admin() {
   }
 
   useEffect(() => {
-    if (me?.role === 'admin') void load();
+    if (me?.official) void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.role]);
+  }, [me?.official]);
 
   async function act(body: Record<string, unknown>) {
     try {
@@ -82,7 +82,7 @@ export function Admin() {
     }
   }
 
-  if (!me || me.role !== 'admin') return null;
+  if (!me || !me.official) return null;
   if (loading) return <Loading what="Loading the queue" />;
 
   const lines = (runResult?.lines ?? []) as {

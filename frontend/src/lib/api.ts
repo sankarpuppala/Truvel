@@ -161,10 +161,42 @@ export const api = {
           q: options.q,
         }),
     ),
+  statePlaces: (
+    slug: string,
+    options: {
+      sort?: string;
+      cat?: string;
+      verified?: boolean;
+      at?: Coords;
+      page?: number;
+      q?: string;
+    } = {},
+  ) =>
+    request<{
+      city: City;
+      sort: string;
+      explainer: string;
+      total: number;
+      page: number;
+      page_size: number;
+      places: Place[];
+    }>(
+      `/states/${slug}/places` +
+        query({
+          sort: options.sort,
+          cat: options.cat,
+          verified: options.verified ? 1 : undefined,
+          lat: options.at?.lat,
+          lng: options.at?.lng,
+          page: options.page,
+          q: options.q,
+        }),
+    ),
   search: (q: string, at?: Coords) =>
     request<{
       query: string;
       cities: City[];
+      states: City[];
       areas: { id: number; name: string; city_id: number }[];
       places: Place[];
     }>('/search' + query({ q, lat: at?.lat, lng: at?.lng })),

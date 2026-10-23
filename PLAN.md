@@ -221,6 +221,21 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (later still) — **Search a state, and admin tied to the official account.**
+  - Searching "Goa" found only the handful of places with "Goa" literally in
+    their name (the `City` table has only Hyderabad, so a state had nowhere to
+    browse to). `GET /states/{slug}/places` ranks a whole state the same way
+    `/cities/{slug}/places` does (sorts, pagination, payloads shared via a new
+    `_rank_places()` helper), and `/search` now also matches state names.
+    Searching "Goa" now surfaces the state (150 places) and browsing it finds
+    the Basilica of Bom Jesus and Fort Aguada, not just places named "Goa ...".
+    The Map tab is hidden for a state (no bbox to draw a fog map around).
+  - **Admin controls are for `@truvel` specifically, not "any admin-role
+    account".** `require_admin` and the Admin screen's gate now check
+    `User.official`, not `role` (role stays only as a display label). Nothing
+    in the app currently lets an account become `role="admin"` except the
+    official-account script, so this was latent rather than exploitable, but
+    it is the correct invariant to enforce at the gate, not just by convention.
 - 2026-10-23 (later) — **State-wide OSM import, corrected to famous places only.**
   `scripts/seed_osm_states.py` finds places OSM knows about that Wikidata's
   sweep missed, one Indian state at a time (an Overpass `area["ISO3166-2"=...]`

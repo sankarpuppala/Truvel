@@ -289,9 +289,9 @@ export function Settings() {
           <h4>Account</h4>
           <p className="plain" style={{ marginBottom: 10 }}>
             Signed in as <b>@{me?.username}</b>
-            {me?.role === 'admin' && ' (admin)'}
+            {me?.official && ' (official account)'}
           </p>
-          {me?.role === 'admin' && (
+          {me?.official && (
             <button
               type="button"
               className="btn btn-ghost btn-wide"

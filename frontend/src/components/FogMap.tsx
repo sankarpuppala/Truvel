@@ -64,8 +64,13 @@ export function FogMap({
       .catch(() => setFog(null));
   }, [me, city?.slug]);
 
+  // A state browsed by its `state` column, not a seeded City, has no centre
+  // or bbox to put a map around (state_payload() in places.py), so there is
+  // no fog map for it -- the list view still works.
+  const centre = city?.centre ?? null;
+
   useEffect(() => {
-    if (!city || !container.current || mapRef.current) return;
+    if (!city || !centre || !container.current || mapRef.current) return;
     let cancelled = false;
 
     void (async () => {
@@ -76,7 +81,7 @@ export function FogMap({
         const map = new maplibre.Map({
           container: container.current,
           style: TILES,
-          center: [city.centre[1], city.centre[0]],
+          center: [centre[1], centre[0]],
           zoom: 10.5,
           attributionControl: false,
         });
@@ -361,7 +366,7 @@ async function drawFog(map: MapLibreMap, city: City, fog: Fog | null): Promise<v
     }
   }
 
-  const bbox = city.bbox.length === 4 ? city.bbox : null;
+  const bbox = city.bbox && city.bbox.length === 4 ? city.bbox : null;
   if (!bbox) return;
   // The city rectangle, generously padded so the fog reaches past the edge.
   const [south, west, north, east] = bbox;

@@ -107,12 +107,13 @@ export type Place = {
 };
 
 export type City = {
-  id: number;
+  /** null for a state browsed by its `state` column, which has no City row. */
+  id: number | null;
   slug: string;
   name: string;
   state: string;
-  centre: [number, number];
-  bbox: number[];
+  centre: [number, number] | null;
+  bbox: number[] | null;
   regional_langs: string[];
   place_count: number;
   community_count: number;

@@ -430,7 +430,7 @@ def delete_media(
     media = session.get(Media, media_id)
     if media is None or media.source != "upload":
         raise not_found("That upload is not here.", "no_media")
-    if media.user_id != user.id and user.role != "admin":
+    if media.user_id != user.id and not user.official:
         raise forbidden("You can only delete your own uploads.", "not_yours")
 
     # Children first: bulk deletes run in the order written.
