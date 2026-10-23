@@ -141,10 +141,20 @@ def get_deck(
             )
         )
 
-    rng = deck_rng(int(user.id) if user else 0, now.date().isoformat(), request_no)
+    # The ranking itself is seeded by (user, day) only, never by request_no:
+    # `request_no` pages through that one stable order instead of re-drawing
+    # it. A re-draw per request was leaving some in-radius places essentially
+    # unreachable -- a place that scored just outside the first `page_size`
+    # every time it was redrawn would never appear until the radius changed
+    # the candidate pool, which looked like the radius or distance was wrong
+    # (it was not: every in-radius place is always a candidate here, see the
+    # haversine filter above -- it just never got *shown*).
+    rng = deck_rng(int(user.id) if user else 0, now.date().isoformat(), 0)
     ranked = diversify(score_candidates(candidates, prefs, now, rng))
     page_size = int(cfg("deck.page_size", 30))
-    window = ranked[:page_size]
+    start = max(0, request_no) * page_size
+    window = ranked[start : start + page_size]
+    more_at_this_radius = start + page_size < len(ranked)
 
     cards = []
     for cand in window:
@@ -172,9 +182,12 @@ def get_deck(
         "radius_km": radius_km,
         "location_fallback": fallback,
         "total_candidates": len(ranked),
+        "more_at_this_radius": more_at_this_radius,
         "end_card": {
             "message": (
-                f"That's everything within {int(radius_km)} km. "
+                "Keep swiping for more within this radius."
+                if more_at_this_radius
+                else f"That's everything within {int(radius_km)} km. "
                 "Widen the radius, or go see one you saved?"
             )
         },

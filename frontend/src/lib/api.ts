@@ -130,6 +130,11 @@ export const api = {
 
   // --- places and explore ------------------------------------------------ //
   cities: () => request<{ cities: City[] }>('/cities'),
+  /** The town/village/city at a live position, for Nearby's header. */
+  here: (lat: number, lng: number) =>
+    request<{ name: string | null; state: string | null; kind: string }>(
+      '/here' + query({ lat, lng }),
+    ),
   cityPlaces: (
     slug: string,
     options: {

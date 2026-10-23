@@ -148,6 +148,7 @@ export type DeckResponse = {
   radius_km: number;
   location_fallback: boolean;
   total_candidates: number;
+  more_at_this_radius: boolean;
   end_card: { message: string };
 };
 

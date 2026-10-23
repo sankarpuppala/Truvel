@@ -6,9 +6,11 @@ from sqlmodel import select
 
 from app import kadam, mailer
 from app.models import KadamEntry, Media, MediaLike, Place, Session as LoginSession, Touch
+
 from tests.conftest import make_city, make_place, make_user
 
 PASSWORD = "correct horse battery"
+KHAJAGUDA = (17.4186, 78.3391)
 
 
 @pytest.fixture()
@@ -306,3 +308,62 @@ def test_place_location_falls_back_to_locality_not_just_area(client, session):
     assert a["area"] == "Banjara Hills"
     assert b["area"] == "Tirupati"
     assert c["area"] == ""
+
+
+def test_here_says_the_seeded_city_inside_its_bbox(client, session):
+    city = make_city(session)  # Hyderabad bbox from the fixture
+    out = client.get("/api/here?lat=17.40&lng=78.45").json()
+    assert out == {"name": city.name_en, "state": city.state, "kind": "city"}
+
+
+def test_here_falls_back_to_the_nearest_localitys_town(client, session):
+    make_place(session, None, "Tirumala Venkateswara Temple", state="Andhra Pradesh",
+               locality="Tirupati", lat=13.68, lng=79.35)
+    out = client.get("/api/here?lat=13.681&lng=79.351").json()
+    assert out["name"] == "Tirupati"
+    assert out["kind"] == "locality"
+
+
+def test_here_is_none_far_from_anything_known(client, session):
+    out = client.get("/api/here?lat=5.0&lng=5.0").json()
+    assert out["name"] is None
+
+
+def test_deck_eventually_shows_every_place_within_radius(client, session):
+    """A place within the chosen radius must not be permanently invisible just
+    because it did not score into the first page (SPEC §9.4 is a ranking, not
+    a filter: `request_no` pages a stable order rather than re-drawing it)."""
+    city = make_city(session)
+    for i in range(45):
+        make_place(
+            session, city, f"Place {i}",
+            lat=KHAJAGUDA[0] + i * 0.0003, lng=KHAJAGUDA[1], fame="famous", sitelinks=i,
+        )
+    make_user(session, "pagerider", email="pagerider@example.com")
+    client.post("/api/auth/login", json={"identifier": "pagerider", "password": PASSWORD})
+
+    seen: set[str] = set()
+    total = None
+    for request_no in range(3):
+        out = client.get(
+            f"/api/deck?lat={KHAJAGUDA[0]}&lng={KHAJAGUDA[1]}&radius_km=10&request_no={request_no}"
+        ).json()
+        total = out["total_candidates"]
+        seen |= {c["name"]["primary"]["text"] for c in out["cards"]}
+        if not out["more_at_this_radius"]:
+            break
+
+    assert total == 45
+    assert len(seen) == 45
+
+
+def test_deck_page_is_stable_when_radius_is_unchanged(client, session):
+    city = make_city(session)
+    for i in range(5):
+        make_place(session, city, f"Stable {i}", lat=KHAJAGUDA[0], lng=KHAJAGUDA[1], fame="famous")
+    make_user(session, "stableuser", email="stableuser@example.com")
+    client.post("/api/auth/login", json={"identifier": "stableuser", "password": PASSWORD})
+
+    first = client.get(f"/api/deck?lat={KHAJAGUDA[0]}&lng={KHAJAGUDA[1]}&radius_km=10").json()
+    again = client.get(f"/api/deck?lat={KHAJAGUDA[0]}&lng={KHAJAGUDA[1]}&radius_km=10").json()
+    assert [c["id"] for c in first["cards"]] == [c["id"] for c in again["cards"]]

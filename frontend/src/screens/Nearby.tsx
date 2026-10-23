@@ -26,6 +26,7 @@ export function Nearby() {
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [requestNo, setRequestNo] = useState(0);
+  const [hereName, setHereName] = useState<string | null>(null);
 
   const radii = config?.deck.radii_km ?? RADII;
 
@@ -33,12 +34,36 @@ export function Nearby() {
     void requestPosition();
   }, [requestPosition]);
 
+  // The header should say where someone actually *is* ("Tirupati"), not
+  // their saved home city ("Hyderabad") -- that is a different thing, and
+  // only the fallback for when location is off (see `homeCity` below).
+  useEffect(() => {
+    if (!position) {
+      setHereName(null);
+      return undefined;
+    }
+    let cancelled = false;
+    void api
+      .here(position.lat, position.lng)
+      .then((result) => {
+        if (!cancelled) setHereName(result.name);
+      })
+      .catch(() => {
+        if (!cancelled) setHereName(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [position?.lat, position?.lng]);
+
   const load = useCallback(
-    async (km: number, bump = false) => {
+    async (km: number, bump = false, resetTo?: number) => {
       setLoading(true);
       try {
-        const next = bump ? requestNo + 1 : requestNo;
-        if (bump) setRequestNo(next);
+        // `resetTo` wins over `bump`: a new radius starts back at page 0,
+        // whatever page the previous radius had reached.
+        const next = resetTo ?? (bump ? requestNo + 1 : requestNo);
+        if (next !== requestNo) setRequestNo(next);
         const response = await api.deck(position, km, next);
         setDeck(response);
         setIndex(0);
@@ -52,7 +77,9 @@ export function Nearby() {
   );
 
   useEffect(() => {
-    void load(radius);
+    // A new radius is a new candidate pool, so it starts back at page 0 --
+    // never mid-way through wherever the previous radius had been paged to.
+    void load(radius, false, 0);
     // `load` changes with position; re-running on radius and position is what
     // we want, and `requestNo` only changes when the user asks for more.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -118,7 +145,7 @@ export function Nearby() {
   // Signed out, or an account with no home city yet: the header still needs a
   // word, but the sentence below it must not read "the centre of Nearby".
   const homeCity = me?.home_city?.name ?? null;
-  const cityName = homeCity ?? 'Nearby';
+  const cityName = hereName ?? homeCity ?? 'Nearby';
   const kadam = me?.kadam ?? 0;
 
   const header = useMemo(
@@ -195,21 +222,37 @@ export function Nearby() {
           /* The end card. No infinite feed (SPEC §8.2). */
           <EmptyState
             icon="i-compass"
-            title={deck && deck.total_candidates > 0 ? "That's everything nearby" : 'Nothing in range yet'}
+            title={
+              deck?.more_at_this_radius
+                ? 'More within this radius'
+                : deck && deck.total_candidates > 0
+                  ? "That's everything nearby"
+                  : 'Nothing in range yet'
+            }
             body={
               deck?.end_card.message ??
               'Widen the radius, or be the first to add a place here.'
             }
             action={
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {radius < radii[radii.length - 1] && (
+                {deck?.more_at_this_radius ? (
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
-                    onClick={() => setRadius(radii[radii.indexOf(radius) + 1] ?? 25)}
+                    onClick={() => void load(radius, true)}
                   >
-                    Widen to {radii[radii.indexOf(radius) + 1] ?? 25} km
+                    Keep swiping
                   </button>
+                ) : (
+                  radius < radii[radii.length - 1] && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setRadius(radii[radii.indexOf(radius) + 1] ?? 25)}
+                    >
+                      Widen to {radii[radii.indexOf(radius) + 1] ?? 25} km
+                    </button>
+                  )
                 )}
                 <button
                   type="button"

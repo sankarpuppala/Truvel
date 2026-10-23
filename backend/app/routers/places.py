@@ -313,6 +313,50 @@ def list_cities(session: DbSession = Depends(get_session)) -> dict:
     return {"cities": [city_payload(session, c) for c in cities]}
 
 
+@router.get("/here")
+def here(
+    lat: float, lng: float, session: DbSession = Depends(get_session)
+) -> dict:
+    """The name of the town, village or city at a live position (SPEC §8.2).
+
+    Nearby's header is supposed to say where someone *is*, not their saved
+    home city -- that is a different thing (what the deck falls back to when
+    location is off). A seeded city's bbox wins first (it has a proper name
+    and no ambiguity); otherwise the nearest place within 40 km lends its
+    `locality` (Wikidata's nearest town, SPEC §6.2) or `area`, so this works
+    for everywhere Truvel has data, not only the handful of deep-seeded
+    cities. The position is used for this one lookup and never stored
+    (invariant 1).
+    """
+    for city in session.exec(select(City)).all():
+        bbox = city.bbox or []
+        if len(bbox) == 4 and bbox[0] <= lat <= bbox[2] and bbox[1] <= lng <= bbox[3]:
+            return {"name": city.name_en, "state": city.state, "kind": "city"}
+
+    box = bbox_around(lat, lng, 40)
+    nearby = session.exec(
+        select(Place).where(
+            Place.status != "hidden",
+            Place.lat.between(box[0], box[2]),
+            Place.lng.between(box[1], box[3]),
+        )
+    ).all()
+    nearest: Place | None = None
+    nearest_km = 40.0
+    for place in nearby:
+        d = haversine_km(lat, lng, place.lat, place.lng)
+        if d <= nearest_km:
+            nearest, nearest_km = place, d
+    if nearest is not None:
+        name = nearest.locality or nearest.area
+        if name:
+            return {"name": name, "state": nearest.state, "kind": "locality"}
+        if nearest.state:
+            return {"name": nearest.state, "state": nearest.state, "kind": "state"}
+
+    return {"name": None, "state": None, "kind": "none"}
+
+
 def _events_for_trending(
     session: DbSession, place_ids: list[int], now: datetime
 ) -> dict[int, list[tuple[str, datetime]]]:

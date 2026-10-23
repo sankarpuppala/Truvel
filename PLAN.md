@@ -221,6 +221,30 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-23 (latest) — **Nearby says where you are, and the deck no longer
+  hides in-radius places forever.**
+  - Nearby's header always read "Hyderabad" (the saved home city), never
+    where someone actually was. New `GET /here?lat=&lng=` answers with a
+    seeded city if the position is in one, else the nearest place's
+    `locality`/`area` (so it works outside the handful of deep-seeded cities
+    too), else its state; the header now says that, falling back to the home
+    city only when location is off (position is used for this lookup and
+    never stored, invariant 1).
+  - **The deck's "that's everything within X km" was sometimes a lie.** The
+    candidate query and the radius filter were always correct (checked by
+    reading both; a 3-4 km place is unquestionably inside a 10 km candidate
+    set) -- the bug was that only the top `page_size` (30) of the *ranked*
+    list was ever returned, and reloading at the same radius re-drew the
+    Thompson sample from scratch (`deck_rng` seeded by `request_no`, which
+    changed every reload), so a place that scored just outside the top 30
+    could lose on every redraw and never be shown, however many times the
+    radius was "widened" back to a value that already covered it. Fixed:
+    the ranking is now seeded by `(user, day)` only, and `request_no` pages
+    through that one stable order (`ranked[request_no*30 : ...]`) instead of
+    re-drawing it, so continued swiping at a fixed radius eventually reaches
+    every candidate in it. `more_at_this_radius` is now honest, and the end
+    card offers "Keep swiping" instead of (sometimes falsely) "That's
+    everything" when there is more to page through.
 - 2026-10-23 (yet later) — **Explore's search stopped silently becoming an
   all-India search, and 9 more real cities are being seeded.**
   - Typing in Explore's search box while browsing Hyderabad replaced the list
