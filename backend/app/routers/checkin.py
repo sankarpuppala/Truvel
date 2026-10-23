@@ -11,7 +11,9 @@ community place to `verified` and pay its discoverer (§9.8).
 """
 from __future__ import annotations
 
+import threading
 import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
@@ -45,6 +47,22 @@ router = APIRouter(tags=["checkin"], dependencies=[Depends(require_csrf_header)]
 
 WATER_CATEGORIES = {"waterfall", "lake", "beach_river"}
 
+# FastAPI runs a sync `def` route in a thread pool, so two check-ins from the
+# same person for the same place can genuinely overlap: both can read "no
+# visit today yet" before either has committed its Visit row, and both then
+# pass every award/attribution check meant to run once. A per-(user, place)
+# lock makes the whole read-then-write section below atomic within this one
+# process -- the only process this app ever runs as (CLAUDE.md: SQLite file,
+# no Postgres/Redis). It does not need to survive restarts or span processes.
+_checkin_locks: dict[tuple[int, int], threading.Lock] = defaultdict(threading.Lock)
+_checkin_locks_guard = threading.Lock()
+
+
+def _lock_for(user_id: int, place_id: int) -> threading.Lock:
+    key = (user_id, place_id)
+    with _checkin_locks_guard:
+        return _checkin_locks[key]
+
 
 class CheckinIn(BaseModel):
     lat: float
@@ -60,7 +78,22 @@ def check_in(
     session: DbSession = Depends(get_session),
     user: User = Depends(current_user),
 ) -> dict:
-    """Verify a visit from one position reading. Coordinates are not stored."""
+    """Verify a visit from one position reading. Coordinates are not stored.
+
+    Held for the length of the real work below so two overlapping requests
+    for the same (user, place) -- two tabs, a double-tap, a scripted retry --
+    cannot both read "no visit yet today" before either has written one.
+    """
+    with _lock_for(int(user.id), place_id):
+        return _check_in_locked(place_id, body, session, user)
+
+
+def _check_in_locked(
+    place_id: int,
+    body: CheckinIn,
+    session: DbSession,
+    user: User,
+) -> dict:
     place = session.get(Place, place_id)
     if place is None or place.status == "hidden":
         raise not_found("That place is not here.", "no_place")

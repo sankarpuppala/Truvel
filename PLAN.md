@@ -221,6 +221,21 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-24 — **Card A1: security, privacy and fraud review.** An independent
+  subagent (PROMPT.md Prompt 8) found 1 Critical, 3 High, 2 Medium, 1 Low
+  (accepted). Fixed: fragile-place distance oracle in `place_payload` and
+  `duplicate_candidates` (invariant 5); `/api/touch` no longer trusts a
+  client-asserted video/photo view, is rate-limited and deduped (invariant 3);
+  `uvicorn.access` logger disabled so viewer lat/lng never hits a log file
+  (invariant 1); per-`(user, place)` lock in `check_in` closes a double-award
+  race; login now pays the same argon2id cost whether or not the account
+  exists (no timing-based user enumeration); dev teleport fuzzes a fragile
+  place's coordinates until pledged, same as the real API. Added security
+  headers (CSP scoped to `tiles.openfreemap.org`, X-Content-Type-Options,
+  Referrer-Policy, Permissions-Policy). Full findings and fix rationale in
+  `docs/SECURITY_REVIEW.md`; one test per fix in
+  `backend/tests/test_security.py`. `pytest -q` (238 passed) and frontend
+  `npm run test` (26 passed) green before committing.
 - 2026-10-23 (even later) — **Card A6: repo hygiene, CI workflow, commit skill.**
   Removed the tracked `pagdandi-starter.zip` (its contents are already in the
   repo) and generalized `.gitignore`'s starter-archive rule to `*-starter.zip`;

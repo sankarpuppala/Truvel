@@ -73,7 +73,7 @@ flowchart TD
 
 No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on site) → A7.
 
-### A1 Security, privacy and fraud review `[ ]`
+### A1 Security, privacy and fraud review `[x]`
 - **Why:** Phase 9 item never run; invariants 1, 5, 7 are the core promise.
 - **Read:** CLAUDE.md invariants; SPEC §8.7, §8.14, §9.8, §14 (see CONTEXT_MAP);
   `backend/app/auth.py`, `routers/checkin.py`, `routers/places.py` (fragile path),

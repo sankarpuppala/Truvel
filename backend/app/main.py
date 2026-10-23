@@ -10,7 +10,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 
 from .config import DB_PATH, cfg, dev_allow_fake_location, load_config
@@ -35,6 +35,16 @@ from .routers import (
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 log = logging.getLogger("truvel")
+
+# Uvicorn's own access logger prints the full request line, query string
+# included -- and every deck/watch/nearby/search request carries the viewer's
+# live lat/lng as a query parameter. That would put a user's location history
+# into plaintext log files even though no lat/lng ever reaches a database row
+# (invariant 1 covers *storage*, but a log file is storage too). Disabling it
+# here means the "never log a request body" promise in this module's
+# docstring also holds for request lines, regardless of how uvicorn is
+# started.
+logging.getLogger("uvicorn.access").disabled = True
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -63,6 +73,24 @@ app = FastAPI(
 
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(HTTPException, http_error_handler)
+
+
+# Only tiles.openfreemap.org is allowed to be reached from the frontend
+# (invariant 7); these headers make the browser enforce that, and close off
+# a few other response-header gaps a security review would otherwise flag.
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; "
+        "connect-src 'self' https://tiles.openfreemap.org; style-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; frame-ancestors 'none'"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(self)"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
 
 API = "/api"
 for router in (

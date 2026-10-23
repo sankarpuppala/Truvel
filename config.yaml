@@ -154,6 +154,7 @@ rate_limits:
   likes_per_hour: 300
   checkins_per_hour: 10
   pulse_per_hour: 10
+  touches_per_hour: 60
 
 kadam:
   discovery: 50
