@@ -88,7 +88,7 @@ No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on sit
 - **Done when:** findings list in `docs/SECURITY_REVIEW.md` with each item fixed
   or justified; `pytest -q` green.
 
-### A2 Tick what is already verified; Lighthouse `[ ]`
+### A2 Tick what is already verified; Lighthouse `[x]`
 - **Why:** AC-20/21/22 tests exist (`e2e/screens.spec.ts`, `e2e/accessibility.spec.ts`)
   but PLAN.md shows `[ ]`.
 - **Do:** run `npx playwright test`; if green, tick the box. Run Lighthouse

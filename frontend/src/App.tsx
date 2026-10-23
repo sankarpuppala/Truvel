@@ -62,31 +62,35 @@ export function App() {
 
         {fullBleed ? (
           <>
-            <Routes>
-              <Route path="/watch" element={<Watch />} />
-            </Routes>
+            <main>
+              <Routes>
+                <Route path="/watch" element={<Watch />} />
+              </Routes>
+            </main>
             <BottomNav dark />
           </>
         ) : (
           <div className={`scr page-${pageName(path)}`}>
-            <Routes>
-              <Route path="/" element={<Nearby />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/place/:id" element={<PlacePage />} />
-              <Route path="/place/:id/pulse" element={<AddPulse />} />
-              <Route path="/place/:id/steps/new" element={<WriteSteps />} />
-              <Route path="/add/place" element={<AddPlace />} />
-              <Route path="/add/media" element={<AddMedia />} />
-              <Route path="/add/pulse" element={<AddPulse />} />
-              <Route path="/you" element={<You />} />
-              <Route path="/u/:handle" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/forgot" element={<ForgotPassword />} />
-              <Route path="/reset" element={<ResetPassword />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <main>
+              <Routes>
+                <Route path="/" element={<Nearby />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/place/:id" element={<PlacePage />} />
+                <Route path="/place/:id/pulse" element={<AddPulse />} />
+                <Route path="/place/:id/steps/new" element={<WriteSteps />} />
+                <Route path="/add/place" element={<AddPlace />} />
+                <Route path="/add/media" element={<AddMedia />} />
+                <Route path="/add/pulse" element={<AddPulse />} />
+                <Route path="/you" element={<You />} />
+                <Route path="/u/:handle" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/forgot" element={<ForgotPassword />} />
+                <Route path="/reset" element={<ResetPassword />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
             {!hideNav && <BottomNav />}
           </div>
         )}

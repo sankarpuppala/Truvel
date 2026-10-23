@@ -141,8 +141,8 @@ P2, P4-UI, P5-UI (Add, Watch), P6-UI, Studio UI.
 ## Phase 9 — Polish, reviews, Tier 2 [T2 + fixes] (Day 7)
 - [ ] Prompt 7 design critique on all 9 screens, both themes; fix the top 10.
 - [ ] Prompt 8 independent security/privacy/fraud review; fix high + medium.
-- [ ] AC-20, AC-21, AC-22 in Playwright.
-- [ ] Lighthouse mobile on Nearby and Watch; fix the top 2 issues each.
+- [x] AC-20, AC-21, AC-22 in Playwright.
+- [x] Lighthouse mobile on Nearby and Watch; fix the top 2 issues each.
 - [ ] Tier 2, in order, stop at 18:00: Hindi + regional UI (Prompt 14, native-reviewed) → comments
       → golden hour → Weekly Trail → Trails → clans → admin UI → offline → Isolation
       Forest → CLIP → IndicXlit batch (Prompt 13) → Wikivoyage.
@@ -205,7 +205,7 @@ summaries. Every figure here is reproducible by re-running the command named.
 | Outdoor check-in accuracy (m) | *not yet measured — needs the Day-5 trip* | P6 |
 | Median upload size after resize (KB) | *not yet measured — needs real photos from a phone* | P5 |
 | Watch first-frame time on phone (s) | *not yet measured — needs a real uploaded video* | P5 |
-| Lighthouse mobile (Nearby / Watch) | *not yet run* | P9 |
+| Lighthouse mobile (Nearby / Watch), prod build | Performance **66** / **90**, Accessibility **100** / **100**, Best Practices 92 / 92, SEO 92 / 91 | P9 |
 
 
 ## Ideas parked
@@ -221,6 +221,30 @@ summaries. Every figure here is reproducible by re-running the command named.
   survive as duplicates. Fixing it means comparing outlines, not points.
 
 ## Progress log
+- 2026-10-24 (later) — **Card A2: tick what's already verified; Lighthouse.**
+  `npx playwright test` is green (70 passed, both themes); ticked AC-20/21/22
+  in PLAN.md Phase 9. Ran Lighthouse mobile on the production build
+  (`npm run build && npm run preview`) for Nearby (`/`) and Watch (`/watch`):
+  Performance 66/90, Accessibility 98/100, Best Practices 92/92, SEO 92/91.
+  Fixed the top issues found: (1) the deck's lead photo -- the page's LCP
+  element on both screens -- had no `fetchPriority`, so `DeckCard`'s
+  `CardArt` now hints `fetchPriority="high"` on the front card only (not the
+  peeking back card); (2) neither screen had a `<main>` landmark (axe
+  `landmark-one-main`), so `App.tsx` now wraps the routed screen in one,
+  outside `<BottomNav>` since that is shared chrome, not page content --
+  Nearby's accessibility score went 98 → 100; (3) Vite was emitting an
+  unconditional `<link rel="modulepreload">` for the `turf` chunk into the
+  single shared `index.html`, so Nearby (which never touches `@turf/turf`,
+  only `FogMap`'s fog-of-war screen does) paid for downloading it on every
+  load -- `vite.config.ts`'s new `build.modulePreload.resolveDependencies`
+  drops the `maplibre` and `turf` chunks from the preload list. Nearby's
+  remaining low Performance score is an inherent SPA constraint (SPEC §15,
+  zero-budget stack has no SSR): the deck's lead photo URL isn't known until
+  after the JS bundle parses and the `/api/deck` call returns, so Lighthouse's
+  simulated-throttling model scores the resulting `resourceLoadDelay` harshly;
+  fixing that for real needs server-rendering the first card, out of scope
+  here. `pytest -q`, `npm run test` (26 passed) and `tsc --noEmit` all green
+  before committing.
 - 2026-10-24 — **Card A1: security, privacy and fraud review.** An independent
   subagent (PROMPT.md Prompt 8) found 1 Critical, 3 High, 2 Medium, 1 Low
   (accepted). Fixed: fragile-place distance oracle in `place_payload` and

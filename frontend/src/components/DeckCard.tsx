@@ -27,7 +27,7 @@ function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function CardArt({ place }: { place: Place }) {
+function CardArt({ place, priority }: { place: Place; priority?: boolean }) {
   const photo = place.lead_media;
   // A photo that fails to load (offline, licence refused) falls back to the
   // category illustration -- never a broken-image icon (SPEC §12.6).
@@ -39,6 +39,9 @@ function CardArt({ place }: { place: Place }) {
         src={photo.url}
         alt={photo.caption || place.name.primary.text}
         style={{ objectFit: 'cover' }}
+        // The front card's photo is the page's LCP element (Lighthouse,
+        // card A2): hint the browser to fetch it first.
+        fetchPriority={priority ? 'high' : undefined}
         onError={() => setFailed(true)}
       />
     );
@@ -150,7 +153,7 @@ export function DeckCard({
           touchAction: 'none',
         }}
       >
-        <CardArt place={place} />
+        <CardArt place={place} priority />
 
         <div className="card-top">
           {place.is_gem ? <GemPill /> : <span />}
