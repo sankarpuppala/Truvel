@@ -21,6 +21,7 @@ from ..db import get_session
 from ..errors import bad_request, forbidden, not_found, too_many
 from ..integrity.fraud import rate_limited
 from ..models import (
+    Comment,
     Follow,
     Like,
     Media,
@@ -402,7 +403,7 @@ def create_report(
     """File a report. 3 from verified visitors auto-hide media (SPEC §8.13)."""
     if body.reason not in REPORT_REASONS:
         raise bad_request("Unknown reason.", "bad_reason")
-    if body.target_type not in ("place", "media", "steps"):
+    if body.target_type not in ("place", "media", "steps", "comment"):
         raise bad_request("Unknown target.", "bad_target")
 
     already = session.exec(
@@ -464,4 +465,26 @@ def create_report(
                     session.add(media)
                     session.commit()
                     hidden = True
+    if body.target_type == "comment":
+        hidden = _maybe_hide_comment(session, body.target_id)
     return {"filed": True, "hidden": hidden}
+
+
+def _maybe_hide_comment(session: DbSession, comment_id: int) -> bool:
+    """3 reports from different people hide a comment pending review (§8.13)."""
+    comment = session.get(Comment, comment_id)
+    if comment is None or comment.status != "ok":
+        return False
+    reporters = session.exec(
+        select(func.count(func.distinct(Report.reporter_id))).where(
+            Report.target_type == "comment",
+            Report.target_id == comment_id,
+            Report.status == "open",
+        )
+    ).one()
+    if int(reporters or 0) < int(cfg("moderation.auto_hide_reports", 3)):
+        return False
+    comment.status = "hidden"
+    session.add(comment)
+    session.commit()
+    return True

@@ -7,6 +7,9 @@
  *    an `ApiError` whose `message` is already written for a person to read.
  */
 import type {
+  CommentItem,
+  FeedItem,
+  SocialUser,
   AppConfig,
   CheckinResult,
   City,
@@ -257,6 +260,19 @@ export const api = {
     request<{ liked: boolean; likes: number }>(`/media/${id}/like`, {
       method: on ? 'POST' : 'DELETE',
     }),
+  feed: (before?: string) =>
+    request<{ items: FeedItem[]; next: string | null; following: number }>(
+      `/feed${before ? `?before=${encodeURIComponent(before)}` : ''}`,
+    ),
+  followers: (handle: string) => request<{ users: SocialUser[] }>(`/users/${handle}/followers`),
+  followingList: (handle: string) => request<{ users: SocialUser[] }>(`/users/${handle}/following`),
+  suggestedCreators: () => request<{ users: SocialUser[] }>('/creators/suggested'),
+  comments: (mediaId: number) =>
+    request<{ comments: CommentItem[] }>(`/media/${mediaId}/comments`),
+  addComment: (mediaId: number, text: string) =>
+    request<CommentItem>(`/media/${mediaId}/comments`, { method: 'POST', body: { text } }),
+  deleteComment: (id: number) =>
+    request<{ deleted: boolean }>(`/comments/${id}`, { method: 'DELETE' }),
   follow: (handle: string, on: boolean) =>
     request<{ following: boolean }>(`/users/${handle}/follow`, {
       method: on ? 'POST' : 'DELETE',

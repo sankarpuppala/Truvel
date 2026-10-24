@@ -88,6 +88,9 @@ export function You() {
           { key: 'studio', label: 'Studio' },
         ]}
       />
+      <Link className="round round-flat" to="/following" aria-label="Following">
+        <Icon name="i-group" size={20} />
+      </Link>
       <Link className="round round-flat" to="/settings" aria-label="Settings">
         <Icon name="i-gear" size={20} />
       </Link>

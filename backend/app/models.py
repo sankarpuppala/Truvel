@@ -341,6 +341,16 @@ class EarningLine(SQLModel, table=True):
 # Moderation and sessions
 # --------------------------------------------------------------------------- #
 
+class Comment(SQLModel, table=True):
+    """A comment on a video or photo (SPEC §8.11, Tier 2). Text only, ≤ 300 chars."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    media_id: int = Field(foreign_key="media.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    text: str = ""
+    status: str = "ok"                                         # ok | hidden
+    at: datetime = Field(default_factory=utcnow)
+
+
 class Report(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     reporter_id: int = Field(foreign_key="user.id", index=True)

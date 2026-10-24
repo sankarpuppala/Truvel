@@ -31,6 +31,7 @@ from ..integrity.exif import GPS_MISMATCH, gps_mismatch
 from ..integrity.fraud import rate_limited
 from ..integrity.phash import check_upload
 from ..models import (
+    Comment,
     LastMileStep,
     Media,
     MediaLike,
@@ -443,7 +444,7 @@ def delete_media(
         raise forbidden("You can only delete your own uploads.", "not_yours")
 
     # Children first: bulk deletes run in the order written.
-    for related in (MediaLike, MediaView):
+    for related in (MediaLike, MediaView, Comment):
         session.exec(sa_delete(related).where(related.media_id == media_id))
     for model, column in ((Pulse, Pulse.media_id), (LastMileStep, LastMileStep.media_id)):
         session.exec(sa_update(model).where(column == media_id).values(media_id=None))

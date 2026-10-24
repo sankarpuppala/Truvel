@@ -155,6 +155,13 @@ rate_limits:
   checkins_per_hour: 10
   pulse_per_hour: 10
   touches_per_hour: 60
+  comments_per_hour: 30
+
+# Comments (SPEC §8.11). The keyword list is lower-case; a comment containing
+# any of these words is refused. Add words here, never in code.
+comments:
+  max_chars: 300
+  blocked_words: []
 
 kadam:
   discovery: 50

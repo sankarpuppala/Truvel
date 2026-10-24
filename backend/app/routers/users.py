@@ -32,6 +32,18 @@ def profile(
         session.exec(select(func.count()).select_from(Follow).where(Follow.creator_id == cid)).one()
         or 0
     )
+    following_count = int(
+        session.exec(select(func.count()).select_from(Follow).where(Follow.follower_id == cid)).one()
+        or 0
+    )
+    posts = list(
+        session.exec(
+            select(Media)
+            .where(Media.user_id == cid, Media.status == "ok")
+            .order_by(Media.created_at.desc())
+            .limit(60)
+        ).all()
+    )
     found_query = select(Place).where(Place.added_by == cid, Place.status != "hidden")
     places_found = int(
         session.exec(select(func.count()).select_from(found_query.subquery())).one() or 0
@@ -86,6 +98,10 @@ def profile(
         "bio": creator.bio,
         "level": level_name,
         "followers": followers,
+        "following_count": following_count,
+        "posts": [
+            {**services.media_payload(m, creator), "place_id": m.place_id} for m in posts
+        ],
         "following": following,
         "is_self": viewer is not None and int(viewer.id) == cid,
         "places_found": places_found,
