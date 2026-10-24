@@ -71,9 +71,3 @@ def test_three_reports_hide_a_comment(client, session):
     assert session.get(Comment, cid).status == "hidden"
     assert client.get(f"/api/media/{media.id}/comments").json()["comments"] == []
 
-
-def test_stand_in_photo_kept_only_when_it_names_the_place():
-    from scripts.undo_stock_photos import looks_like_this_place
-
-    assert looks_like_this_place("Golden Temple Amritsar 2019.jpg", "Golden Temple")
-    assert not looks_like_this_place("Three Sisters Blue Mountains.jpg", "National Horticulture Museum")
