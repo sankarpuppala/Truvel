@@ -122,45 +122,67 @@ def measure_creator(
         engaged += counted
         held_total += held
 
-    # Visits caused: verified, unflagged, non-simulated visits only (AC-25).
-    caused = float(
-        session.exec(
-            select(func.coalesce(func.sum(Attribution.share), 0.0))
-            .join(Visit, Visit.id == Attribution.visit_id)
-            .where(
-                Attribution.creator_id == creator_id,
-                Visit.at >= start,
-                Visit.at < end,
-                Visit.verified == True,  # noqa: E712
-                Visit.flag == None,  # noqa: E711
-                Visit.simulated == False,  # noqa: E712
-            )
-        ).one()
-        or 0.0
+    return (
+        CreatorMonth(
+            creator_id=creator_id,
+            engaged_views=engaged,
+            visits_caused=_visits_caused(session, creator_id, start, end),
+            helpful_votes=_helpful_votes(session, creator_id, start, end),
+            pulse_confirmed=_pulse_confirmed(session, creator_id, start, end),
+            eligible=_eligible(session, creator_id, media, end),
+        ),
+        held_total,
     )
 
-    groups = [
-        g
-        for g in session.exec(
+
+def _visits_caused(
+    session: Session, creator_id: int, start: datetime, end: datetime | None
+) -> float:
+    """Sum of attribution shares (§9.9) on verified, unflagged, non-simulated
+    visits only (AC-25). `end=None` means "up to now"."""
+    query = (
+        select(func.coalesce(func.sum(Attribution.share), 0.0))
+        .join(Visit, Visit.id == Attribution.visit_id)
+        .where(
+            Attribution.creator_id == creator_id,
+            Visit.at >= start,
+            Visit.verified == True,  # noqa: E712
+            Visit.flag == None,  # noqa: E711
+            Visit.simulated == False,  # noqa: E712
+        )
+    )
+    if end is not None:
+        query = query.where(Visit.at < end)
+    return float(session.exec(query).one() or 0.0)
+
+
+def _helpful_votes(session: Session, creator_id: int, start: datetime, end: datetime) -> int:
+    """Count of helpful votes this month on last-mile steps the creator wrote (§10.3)."""
+    groups = list(
+        session.exec(
             select(LastMileStep.version_group).where(LastMileStep.author_id == creator_id)
         ).all()
-    ]
-    helpful = 0
-    if groups:
-        helpful = int(
-            session.exec(
-                select(func.count())
-                .select_from(LastMileVote)
-                .where(
-                    LastMileVote.version_group.in_(groups),
-                    LastMileVote.helpful == True,  # noqa: E712
-                    LastMileVote.at >= start,
-                    LastMileVote.at < end,
-                )
-            ).one()
-            or 0
-        )
+    )
+    if not groups:
+        return 0
+    return int(
+        session.exec(
+            select(func.count())
+            .select_from(LastMileVote)
+            .where(
+                LastMileVote.version_group.in_(groups),
+                LastMileVote.helpful == True,  # noqa: E712
+                LastMileVote.at >= start,
+                LastMileVote.at < end,
+            )
+        ).one()
+        or 0
+    )
 
+
+def _pulse_confirmed(session: Session, creator_id: int, start: datetime, end: datetime) -> int:
+    """Pulse reports this month that someone else confirmed within the recent
+    window (`pulse.recent_hours`) at the same place (§10.3)."""
     window_h = float(cfg("pulse.recent_hours", 48))
     confirmed = 0
     for report in session.exec(
@@ -178,82 +200,54 @@ def measure_creator(
         ).first()
         if later is not None:
             confirmed += 1
+    return confirmed
 
+
+def _count(session: Session, query) -> int:
+    return int(session.exec(query).one() or 0)
+
+
+def _eligible(session: Session, creator_id: int, media: list[Media], end: datetime) -> bool:
+    """Gather the 90-day inputs and ask `is_eligible` (§10.4)."""
     user = session.get(User, creator_id)
-    eligible = False
-    if user is not None:
-        since_90 = end - timedelta(days=90)
-        verified_places = int(
-            session.exec(
-                select(func.count())
-                .select_from(Place)
-                .where(Place.added_by == creator_id, Place.status == "verified")
-            ).one()
-            or 0
-        )
-        verified_media = int(
-            session.exec(
-                select(func.count())
-                .select_from(Media)
-                .join(Place, Place.id == Media.place_id)
-                .where(
-                    Media.user_id == creator_id,
-                    Media.status == "ok",
-                    Place.status == "verified",
-                )
-            ).one()
-            or 0
-        )
-        views_90 = 0
-        if media:
-            views_90 = int(
-                session.exec(
-                    select(func.count())
-                    .select_from(MediaView)
-                    .where(
-                        MediaView.media_id.in_([int(m.id) for m in media]),
-                        MediaView.engaged == True,  # noqa: E712
-                        MediaView.invalid_reason == None,  # noqa: E711
-                        MediaView.started_at >= since_90,
-                    )
-                ).one()
-                or 0
-            )
-        caused_90 = float(
-            session.exec(
-                select(func.coalesce(func.sum(Attribution.share), 0.0))
-                .join(Visit, Visit.id == Attribution.visit_id)
-                .where(
-                    Attribution.creator_id == creator_id,
-                    Visit.at >= since_90,
-                    Visit.verified == True,  # noqa: E712
-                    Visit.flag == None,  # noqa: E711
-                    Visit.simulated == False,  # noqa: E712
-                )
-            ).one()
-            or 0.0
-        )
-        eligible = is_eligible(
-            EligibilityInput(
-                account_created_at=user.created_at,
-                strikes=user.strikes,
-                verified_content=verified_places + verified_media,
-                visits_caused_90d=caused_90,
-                engaged_views_90d=views_90,
+    if user is None:
+        return False
+    since_90 = end - timedelta(days=90)
+    verified_places = _count(
+        session,
+        select(func.count())
+        .select_from(Place)
+        .where(Place.added_by == creator_id, Place.status == "verified"),
+    )
+    verified_media = _count(
+        session,
+        select(func.count())
+        .select_from(Media)
+        .join(Place, Place.id == Media.place_id)
+        .where(Media.user_id == creator_id, Media.status == "ok", Place.status == "verified"),
+    )
+    views_90 = 0
+    if media:
+        views_90 = _count(
+            session,
+            select(func.count())
+            .select_from(MediaView)
+            .where(
+                MediaView.media_id.in_([int(m.id) for m in media]),
+                MediaView.engaged == True,  # noqa: E712
+                MediaView.invalid_reason == None,  # noqa: E711
+                MediaView.started_at >= since_90,
             ),
-            end,
         )
-
-    return (
-        CreatorMonth(
-            creator_id=creator_id,
-            engaged_views=engaged,
-            visits_caused=caused,
-            helpful_votes=helpful,
-            pulse_confirmed=confirmed,
-            eligible=eligible,
+    return is_eligible(
+        EligibilityInput(
+            account_created_at=user.created_at,
+            strikes=user.strikes,
+            verified_content=verified_places + verified_media,
+            visits_caused_90d=_visits_caused(session, creator_id, since_90, None),
+            engaged_views_90d=views_90,
         ),
-        held_total,
+        end,
     )
 
 
