@@ -418,3 +418,14 @@
 .ncard-name{font-family:var(--f-display);font-size:18px;line-height:1.25;margin:0}
 .ncard-meta{margin:4px 0 0;color:var(--muted);font-size:13px}
 .nearby-empty{color:var(--muted);text-align:center;padding:32px 16px}
+
+/* Comments sheet (SPEC §8.11) */
+.comments-sheet .c-muted{color:var(--muted);font-size:14px}
+.comment-list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:10px}
+.comment{border-bottom:1px solid var(--line);padding-bottom:8px}
+.comment p{margin:2px 0 0;color:var(--ink);overflow-wrap:anywhere}
+.comment-head{display:flex;gap:8px;align-items:baseline;font-size:14px;color:var(--ink)}
+.comment-form{position:sticky;bottom:0;background:var(--surface);padding-top:8px}
+.comment-form textarea{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px;resize:vertical}
+.comment-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.wr-follow{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--laterite);color:var(--on-primary);border:0}

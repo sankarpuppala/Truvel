@@ -19,6 +19,14 @@ export type Creator = {
   display_name: string;
 };
 
+export type CommentItem = {
+  id: number;
+  text: string;
+  at: string;
+  user: { username: string; display_name: string };
+  mine: boolean;
+};
+
 export type MediaItem = {
   id: number;
   kind: 'photo' | 'video';

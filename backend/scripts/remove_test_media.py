@@ -15,7 +15,7 @@ from sqlmodel import Session, select
 
 from app.config import MEDIA_DIR
 from app.db import engine
-from app.models import Media, MediaLike, MediaView
+from app.models import Comment, Media, MediaLike, MediaView
 
 PREFIX = "Test clip"
 
@@ -28,7 +28,7 @@ def main() -> int:
             # Bulk deletes run in the order written, children first. Deleting
             # ORM objects one by one lets the unit of work reorder them, and a
             # parent row can be deleted before the rows that point at it.
-            for related in (MediaLike, MediaView):
+            for related in (MediaLike, MediaView, Comment):
                 session.exec(sa_delete(related).where(related.media_id == row.id))
             for rel in (row.path_display, row.path_poster, row.path_thumb):
                 if rel:

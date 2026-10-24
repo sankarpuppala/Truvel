@@ -16,6 +16,7 @@ import { useApp } from '../lib/app-state';
 import { EmptyState, Loading } from '../components/common';
 import { Icon, StatusBar } from '../components/Icon';
 import { NearbyCards } from '../components/NearbyCards';
+import { CommentsSheet } from '../components/CommentsSheet';
 import { WatchPlayer } from '../components/WatchPlayer';
 import { distance } from '../lib/format';
 import { haptic } from '../lib/geo';
@@ -34,6 +35,7 @@ export function Watch() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('foryou');
   const [items, setItems] = useState<WatchItem[]>([]);
+  const [commentsFor, setCommentsFor] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
   const [muted, setMuted] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -149,6 +151,30 @@ export function Watch() {
     }
   }
 
+  async function follow(item: WatchItem) {
+    const handle = item.media.creator?.username;
+    if (!handle) return;
+    if (!me) {
+      toast('Sign in to follow creators.', 'bad');
+      return;
+    }
+    try {
+      const result = await api.follow(handle, true);
+      haptic();
+      // Every video by this creator now shows them as followed.
+      setItems((list) =>
+        list.map((entry) =>
+          entry.media.creator?.username === handle
+            ? { ...entry, following: result.following }
+            : entry,
+        ),
+      );
+      toast(`Following @${handle}`, 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'That did not work.', 'bad');
+    }
+  }
+
   async function savePlace(item: WatchItem) {
     if (!me) {
       toast('Sign in to save places.', 'bad');
@@ -183,7 +209,7 @@ export function Watch() {
   );
 
   return (
-    <div className="scr scr-watch scr-fill" style={{ overflow: 'hidden' }}>
+    <main className="scr scr-watch scr-fill" style={{ overflow: 'hidden' }}>
       <StatusBar />
 
       <div className="wtabs" role="tablist" aria-label="Watch feeds">
@@ -250,6 +276,12 @@ export function Watch() {
                   onLike={() => void like(item)}
                   onSave={() => void savePlace(item)}
                   onShare={() => void share(item)}
+                  onComments={() => setCommentsFor(item.media.id)}
+                  onFollow={
+                    item.media.creator && item.media.creator.id !== me?.id
+                      ? () => void follow(item)
+                      : undefined
+                  }
                   onView={sendView(item.media.id)}
                 />
               </div>
@@ -349,6 +381,9 @@ export function Watch() {
           Video {index + 1} of {items.length}: {current.place.name.primary.text}
         </span>
       )}
-    </div>
+      {commentsFor !== null && (
+        <CommentsSheet mediaId={commentsFor} onClose={() => setCommentsFor(null)} />
+      )}
+    </main>
   );
 }

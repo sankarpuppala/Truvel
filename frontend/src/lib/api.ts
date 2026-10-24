@@ -7,6 +7,7 @@
  *    an `ApiError` whose `message` is already written for a person to read.
  */
 import type {
+  CommentItem,
   AppConfig,
   CheckinResult,
   City,
@@ -257,6 +258,12 @@ export const api = {
     request<{ liked: boolean; likes: number }>(`/media/${id}/like`, {
       method: on ? 'POST' : 'DELETE',
     }),
+  comments: (mediaId: number) =>
+    request<{ comments: CommentItem[] }>(`/media/${mediaId}/comments`),
+  addComment: (mediaId: number, text: string) =>
+    request<CommentItem>(`/media/${mediaId}/comments`, { method: 'POST', body: { text } }),
+  deleteComment: (id: number) =>
+    request<{ deleted: boolean }>(`/comments/${id}`, { method: 'DELETE' }),
   follow: (handle: string, on: boolean) =>
     request<{ following: boolean }>(`/users/${handle}/follow`, {
       method: on ? 'POST' : 'DELETE',

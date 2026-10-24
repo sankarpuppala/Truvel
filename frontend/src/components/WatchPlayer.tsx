@@ -30,6 +30,8 @@ export function WatchPlayer({
   onLike,
   onSave,
   onShare,
+  onComments,
+  onFollow,
   onView,
 }: {
   item: WatchItem;
@@ -39,6 +41,9 @@ export function WatchPlayer({
   onLike: () => void;
   onSave: () => void;
   onShare: () => void;
+  onComments: () => void;
+  /** Undefined when there is no one to follow (your own video, or no creator). */
+  onFollow?: () => void;
   /** Called when this item stops being current: (watched seconds, duration). */
   onView: (watchedSeconds: number, duration: number) => void;
 }) {
@@ -218,10 +223,21 @@ export function WatchPlayer({
           >
             <span className="avatar av-watch">{initials(media.creator?.display_name)}</span>
           </Link>
-          {item.following && (
+          {item.following ? (
             <span className="wr-plus" aria-hidden="true">
               <Icon name="i-check" size={11} />
             </span>
+          ) : (
+            onFollow && (
+              <button
+                type="button"
+                className="wr-follow"
+                onClick={onFollow}
+                aria-label={`Follow @${media.creator?.username ?? 'creator'}`}
+              >
+                <Icon name="i-plus" size={14} />
+              </button>
+            )
           )}
         </div>
         {/* WCAG 2.5.3: each accessible name contains the visible text. */}
@@ -238,6 +254,10 @@ export function WatchPlayer({
           <Icon name="i-star" size={28} />
           <span>Save</span>
         </button>
+        <button className="wr" onClick={onComments} aria-label="Comments">
+          <Icon name="i-comment" size={28} />
+          <span>Comments</span>
+        </button>
         <button className="wr" onClick={onShare} aria-label="Share">
           <Icon name="i-share" size={28} />
           <span>Share</span>
@@ -248,7 +268,7 @@ export function WatchPlayer({
           aria-pressed={showCaption}
           aria-label="Text captions on this video"
         >
-          <Icon name="i-comment" size={28} />
+          <Icon name="i-list" size={28} />
           <span>Text</span>
         </button>
       </div>
