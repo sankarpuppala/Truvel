@@ -487,3 +487,4 @@ summaries. Every figure here is reproducible by re-running the command named.
   - **Two real WCAG 2.5.3 violations** found by axe and fixed.
   - **Passport/fog was 660 ms**; a spatial grid plus a per-seed cache brought it
     to 33 ms warm.
+- 2026-10-24 — **Cards A5, A4, A7 (part).** Split `check_in` and `measure_creator` into named steps (no behaviour change, 247 tests green). Design tokens for photo overlays; Nearby card names now use the display font. Wrote `docs/REPORT.md` and `docs/DEMO.md`. Waiting on A3 field numbers, the recording and the tag.

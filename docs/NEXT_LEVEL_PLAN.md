@@ -132,9 +132,11 @@ No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on sit
   seeded data); recreate `.claude/skills/commit/SKILL.md` per PROMPT.md Prompt 3.
 - **Done when:** CI green on the branch.
 
-### A7 Report, recording, rehearsal, tag `[ ]`
+### A7 Report, recording, rehearsal, tag `[~]`
 - PROMPT.md Prompts 11, 12 and Prompt 5 (quiz mode). Use `docs/REVIEW.md`
   §2 and §4 for the "future work" chapter. Tag `v1.0-submission`.
+- **Status:** `docs/REPORT.md` and `docs/DEMO.md` written. Left for you: A3 numbers
+  into REPORT §9, the recording, rehearsal (Prompt 12 part 3), then the tag.
 
 ---
 

@@ -500,3 +500,14 @@ test spins up five threads hitting the same check-in simultaneously and
 asserts exactly one `own_visit` KadamEntry exists afterward — that assertion
 failed before the fix and passes after it, which is the proof this isn't a
 theoretical worry.
+
+### Cards A4–A5 (24 Oct)
+
+**Q: Why split `check_in` into helpers if the behaviour didn't change?**
+A: So each step can be explained and tested on its own: rate limit, simulated flag, distance, speed flag, once-a-day rule, reward. The order of database reads and writes is exactly the same, and all 247 tests still pass.
+
+**Q: Where do the user's coordinates go in a check-in?**
+A: Only into one `haversine_m` call inside `_check_in_locked`. `_visit_row` builds the `Visit` from distance and accuracy only; the model has no lat/lng columns.
+
+**Q: Why are the overlay colours tokens that don't change with the theme?**
+A: Text over a photo or video always sits on a dark scrim, whatever the theme, so it must stay white in both. Making them tokens (`--on-photo`, `--scrim`) keeps the "tokens only" rule without breaking contrast.
