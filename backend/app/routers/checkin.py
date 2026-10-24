@@ -94,11 +94,64 @@ def _check_in_locked(
     session: DbSession,
     user: User,
 ) -> dict:
+    """The check-in steps in order (SPEC §8.7): load, rate-limit, measure,
+    flag, then record a failed attempt or a verified visit and its rewards."""
     place = session.get(Place, place_id)
     if place is None or place.status == "hidden":
         raise not_found("That place is not here.", "no_place")
 
     now = utcnow()
+    _refuse_if_rate_limited(session, user, now)
+    simulated = _simulated_allowed(body)
+
+    # --- the only place the coordinates are used -------------------------- #
+    distance_m = haversine_m(body.lat, body.lng, place.lat, place.lng)
+    accuracy_m = float(body.accuracy)
+    # ---------------------------------------------------------------------- #
+
+    max_accuracy = float(cfg("verification.max_accuracy_m", 100))
+    allowed_m = max(float(place.radius_m), float(cfg("verification.min_radius_m", 150)))
+    verified = distance_m <= allowed_m and accuracy_m <= max_accuracy
+
+    flag = _speed_flag(session, user, place, now)
+    already_today = _verified_today(session, user, place_id, now)
+
+    if not verified:
+        session.add(_visit_row(user, place_id, now, distance_m, accuracy_m, False, flag, simulated))
+        session.commit()
+        return _not_verified_reply(distance_m, accuracy_m, max_accuracy)
+
+    if already_today is not None:
+        return {
+            "verified": True,
+            "code": "already_today",
+            "message": "You already checked in here today.",
+            "kadam": 0,
+            "first_visit": False,
+            "distance_m": round(distance_m),
+        }
+
+    is_first_ever = _never_verified_here(session, user, place_id)
+    visit = _visit_row(user, place_id, now, distance_m, accuracy_m, True, flag, simulated)
+    session.add(visit)
+    session.commit()
+    session.refresh(visit)
+
+    awarded, attributed, place_verified_now = 0, {}, False
+    # A flagged or simulated visit earns nothing, verifies nothing and
+    # attributes to nobody (SPEC §8.7, §9.8, AC-25).
+    if flag is None and not simulated:
+        awarded, attributed, place_verified_now = _reward_visit(
+            session, visit, user, place, is_first_ever, now
+        )
+    return _verified_reply(
+        session, place, visit, now, awarded, is_first_ever, flag, simulated,
+        distance_m, place_verified_now, attributed,
+    )
+
+
+def _refuse_if_rate_limited(session: DbSession, user: User, now: datetime) -> None:
+    """Too many attempts in the last hour → 429 (SPEC §9.8 rate limit)."""
     since = now - timedelta(hours=1)
     attempts = int(
         session.exec(
@@ -111,42 +164,38 @@ def _check_in_locked(
     if rate_limited(attempts, "checkins_per_hour"):
         raise too_many("Too many check-in attempts this hour.")
 
-    # A simulated check-in is only possible when the server was started with the
-    # flag, and the resulting visit is marked and excluded from everything that
-    # matters (SPEC §8.7, AC-25).
-    simulated = bool(body.simulated) and dev_allow_fake_location()
+
+def _simulated_allowed(body: CheckinIn) -> bool:
+    """A simulated check-in is only possible when the server was started with the
+    flag, and the resulting visit is marked and excluded from everything that
+    matters (SPEC §8.7, AC-25)."""
     if body.simulated and not dev_allow_fake_location():
         raise forbidden("Simulated location is not enabled.", "no_fake_location")
+    return bool(body.simulated)
 
-    # --- the only place the coordinates are used -------------------------- #
-    distance_m = haversine_m(body.lat, body.lng, place.lat, place.lng)
-    accuracy_m = float(body.accuracy)
-    # ---------------------------------------------------------------------- #
 
-    min_radius = float(cfg("verification.min_radius_m", 150))
-    max_accuracy = float(cfg("verification.max_accuracy_m", 100))
-    allowed_m = max(float(place.radius_m), min_radius)
-
-    verified = distance_m <= allowed_m and accuracy_m <= max_accuracy
-
-    # Impossible travel: compare with the user's previous visit (SPEC §9.8).
+def _speed_flag(session: DbSession, user: User, place: Place, now: datetime) -> str | None:
+    """Impossible travel: compare with the user's previous visit (SPEC §9.8)."""
     previous = session.exec(
         select(Visit).where(Visit.user_id == user.id).order_by(Visit.at.desc()).limit(1)
     ).first()
-    flag = None
-    if previous is not None:
-        prev_place = session.get(Place, previous.place_id)
-        if prev_place is not None and impossible_travel(
-            PriorVisit(at=previous.at, lat=prev_place.lat, lng=prev_place.lng),
-            now,
-            place.lat,
-            place.lng,
-        ):
-            flag = "speed"
+    if previous is None:
+        return None
+    prev_place = session.get(Place, previous.place_id)
+    if prev_place is not None and impossible_travel(
+        PriorVisit(at=previous.at, lat=prev_place.lat, lng=prev_place.lng),
+        now,
+        place.lat,
+        place.lng,
+    ):
+        return "speed"
+    return None
 
-    # One verified visit per user per place per day (SPEC §8.7).
+
+def _verified_today(session: DbSession, user: User, place_id: int, now: datetime) -> Visit | None:
+    """One verified visit per user per place per day (SPEC §8.7)."""
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    already_today = session.exec(
+    return session.exec(
         select(Visit).where(
             Visit.user_id == user.id,
             Visit.place_id == place_id,
@@ -155,50 +204,10 @@ def _check_in_locked(
         )
     ).first()
 
-    if not verified:
-        if accuracy_m > max_accuracy:
-            message = (
-                f"Your phone isn't sure where you are (±{int(accuracy_m)} m). "
-                "Step into open sky and try again."
-            )
-            code = "poor_accuracy"
-        else:
-            km = distance_m / 1000.0
-            how_far = f"{km:.1f} km" if km >= 1 else f"{int(distance_m)} m"
-            message = f"You're {how_far} away. Check in when you get there."
-            code = "too_far"
-        session.add(
-            Visit(
-                user_id=int(user.id),
-                place_id=place_id,
-                at=now,
-                distance_m=distance_m,
-                accuracy_m=accuracy_m,
-                verified=False,
-                flag=flag,
-                simulated=simulated,
-            )
-        )
-        session.commit()
-        return {
-            "verified": False,
-            "code": code,
-            "message": message,
-            "distance_m": round(distance_m),
-            "accuracy_m": round(accuracy_m),
-        }
 
-    if already_today is not None:
-        return {
-            "verified": True,
-            "code": "already_today",
-            "message": "You already checked in here today.",
-            "kadam": 0,
-            "first_visit": False,
-            "distance_m": round(distance_m),
-        }
-
-    is_first_ever = (
+def _never_verified_here(session: DbSession, user: User, place_id: int) -> bool:
+    """True when this is the user's first verified visit to the place ever."""
+    return (
         session.exec(
             select(Visit).where(
                 Visit.user_id == user.id,
@@ -209,66 +218,90 @@ def _check_in_locked(
         is None
     )
 
-    visit = Visit(
+
+def _visit_row(
+    user: User, place_id: int, now: datetime, distance_m: float, accuracy_m: float,
+    verified: bool, flag: str | None, simulated: bool,
+) -> Visit:
+    """A Visit keeps distance and accuracy, never the coordinates (invariant 1)."""
+    return Visit(
         user_id=int(user.id),
         place_id=place_id,
         at=now,
         distance_m=distance_m,
         accuracy_m=accuracy_m,
-        verified=True,
+        verified=verified,
         flag=flag,
         simulated=simulated,
     )
-    session.add(visit)
-    session.commit()
-    session.refresh(visit)
 
-    awarded = 0
-    attributed: dict[int, float] = {}
-    place_verified_now = False
 
-    # A flagged or simulated visit earns nothing, verifies nothing and
-    # attributes to nobody (SPEC §8.7, §9.8, AC-25).
-    if flag is None and not simulated:
-        awarded = kadam.award(
-            session,
-            int(user.id),
-            kadam.OWN_VISIT,
-            ref_type="place",
-            ref_id=place_id,
-            now=now,
+def _not_verified_reply(distance_m: float, accuracy_m: float, max_accuracy: float) -> dict:
+    """Tell the user why: a vague GPS fix, or simply too far away."""
+    if accuracy_m > max_accuracy:
+        message = (
+            f"Your phone isn't sure where you are (±{int(accuracy_m)} m). "
+            "Step into open sky and try again."
         )
+        code = "poor_accuracy"
+    else:
+        km = distance_m / 1000.0
+        how_far = f"{km:.1f} km" if km >= 1 else f"{int(distance_m)} m"
+        message = f"You're {how_far} away. Check in when you get there."
+        code = "too_far"
+    return {
+        "verified": False,
+        "code": code,
+        "message": message,
+        "distance_m": round(distance_m),
+        "accuracy_m": round(accuracy_m),
+    }
 
-        if is_first_ever:
-            attributed = _run_attribution(session, visit, int(user.id), place_id, now)
 
-        if place.status != "verified" and place.source == "community":
-            visits = [
-                {
-                    "user_id": v.user_id,
-                    "verified": v.verified,
-                    "flag": v.flag,
-                    "simulated": v.simulated,
-                }
-                for v in session.exec(select(Visit).where(Visit.place_id == place_id)).all()
-            ]
-            if place_can_verify(place.added_by, visits):
-                place.status = "verified"
-                place.updated_at = now
-                session.add(place)
-                session.commit()
-                place_verified_now = True
-                if place.added_by:
-                    kadam.award(
-                        session,
-                        int(place.added_by),
-                        kadam.DISCOVERY,
-                        ref_type="place",
-                        ref_id=place_id,
-                        now=now,
-                    )
+def _reward_visit(
+    session: DbSession, visit: Visit, user: User, place: Place, is_first_ever: bool,
+    now: datetime,
+) -> tuple[int, dict[int, float], bool]:
+    """Kadam for the visit, attribution on a first visit (§9.9), and maybe
+    verify a community place and pay its discoverer (§9.8)."""
+    place_id = int(place.id)
+    awarded = kadam.award(
+        session, int(user.id), kadam.OWN_VISIT, ref_type="place", ref_id=place_id, now=now
+    )
+    attributed: dict[int, float] = {}
+    if is_first_ever:
+        attributed = _run_attribution(session, visit, int(user.id), place_id, now)
+    return awarded, attributed, _maybe_verify_place(session, place, now)
 
-    can_pulse = True
+
+def _maybe_verify_place(session: DbSession, place: Place, now: datetime) -> bool:
+    """Promote a community place once enough independent visits exist (§9.8)."""
+    if place.status == "verified" or place.source != "community":
+        return False
+    visits = [
+        {"user_id": v.user_id, "verified": v.verified, "flag": v.flag, "simulated": v.simulated}
+        for v in session.exec(select(Visit).where(Visit.place_id == place.id)).all()
+    ]
+    if not place_can_verify(place.added_by, visits):
+        return False
+    place.status = "verified"
+    place.updated_at = now
+    session.add(place)
+    session.commit()
+    if place.added_by:
+        kadam.award(
+            session, int(place.added_by), kadam.DISCOVERY,
+            ref_type="place", ref_id=int(place.id), now=now,
+        )
+    return True
+
+
+def _verified_reply(
+    session: DbSession, place: Place, visit: Visit, now: datetime, awarded: int,
+    is_first_ever: bool, flag: str | None, simulated: bool, distance_m: float,
+    place_verified_now: bool, attributed: dict[int, float],
+) -> dict:
+    """The success payload: kadam, attribution shares and the passport stamp."""
     return {
         "verified": True,
         "code": "ok",
@@ -281,10 +314,10 @@ def _check_in_locked(
         "distance_m": round(distance_m),
         "place_verified": place_verified_now,
         "attributed": [{"creator_id": c, "share": round(s, 6)} for c, s in attributed.items()],
-        "can_pulse": can_pulse,
+        "can_pulse": True,
         "stamp": {
-            "place_id": place_id,
-            "name": services.english_name(session, place_id),
+            "place_id": place.id,
+            "name": services.english_name(session, int(place.id)),
             "category": place.category,
             "date": now.date().isoformat(),
         },
