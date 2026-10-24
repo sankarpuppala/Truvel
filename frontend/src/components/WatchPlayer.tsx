@@ -172,7 +172,7 @@ export function WatchPlayer({
             zIndex: 2,
             display: 'grid',
             placeItems: 'center',
-            color: '#fff',
+            color: 'var(--on-photo)',
           }}
         >
           <span className="round" style={{ width: 64, height: 64 }}>
@@ -197,8 +197,8 @@ export function WatchPlayer({
             display: 'flex',
             gap: 8,
             alignItems: 'flex-start',
-            background: 'rgba(163,38,58,.85)',
-            color: '#fff',
+            background: 'var(--live-badge)',
+            color: 'var(--on-photo)',
             borderRadius: 14,
             padding: '8px 12px',
             fontSize: 13.5,
@@ -298,8 +298,8 @@ export function WatchPlayer({
             bottom: 300,
             zIndex: 3,
             margin: 0,
-            background: 'rgba(10,12,10,.8)',
-            color: '#fff',
+            background: 'var(--scrim-strong)',
+            color: 'var(--on-photo)',
             borderRadius: 12,
             padding: '10px 12px',
             fontSize: 15,

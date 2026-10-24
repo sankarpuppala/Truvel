@@ -102,7 +102,14 @@ No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on sit
   video → time to first frame in Watch.
 - **Done when:** the three "not yet measured" rows in PLAN.md have values.
 
-### A5 Split the long handlers (behaviour-preserving) `[ ]`
+### A4 Design critique (token check) `[x]`
+- Static scan for literal colours and fonts outside `tokens.css`; fixes in
+  `tokens.css`, `components.css`, `base.css`, `desktop.css`, `DeckCard.tsx`,
+  `WatchPlayer.tsx`, `common.tsx`. Found: Nearby card names fell back to the
+  body font (`--font-display` never defined); photo/video overlays used literal
+  white and scrims. Re-take screenshots locally with `npx playwright test e2e/screens.spec.ts`.
+
+### A5 Split the long handlers (behaviour-preserving) `[~]`
 - **Why:** viva readiness; CLAUDE.md "functions ≤ 40 lines where possible".
 - **Targets:** `routers/checkin.py:57 check_in` (202 lines),
   `routers/studio.py:227 studio` (186), `routers/watch_router.py:44 get_watch` (173),
@@ -114,6 +121,8 @@ No new features in Track A. Order: A6 → A1 → A2 → A5 → A4 → A3 (on sit
 - **Stop rule:** if a split needs more than 30 minutes or breaks a test you
   can't explain, revert that file and move on. The deadline beats tidiness.
 - **Done when:** each target ≤ ~60 lines; `pytest -q` green, same count.
+- **Status:** `check_in` and `measure_creator` split (the two the viva will probe).
+  `studio`, `get_watch`, `get_deck` are payload builders; left as they are per the stop rule.
 
 ### A6 Repo hygiene + CI + commit skill `[x]`
 - **Do:** `git rm pagdandi-starter.zip`; fix `.gitignore` (`*-starter.zip`);

@@ -81,8 +81,8 @@ html,body{overflow-x:hidden}
   to{transform:translateY(0);opacity:1}
 }
 @keyframes live-pulse{
-  0%,100%{box-shadow:0 0 0 3px rgba(108,196,149,.30)}
-  50%{box-shadow:0 0 0 6px rgba(108,196,149,.10)}
+  0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--moss) 30%,transparent)}
+  50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--moss) 10%,transparent)}
 }
 @keyframes fog-open{
   from{r:0}
@@ -122,10 +122,10 @@ html,body{overflow-x:hidden}
   animation:toast-in 220ms ease-out both;
 }
 .toast-kadam{background:var(--marigold);color:var(--on-marigold)}
-.toast-bad{background:var(--danger);color:#fff}
+.toast-bad{background:var(--danger);color:var(--on-primary)}
 
 .sheet-backdrop{
-  position:fixed;inset:0;z-index:50;background:rgba(10,12,10,.45);
+  position:fixed;inset:0;z-index:50;background:var(--backdrop);
   display:flex;align-items:flex-end;justify-content:center;
 }
 .sheet-backdrop>.sheet{
@@ -136,7 +136,7 @@ html,body{overflow-x:hidden}
   display:flex;flex-direction:column;align-items:center;gap:10px;
   text-align:center;padding:40px 24px;color:var(--muted);
 }
-.empty b{font:400 22px/1.2 'Rozha One',Georgia,serif;color:var(--ink)}
+.empty b{font:400 22px/1.2 var(--f-display);color:var(--ink)}
 .empty p{margin:0;font-size:14.5px;text-wrap:pretty;max-width:34ch}
 
 .loading{padding:40px 16px;text-align:center;color:var(--muted);font-size:14.5px}
@@ -151,7 +151,7 @@ html,body{overflow-x:hidden}
 .field-error{color:var(--danger);font-size:13px;font-weight:600}
 
 .form-page{padding:16px;display:flex;flex-direction:column}
-.form-page h2{font:400 30px/1.1 'Rozha One',Georgia,serif;margin:0 0 4px}
+.form-page h2{font:400 30px/1.1 var(--f-display);margin:0 0 4px}
 .form-page .sub{color:var(--muted);font-size:14.5px;margin:0 0 18px}
 
 .seg-full{display:flex;width:100%}
@@ -178,7 +178,7 @@ html,body{overflow-x:hidden}
 /* --- the sign-in page (SPEC §11) ----------------------------------------- */
 .auth-page{max-width:420px;margin-inline:auto;width:100%;padding-top:24px;gap:0}
 .auth-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
-.auth-word{font:400 42px/1 'Rozha One',Georgia,serif;margin:0;letter-spacing:-.01em}
+.auth-word{font:400 42px/1 var(--f-display);margin:0;letter-spacing:-.01em}
 .auth-tag{margin:2px 0 0;color:var(--muted);font-size:14.5px}
 .auth-seg{margin-bottom:20px;max-width:none}
 .auth-seg button{flex:1}

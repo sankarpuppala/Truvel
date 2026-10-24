@@ -251,7 +251,7 @@ export function BottomSheet({
       >
         <div className="grab" />
         {title && (
-          <h4 style={{ font: "400 22px/1.15 'Rozha One',Georgia,serif", margin: '0 0 8px' }}>
+          <h4 style={{ font: "400 22px/1.15 var(--f-display)", margin: '0 0 8px' }}>
             {title}
           </h4>
         )}

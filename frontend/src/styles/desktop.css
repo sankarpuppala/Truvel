@@ -96,7 +96,7 @@
   }
   .side-logo{display:flex;align-items:center;gap:10px;color:var(--ink);padding:0 8px}
   .side-word{display:flex;flex-direction:column;gap:1px}
-  .side-word{font:400 32px/1 "Rozha One",Georgia,serif;letter-spacing:-.01em}
+  .side-word{font:400 32px/1 var(--f-display);letter-spacing:-.01em}
   .side-word small{font:500 11.5px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.01em}
   .side-nav{display:flex;flex-direction:column;gap:4px}
   .side-link{

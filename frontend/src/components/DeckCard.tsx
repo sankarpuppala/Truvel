@@ -171,15 +171,15 @@ export function DeckCard({
               right: skipping ? 18 : 'auto',
               zIndex: 3,
               transform: `rotate(${saving ? -8 : 8}deg)`,
-              border: `2.5px solid ${saving ? 'var(--marigold)' : '#fff'}`,
-              color: saving ? 'var(--marigold)' : '#fff',
+              border: `2.5px solid ${saving ? 'var(--marigold)' : 'var(--on-photo)'}`,
+              color: saving ? 'var(--marigold)' : 'var(--on-photo)',
               borderRadius: 10,
               padding: '4px 10px',
               fontWeight: 800,
               letterSpacing: '.06em',
               fontSize: 15,
               textTransform: 'uppercase',
-              background: 'rgba(12,14,12,.35)',
+              background: 'var(--scrim-soft)',
             }}
           >
             {saving ? 'Want to go' : 'Skip'}

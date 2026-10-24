@@ -13,6 +13,10 @@
  --map-water:color-mix(in srgb,var(--lake) 34%,var(--paper));
  --map-park:color-mix(in srgb,var(--moss) 20%,var(--paper));
  --bezel:#0E100F;
+ /* Over photos and video the backdrop is always dark, so these do not change with the theme. */
+ --on-photo:#FFFFFF;--scrim:rgba(12,14,12,.55);--scrim-soft:rgba(12,14,12,.35);--scrim-strong:rgba(10,12,10,.85);
+ --backdrop:rgba(10,12,10,.45);--live-badge:rgba(163,38,58,.85);
+ --f-display:'Rozha One',Georgia,serif;
  --f-ui:Mukta,'Anek Telugu','Anek Tamil','Anek Kannada','Anek Malayalam','Anek Bangla','Anek Gujarati','Anek Gurmukhi','Anek Odia','Noto Nastaliq Urdu','Noto Sans Ol Chiki','Noto Sans Meetei Mayek',system-ui,sans-serif;
  color-scheme:light;
 }
