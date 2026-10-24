@@ -20,6 +20,7 @@ const ITEMS = [
   { to: '/', icon: 'i-compass', label: 'Nearby', note: 'Places around you' },
   { to: '/watch', icon: 'i-play', label: 'Watch', note: 'Places on video' },
   { to: '/explore', icon: 'i-search', label: 'Explore', note: 'Search a city' },
+  { to: '/following', icon: 'i-group', label: 'Following', note: 'People you follow' },
   { to: '/you', icon: 'i-passport', label: 'You', note: 'Passport & Studio' },
 ];
 

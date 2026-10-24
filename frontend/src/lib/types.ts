@@ -19,6 +19,23 @@ export type Creator = {
   display_name: string;
 };
 
+export type SocialUser = {
+  id: number;
+  username: string;
+  display_name: string;
+  followed_by_me: boolean;
+  is_me: boolean;
+  posts?: number;
+};
+
+export type FeedItem = {
+  type: 'post' | 'place';
+  at: string;
+  creator: SocialUser;
+  media: MediaItem | null;
+  place: Place;
+};
+
 export type CommentItem = {
   id: number;
   text: string;
@@ -317,7 +334,9 @@ export type Profile = {
   bio: string;
   level: string;
   followers: number;
+  following_count: number;
   following: boolean;
+  posts: (MediaItem & { place_id: number })[];
   is_self: boolean;
   places_found: number;
   visits_caused: number;

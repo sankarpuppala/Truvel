@@ -21,6 +21,7 @@ import { AddPulse } from './screens/AddPulse';
 import { Explore } from './screens/Explore';
 import { Nearby } from './screens/Nearby';
 import { PlacePage } from './screens/PlacePage';
+import { Following } from './screens/Following';
 import { Profile } from './screens/Profile';
 import { Settings } from './screens/Settings';
 import { ForgotPassword, ResetPassword } from './screens/Recover';
@@ -39,7 +40,7 @@ function pageName(path: string): string {
   if (path === '/') return 'nearby';
   if (path.startsWith('/explore')) return 'explore';
   if (path.startsWith('/place/')) return 'place';
-  if (path.startsWith('/you') || path.startsWith('/u/')) return 'you';
+  if (path.startsWith('/you') || path.startsWith('/u/') || path.startsWith('/following')) return 'you';
   if (path.startsWith('/settings')) return 'settings';
   if (path.startsWith('/add/')) return 'add';
   if (['/signin', '/forgot', '/reset'].some((prefix) => path.startsWith(prefix))) return 'signin';
@@ -82,6 +83,7 @@ export function App() {
               <Route path="/add/pulse" element={<AddPulse />} />
               <Route path="/you" element={<You />} />
               <Route path="/u/:handle" element={<Profile />} />
+              <Route path="/following" element={<Following />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/forgot" element={<ForgotPassword />} />

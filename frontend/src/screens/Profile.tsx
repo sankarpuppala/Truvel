@@ -78,8 +78,14 @@ export function Profile() {
           <div className="pp-id">
             <div className="pp-name">{profile.display_name}</div>
             <div className="pp-level">
-              {num(profile.followers)} follower{profile.followers === 1 ? '' : 's'} &middot; since{' '}
-              {date(profile.created_at)}
+              <Link to={`/following?user=${profile.username}&tab=followers`}>
+                <b>{num(profile.followers)}</b> follower{profile.followers === 1 ? '' : 's'}
+              </Link>{' '}
+              &middot;{' '}
+              <Link to={`/following?user=${profile.username}&tab=following`}>
+                <b>{num(profile.following_count)}</b> following
+              </Link>{' '}
+              &middot; since {date(profile.created_at)}
             </div>
           </div>
           {!profile.is_self && (
@@ -111,8 +117,8 @@ export function Profile() {
             <small>lifetime</small>
           </div>
           <div className="ppc">
-            <b>{num(profile.videos.length)}</b>
-            <span>videos</span>
+            <b>{num(profile.posts.length)}</b>
+            <span>posts</span>
           </div>
         </div>
 
@@ -124,6 +130,24 @@ export function Profile() {
               is paid.
             </span>
           </div>
+        )}
+
+        {profile.posts.length > 0 && (
+          <section className="sec" style={{ padding: '0 16px 14px' }}>
+            <h4>Posts</h4>
+            <div className="post-grid">
+              {profile.posts.map((post) => (
+                <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Post'}>
+                  {post.kind === 'video' ? (
+                    post.poster ? <img src={post.poster} alt="" loading="lazy" /> : <span className="post-ph" />
+                  ) : (
+                    <img src={post.thumb ?? post.url} alt="" loading="lazy" />
+                  )}
+                  {post.kind === 'video' && <Icon name="i-play" size={18} className="post-kind" />}
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         {profile.videos.length > 0 && (
@@ -158,7 +182,7 @@ export function Profile() {
             </ol>
           </section>
         ) : (
-          profile.videos.length === 0 && (
+          profile.posts.length === 0 && (
             <EmptyState icon="i-compass" title="Nothing posted yet" />
           )
         )}
