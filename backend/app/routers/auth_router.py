@@ -128,8 +128,13 @@ def login(
     user = session.exec(select(User).where(column == identifier)).first()
 
     # One generic error for both "no such account" and "wrong password", so the
-    # endpoint cannot be used to find out who has an account (SPEC §11).
-    if user is None or not auth.verify_password(user.password_hash, body.password):
+    # endpoint cannot be used to find out who has an account (SPEC §11). The
+    # hash to check against is always a real argon2id hash -- a dummy one when
+    # there's no such user -- so a non-existent identifier takes the same time
+    # as a wrong password on a real one.
+    hash_to_check = user.password_hash if user is not None else auth.dummy_hash()
+    password_ok = auth.verify_password(hash_to_check, body.password)
+    if user is None or not password_ok:
         auth.record_login_failure(keys)
         raise unauthorized("That email and password do not match.")
 

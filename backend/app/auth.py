@@ -72,6 +72,19 @@ def verify_password(password_hash: str, password: str) -> bool:
         return False
 
 
+# A hash of a password nobody will ever type, computed once at import time.
+# `login()` runs `verify_password` against this when no account matches, so
+# a non-existent identifier costs the same argon2id time as a wrong password
+# on a real one -- otherwise the login endpoint's identical error message
+# (SPEC §11) is undone by a timing difference that still reveals who has an
+# account.
+_DUMMY_HASH = hash_password(secrets.token_hex(32))
+
+
+def dummy_hash() -> str:
+    return _DUMMY_HASH
+
+
 def validate_username(username: str) -> str:
     """a-z0-9_ and 3-20 characters (SPEC §5)."""
     name = (username or "").strip().lower()

@@ -1,7 +1,7 @@
 # SPEC.md — Truvel (v2)
 
 > *Truvel* (पगडंडी): the narrow footpath that isn't on the map, the one locals
-> walk. Working name; check it first (Q1).
+> walk.
 
 This is the source of truth. If code and this file disagree, the code is wrong,
 or this file gets updated first and then the code (CLAUDE.md, "Fix the spec, not

@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from sqlmodel import Session as DbSession
 from sqlmodel import select
 
+from .. import services
 from ..auth import current_user, require_csrf_header
 from ..config import cfg, dev_allow_fake_location
 from ..db import get_session
@@ -54,9 +55,16 @@ def teleport(
         place = session.get(Place, body.place_id)
         if place is None:
             raise not_found("No such place.", "no_place")
+        # Same redaction as place_payload: the simulator can still teleport
+        # "near" a fragile, unpledged place, but it must not be the one
+        # endpoint that hands back the exact pin invariant 5 withholds
+        # everywhere else.
+        redact = bool(place.fragile) and not services.is_pledged(session, int(place.id), user)
+        lat = round(place.lat, services.FRAGILE_PRECISION) if redact else place.lat
+        lng = round(place.lng, services.FRAGILE_PRECISION) if redact else place.lng
         return {
-            "lat": place.lat,
-            "lng": place.lng,
+            "lat": lat,
+            "lng": lng,
             "accuracy": 12.0,
             "simulated": True,
             "place_id": place.id,

@@ -155,7 +155,12 @@ def duplicate_candidates(
         if place is None:
             continue
         payload = services.place_payload(session, place, user, lat=body.lat, lng=body.lng)
-        payload["distance_m"] = round(cand.distance_m)
+        # The exact distance from the true pin is only safe to show once the
+        # place's own redaction is lifted (place_payload already fuzzed lat/lng
+        # above for an unpledged fragile place) -- otherwise this "is it a
+        # duplicate?" check becomes a trilateration oracle (invariant 5).
+        if payload["coords_exact"]:
+            payload["distance_m"] = round(cand.distance_m)
         payload["name_sim"] = cand.name_sim
         payload["reason"] = cand.reason
         out.append(payload)

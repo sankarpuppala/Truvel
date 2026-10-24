@@ -17,8 +17,17 @@ export default defineConfig({
     },
   },
   build: {
-    // MapLibre is big and only two screens need it, so it gets its own chunk
-    // that the rest of the app never downloads (SPEC §15).
+    // MapLibre and turf are big and only a couple of screens need them, so
+    // they get their own chunks the rest of the app never downloads
+    // (SPEC §15). Vite still defaults to a <link rel="modulepreload"> for a
+    // dynamically-imported chunk if it's reachable from the entry module
+    // graph -- that hint is shared across every route via the single
+    // index.html, so Nearby (which never touches turf) was paying for it on
+    // every load. Drop the two lazy chunks from the preload list.
+    modulePreload: {
+      resolveDependencies: (_url, deps) =>
+        deps.filter((dep) => !dep.includes('/maplibre-') && !dep.includes('/turf-')),
+    },
     rollupOptions: {
       output: {
         manualChunks: {

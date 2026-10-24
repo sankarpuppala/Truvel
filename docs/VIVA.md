@@ -370,3 +370,133 @@ Next, in order: the outdoor trip (it unblocks four measurements), then the real
 pHash run, then CLIP embeddings — because the pHash result shows cropping
 defeats the hash completely (0 % detection at a 20 % crop), and CLIP cosine
 similarity is the documented Tier-2 answer to exactly that.
+
+### Card A6, 23 Oct 2026 — repo hygiene, CI, commit skill
+
+**What was built, in plain English.** No product code changed. A leftover
+394 KB starter archive (`pagdandi-starter.zip`, tracked since the Truvel
+rename) was removed because its contents are already in the repo; `.gitignore`
+now ignores any `*-starter.zip`, not just the one name. The SPEC.md epigraph
+dropped "Working name; check it first (Q1)" because the name was settled to
+Truvel everywhere else in the codebase. A GitHub Actions workflow
+(`.github/workflows/ci.yml`) now runs ruff and pytest on Python 3.12 and
+`npm ci`/lint/test on Node 20 on every push and PR — Playwright is left out
+because it needs seeded data the CI runner doesn't have. `.claude/skills/commit/SKILL.md`
+was recreated to match PROMPT.md Prompt 3: run tests, refuse anything on the
+"Never commit" list, and commit with a `card <ID>:`/`phase N:` message.
+
+---
+
+**Q1. Why delete the starter zip instead of just adding it to `.gitignore` like
+the earlier `truvel-starter.zip`?**
+
+Because it was already tracked, not just present on disk. `.gitignore` only
+stops *new* additions — a file git already has in its history keeps being
+committed on every change to it until it's explicitly removed with
+`git rm`. The zip's contents are the original Pagdandi-starter scaffold, which
+is already unpacked into `backend/` and `frontend/`; keeping the archive too
+meant carrying 394 KB of duplicate, frozen code in every clone for no reason.
+
+**Q2. Why touch SPEC.md for a one-line wording change instead of leaving it?**
+
+CLAUDE.md's rule is "fix the spec, not the code" — SPEC.md is the source of
+truth, and a stale note inside it ("Working name; check it first") actively
+disagrees with the rest of the project, which has called the app Truvel since
+commit `369487f`. Leaving it risks someone reading the spec cold (a teammate,
+a grader, future-me) and wasting time re-opening a question §20 Q1 that was
+already answered. The fix is intentionally the smallest possible diff — one
+line — because CLAUDE.md also says not to add scope beyond what the card asks.
+
+**Q3. The CI workflow doesn't run Playwright. Doesn't that leave a gap?**
+
+Yes, and it's a deliberate, stated gap, not an oversight — the card explicitly
+says "no Playwright in CI yet, it needs seeded data." Playwright's e2e specs
+assert against specific places and photos from `scripts/seed_osm.py`, and CI
+runs on a clean checkout with an empty database. Wiring that up (seed step,
+test DB, headless browser deps) is real work with its own failure modes, and
+cramming it in here would violate the one-card-one-change discipline this
+plan is built on. Backend (pytest) and frontend (vitest) tests don't need
+seeded data, so they run safely as-is; e2e in CI is unstarted work, tracked
+for later, not silently skipped.
+
+### Card A1, 24 Oct 2026 — security, privacy and fraud review
+
+**What was built, in plain English.** An independent subagent — one with no
+memory of any other conversation about this project — was given only
+CLAUDE.md's invariants, the relevant SPEC sections, and the backend source,
+and asked to find concrete ways to break invariants 1 ("never store a user's
+coordinates"), 3/4 ("no shortcut that pays kadam or earnings", "ledgers
+only"), 5 ("a fragile place's exact pin is never returned before the
+pledge"), and auth. It found six real bugs (one Critical, three High, two
+Medium) and one accepted limitation. Every Critical/High/Medium was fixed
+with a targeted, minimal change and a test; nothing in SPEC or the product's
+behaviour changed, only bugs in how the existing rules were enforced.
+
+---
+
+**Q1. The reviewer found that a fragile place's exact coordinates could be
+recovered by trilateration without ever pledging. Walk through the actual
+exploit.**
+
+`place_payload()` correctly rounds the *returned* `lat`/`lng` to about 1 km
+for an unpledged fragile place, but it was computing `distance_km` from the
+viewer's query point to the place's *true*, unrounded coordinates — because
+that line read `place.lat`/`place.lng` instead of the already-fuzzed
+`out_lat`/`out_lng` a few lines above it. A fragile place's name and category
+are never redacted, only its position, so an attacker who sees it in Explore
+already has what three distance readings need: `GET /api/places/{id}?lat=A1&lng=B1`,
+then two more calls from different known points, each returning an exact
+distance to the true pin. Three circles with known centres and known radii
+intersect at one point — the exact coordinates, recovered with no pledge at
+all. The fix is a one-line swap (`place.lat` → `out_lat`), because once the
+*returned* position is fuzzed, every derived quantity (distance, travel time)
+has to be derived from that same fuzzed position, not from the database row
+underneath it. The duplicate-candidates endpoint (`add.py`) had the identical
+gap in its own `distance_m` field and got the identical fix: suppress it
+unless `coords_exact` is true.
+
+**Q2. Why does `/api/touch` now reject `content_type: "video"` and
+`"photo"` outright, instead of just checking that the viewer actually
+watched?**
+
+Because that check already exists — just not in this endpoint. Reading
+`watch_router.py` shows that a genuine video touch is already created
+automatically, server-side, the moment someone's watch session is classified
+as *engaged* (SPEC §9.10: watched ≥ 3 s, invalid-reason rules applied,
+`MediaView` row stamped first). The frontend never calls `/api/touch` with
+`content_type="video"` at all — grep confirms it only ever sends `"place"`
+(opening a place page) and `"steps"` (reading directions for 10 s). So the
+video/photo branch in `record_touch` was dead code from the real app's point
+of view, but still reachable by anyone who could script a direct API call —
+and it trusted the client completely: no check that any `MediaView` existed,
+let alone an engaged one. That's exactly the shape of bug invariant 3 warns
+about: "no shortcut that pays kadam or earnings." The fix isn't to bolt a
+verification check onto this endpoint — it's to delete the unverifiable path
+entirely, because the verified path already exists somewhere else, and
+having two ways to create the same kind of row is itself the vulnerability
+(only one of them is ever checked).
+
+**Q3. The check-in race condition needs two *simultaneous* requests to
+trigger. Is that a realistic attack, or is this fix overkill for a problem
+that will never happen in practice?**
+
+It's realistic precisely because of how this stack runs, not despite it.
+FastAPI executes a synchronous `def` route (which `check_in` is) in a worker
+thread pool, so two check-in requests arriving close together — two browser
+tabs left open, a flaky network causing the client to retry, or a few lines
+of `asyncio.gather`/two parallel `curl`s — can genuinely have their handlers
+running concurrently, each with its own SQLAlchemy session reading the same
+SQLite row at the same moment. The existing code already had the *right
+idea*: `kadam.award()` checks `ONCE_PER_REF` before paying out, and
+`check_in` checks `already_today`/`is_first_ever` before running attribution
+— but each of those checks is a separate read, then later a separate write,
+with nothing stopping two threads from both passing the read before either
+commits the write (classic TOCTOU — time-of-check to time-of-use). The fix
+doesn't touch the database schema or add a migration (this app deliberately
+has neither Postgres nor Alembic); a `threading.Lock` keyed by
+`(user_id, place_id)`, held for the whole read-then-write section, is
+sufficient because this app only ever runs as one process on one laptop. The
+test spins up five threads hitting the same check-in simultaneously and
+asserts exactly one `own_visit` KadamEntry exists afterward — that assertion
+failed before the fix and passes after it, which is the proof this isn't a
+theoretical worry.

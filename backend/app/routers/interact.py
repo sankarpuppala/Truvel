@@ -307,19 +307,39 @@ def record_touch(
     The **server** decides the creator and the timestamp from the content it
     looks up -- the client only says what was seen. Otherwise a client could
     credit any creator it liked for a visit it was about to make.
+
+    Only "place" (a place-page view) and "steps" (last-mile directions) are
+    accepted here: they are a one-tap, low-weight signal the client cannot
+    meaningfully forge. "video"/"photo" touches are deliberately **not**
+    created from a client-asserted call -- they are created by the watch
+    view handler itself, straight from a genuinely engaged `MediaView`
+    (`watch_router.record_view`), because that is the only place the server
+    has actually verified someone watched something (SPEC §9.10). Trusting a
+    client-supplied content_id here would let any account flood touches for a
+    creator it never watched, right before a real check-in, and walk away
+    with that creator's attribution and kadam for free.
     """
-    if body.content_type not in ("place", "video", "photo", "steps"):
+    if body.content_type not in ("place", "steps"):
         raise bad_request("Unknown content type.", "bad_touch")
     place = session.get(Place, body.place_id)
     if place is None or place.status == "hidden":
         raise not_found("That place is not here.", "no_place")
 
+    now = utcnow()
+    since = now - timedelta(hours=1)
+    recent = int(
+        session.exec(
+            select(func.count())
+            .select_from(Touch)
+            .where(Touch.user_id == user.id, Touch.at >= since)
+        ).one()
+        or 0
+    )
+    if rate_limited(recent, "touches_per_hour"):
+        raise too_many("Too many touches this hour.")
+
     creator_id: int | None = None
-    if body.content_type in ("video", "photo") and body.content_id:
-        media = session.get(Media, body.content_id)
-        if media is not None and media.place_id == place.id:
-            creator_id = media.user_id
-    elif body.content_type == "steps" and body.content_id:
+    if body.content_type == "steps" and body.content_id:
         from ..models import LastMileStep
 
         step = session.get(LastMileStep, body.content_id)
@@ -336,6 +356,22 @@ def record_touch(
         # The official account publishes; visits are not credited to it.
         return {"recorded": False}
 
+    # One real page-view or steps-read is one event: repeating this call for
+    # the same (user, place, content) within the attribution lookback window
+    # must not let a single viewing turn into dozens of weighted touches.
+    dedupe_since = now - timedelta(days=int(cfg("attribution.lookback_days", 30)))
+    already = session.exec(
+        select(Touch.id).where(
+            Touch.user_id == user.id,
+            Touch.place_id == place.id,
+            Touch.content_type == body.content_type,
+            Touch.content_id == body.content_id,
+            Touch.at >= dedupe_since,
+        )
+    ).first()
+    if already is not None:
+        return {"recorded": False}
+
     session.add(
         Touch(
             user_id=int(user.id),
@@ -343,6 +379,7 @@ def record_touch(
             creator_id=int(creator_id),
             content_type=body.content_type,
             content_id=body.content_id,
+            at=now,
         )
     )
     session.commit()

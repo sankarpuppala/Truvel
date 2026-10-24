@@ -321,9 +321,13 @@ def place_payload(
     out_lat = round(place.lat, FRAGILE_PRECISION) if redact else place.lat
     out_lng = round(place.lng, FRAGILE_PRECISION) if redact else place.lng
 
+    # Distance must come from the (possibly fuzzed) coordinates we're about to
+    # hand back, never the true ones -- otherwise a fragile place's exact pin
+    # is recoverable by trilateration from three distance readings, without
+    # ever pledging (invariant 5).
     distance_km = None
     if lat is not None and lng is not None:
-        distance_km = haversine_km(lat, lng, place.lat, place.lng)
+        distance_km = haversine_km(lat, lng, out_lat, out_lng)
 
     finder = session.get(User, place.added_by) if place.added_by else None
     city = session.get(City, place.city_id) if place.city_id else None
