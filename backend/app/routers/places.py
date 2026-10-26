@@ -28,7 +28,7 @@ from ..ranking.wilson import wilson_lb
 router = APIRouter(tags=["places"])
 
 SORTS = ("top", "liked", "gems", "trending", "near")
-PAGE_SIZE = 20
+PAGE_SIZE = 50
 
 SORT_EXPLAINERS = {
     "top": "Ranked by the share of viewers who liked it, adjusted so 2 likes can't beat 2,000.",

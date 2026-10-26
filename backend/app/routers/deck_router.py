@@ -76,32 +76,35 @@ def get_deck(
     ).all()
 
     unverified_radius = float(cfg("deck.unverified_radius_km", 5))
-    excluded: set[int] = set()
+    saved_or_visited: set[int] = set()
+    skipped: set[int] = set()
     prefs: dict[str, tuple[float, float]] = {}
 
     if user is not None:
         cooldown_days = int(cfg("deck.skip_cooldown_days", 14))
         cutoff = now - timedelta(days=cooldown_days)
-        excluded |= {
+        saved_or_visited |= {
             int(pid)
             for pid in session.exec(select(Save.place_id).where(Save.user_id == user.id)).all()
         }
-        excluded |= {
+        saved_or_visited |= {
             int(pid)
             for pid in session.exec(
                 select(Visit.place_id).where(Visit.user_id == user.id, Visit.verified == True)  # noqa: E712
             ).all()
         }
-        excluded |= {
+        skipped |= {
             int(pid)
             for pid in session.exec(
-                select(Swipe.place_id).where(Swipe.user_id == user.id, Swipe.at >= cutoff)
+                select(Swipe.place_id).where(Swipe.user_id == user.id, Swipe.action == "skip", Swipe.at >= cutoff)
             ).all()
         }
         prefs = {
             p.category: (p.alpha, p.beta)
             for p in session.exec(select(CategoryPref).where(CategoryPref.user_id == user.id)).all()
         }
+
+    excluded = saved_or_visited | skipped
 
     place_ids = [int(p.id) for p in rows]
     likes = {
@@ -140,6 +143,31 @@ def get_deck(
                 status=place.status,
             )
         )
+
+    # If all candidates within this radius were skipped, recycle skipped places
+    # so Nearby does not turn into an empty dead screen for 14 days.
+    if not candidates and skipped:
+        for place in rows:
+            pid = int(place.id)
+            if pid in saved_or_visited:
+                continue
+            distance = haversine_km(lat, lng, place.lat, place.lng)
+            if distance > radius_km:
+                continue
+            if place.status != "verified" and distance > unverified_radius:
+                continue
+            keep[pid] = place
+            candidates.append(
+                Candidate(
+                    place_id=pid,
+                    category=place.category,
+                    distance_km=distance,
+                    likes=likes.get(pid, 0),
+                    viewers=viewers.get(pid, 0),
+                    created_at=place.created_at,
+                    status=place.status,
+                )
+            )
 
     # The ranking itself is seeded by (user, day) only, never by request_no:
     # `request_no` pages through that one stable order instead of re-drawing

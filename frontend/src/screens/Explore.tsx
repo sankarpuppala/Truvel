@@ -66,6 +66,10 @@ export function Explore() {
   );
 
   useEffect(() => {
+    setPage(1);
+  }, [stateSlug, localitySlug, citySlug, sort, category, verifiedOnly]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     const options = {
@@ -85,7 +89,15 @@ export function Explore() {
       .then((response) => {
         if (cancelled) return;
         setCity(response.city);
-        setPlaces(response.places);
+        if (page === 1) {
+          setPlaces(response.places);
+        } else {
+          setPlaces((prev) => {
+            const seen = new Set(prev.map((p) => p.id));
+            const fresh = response.places.filter((p) => !seen.has(p.id));
+            return [...prev, ...fresh];
+          });
+        }
         setExplainer(response.explainer);
         setTotal(response.total);
       })
@@ -378,7 +390,7 @@ export function Explore() {
                 <PlaceRow key={place.id} place={place} />
               ))}
             </ol>
-            {total > places.length + (page - 1) * 20 && (
+            {total > places.length && (
               <div style={{ padding: 16, display: 'flex', justifyContent: 'center' }}>
                 <button
                   type="button"

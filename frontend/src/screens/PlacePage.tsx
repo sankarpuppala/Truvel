@@ -154,6 +154,27 @@ export function PlacePage() {
     }
   }
 
+  async function toggleFollowCreator() {
+    if (!place?.found_by) return;
+    if (!me) {
+      toast('Sign in to follow creators.', 'bad');
+      return;
+    }
+    const target = place.found_by;
+    const nextState = !target.following;
+    try {
+      const res = await api.follow(target.username, nextState);
+      setPlace((cur) =>
+        cur && cur.found_by
+          ? { ...cur, found_by: { ...cur.found_by, following: res.following } }
+          : cur,
+      );
+      toast(res.following ? `Following @${target.username}` : `Unfollowed @${target.username}`);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'Could not update follow.', 'bad');
+    }
+  }
+
   async function pledge() {
     try {
       await api.fragilePledge(place!.id);
@@ -437,6 +458,17 @@ export function PlacePage() {
                     <br />
                     <small>{date(place.created_at)}</small>
                   </span>
+                  {me && me.username !== place.found_by.username && (
+                    <button
+                      type="button"
+                      className={`btn btn-xs ${place.found_by.following ? 'btn-ghost' : 'btn-primary'}`}
+                      style={{ marginLeft: 8, padding: '3px 9px', fontSize: 12, borderRadius: 12 }}
+                      aria-pressed={place.found_by.following}
+                      onClick={() => void toggleFollowCreator()}
+                    >
+                      {place.found_by.following ? 'Following' : '+ Follow'}
+                    </button>
+                  )}
                 </>
               ) : (
                 <span>
@@ -462,14 +494,24 @@ export function PlacePage() {
           )}
 
           {/* 7. Description and what to do. */}
-          {place.description && <p className="pl-desc">{place.description}</p>}
-          {place.activities && place.activities.length > 0 && (
-            <div className="chips chips-wrap">
-              {place.activities.map((activity) => (
-                <Chip key={activity} label={activity} as="span" />
-              ))}
-            </div>
-          )}
+          <section className="sec pl-about">
+            <h4>About this place</h4>
+            {place.description ? (
+              <p className="pl-desc">{place.description}</p>
+            ) : (
+              <p className="pl-desc" style={{ color: 'var(--muted)', fontSize: 14.5 }}>
+                {categoryLabel(place.category)} located in {place.area ? `${place.area}, ` : ''}{place.state || 'India'}.
+                {' '}No community write-up has been added yet. If you have visited, check in or add photos and last-mile steps!
+              </p>
+            )}
+            {place.activities && place.activities.length > 0 && (
+              <div className="chips chips-wrap" style={{ marginTop: 10 }}>
+                {place.activities.map((activity) => (
+                  <Chip key={activity} label={activity} as="span" />
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* 8. When to go. */}
           <WhenToGo place={place} />

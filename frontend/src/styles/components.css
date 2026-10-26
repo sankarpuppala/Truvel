@@ -123,7 +123,7 @@
 .stat-by span{font-size:13px;color:var(--ink);line-height:1.25}
 .stat-by small{color:var(--muted)}
 .stat-by b{font-size:inherit;font-weight:700}
-.pl-desc{margin:0;font-size:15.5px;text-wrap:pretty}
+.pl-desc{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink);text-wrap:pretty}
 .sec h4{font:700 13px/1.3 Mukta,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:6px}
 .when{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14.5px}
 .when-k{color:var(--muted);font-weight:600}

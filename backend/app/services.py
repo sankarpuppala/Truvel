@@ -24,6 +24,7 @@ from .geo import haversine_km, travel_minutes
 from .models import (
     Attribution,
     City,
+    Follow,
     Like,
     Media,
     Place,
@@ -353,6 +354,16 @@ def place_payload(
         distance_km = haversine_km(lat, lng, out_lat, out_lng)
 
     finder = session.get(User, place.added_by) if place.added_by else None
+    following_finder = False
+    if finder and user is not None:
+        following_finder = (
+            session.exec(
+                select(Follow.id).where(
+                    Follow.follower_id == user.id, Follow.creator_id == finder.id
+                )
+            ).first()
+            is not None
+        )
     city = session.get(City, place.city_id) if place.city_id else None
     city_name = city.name_en if city else ""
     lead = lead_media(session, pid)
@@ -390,6 +401,7 @@ def place_payload(
                 "username": finder.username,
                 "display_name": finder.display_name,
                 "official": bool(finder.official),
+                "following": following_finder,
             }
             if finder
             else None

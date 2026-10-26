@@ -96,7 +96,7 @@ export type Place = {
   video_count: number;
   live: boolean;
   lead_media: MediaItem | null;
-  found_by: (Creator & { official?: boolean }) | null;
+  found_by: (Creator & { official?: boolean; following?: boolean }) | null;
   created_at: string;
   attribution: string;
   distance_km?: number;
