@@ -419,7 +419,84 @@
 .ncard-meta{margin:4px 0 0;color:var(--muted);font-size:13px}
 .nearby-empty{color:var(--muted);text-align:center;padding:32px 16px}
 
-/* Comments sheet (SPEC §8.11) */
+/* BottomSheet standard header row and close button */
+.sheet-head-row{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+.sheet-close-btn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);color:var(--muted);border:0;cursor:pointer;transition:all .15s ease}
+.sheet-close-btn:hover{color:var(--ink);background:var(--line);transform:scale(1.06)}
+
+/* Account links across Watch, Deck, and Place */
+.wcreator-link{color:var(--on-photo);text-decoration:none;display:inline-flex;align-items:center;transition:opacity .15s,transform .15s}
+.wcreator-link:hover{opacity:.88;text-decoration:underline}
+.wcreator-link b{font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.deck-creator-link{color:inherit;text-decoration:none;font-weight:inherit;pointer-events:auto}
+.deck-creator-link:hover{color:var(--laterite);text-decoration:underline}
+.creator-link{color:inherit;text-decoration:none;font-weight:inherit}
+.creator-link:hover{color:var(--laterite);text-decoration:underline}
+
+/* Modern Comments Sheet (SPEC §8.11) */
+.comments-sheet{padding:10px 16px 14px;display:flex;flex-direction:column;max-height:82vh;min-height:360px}
+.cm-header{display:flex;align-items:center;justify-content:space-between;padding:2px 0 12px;border-bottom:1px solid var(--line)}
+.cm-title-wrap{display:flex;align-items:center;gap:8px}
+.cm-title{font:400 22px/1.15 var(--f-display);margin:0;color:var(--ink)}
+.cm-count-badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;background:color-mix(in srgb,var(--laterite) 16%,var(--surface));color:var(--laterite)}
+
+.cm-content-area{flex:1;min-height:160px;max-height:calc(82vh - 145px);overflow-y:auto;overscroll-behavior:contain;padding:12px 2px 8px}
+
+/* Comments loading state */
+.cm-loading{display:flex;flex-direction:column;gap:14px;padding:12px 0}
+.cm-skeleton{display:flex;gap:12px;align-items:flex-start}
+.cm-skel-av{width:36px;height:36px;border-radius:50%;background:var(--line);animation:cmPulse 1.4s ease-in-out infinite;flex-shrink:0}
+.cm-skel-body{flex:1;display:flex;flex-direction:column;gap:7px}
+.cm-skel-line{height:12px;border-radius:6px;background:var(--line);animation:cmPulse 1.4s ease-in-out infinite}
+.cm-skel-line.skel-short{width:35%}
+.cm-skel-line.skel-long{width:75%}
+@keyframes cmPulse{0%,100%{opacity:.45}50%{opacity:.9}}
+
+/* Empty comments state */
+.cm-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:36px 16px;gap:6px}
+.cm-empty-bubble{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--laterite) 12%,var(--surface));color:var(--laterite);margin-bottom:6px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--laterite) 24%,transparent)}
+.cm-empty-title{font-size:17px;font-weight:600;margin:0;color:var(--ink)}
+.cm-empty-text{font-size:13.5px;color:var(--muted);margin:0;max-width:30ch;line-height:1.4}
+
+/* Comments list and cards */
+.cm-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.cm-card{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 3%,var(--surface));border:1px solid color-mix(in srgb,var(--line) 75%,transparent);transition:background .15s}
+.cm-card:hover{background:color-mix(in srgb,var(--ink) 5.5%,var(--surface))}
+.cm-av-link{flex-shrink:0;text-decoration:none}
+.cm-avatar{width:36px;height:36px;border-radius:50%;font-size:13px;font-weight:700;display:grid;place-items:center;background:var(--moss);color:var(--on-primary);border:1.5px solid var(--line)}
+
+.cm-card-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.cm-card-head{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.cm-user-link{display:inline-flex;align-items:baseline;gap:5px;text-decoration:none;color:var(--ink);min-width:0}
+.cm-user-link:hover .cm-name{color:var(--laterite);text-decoration:underline}
+.cm-user-link:hover .cm-handle{color:var(--laterite)}
+.cm-name{font-weight:700;font-size:14px;color:var(--ink)}
+.cm-handle{font-size:12.5px;color:var(--muted)}
+.cm-you-pill{font-size:11px;font-weight:700;padding:1px 6px;border-radius:10px;background:color-mix(in srgb,var(--laterite) 18%,var(--surface));color:var(--laterite);line-height:1.2}
+.cm-time{font-size:11.5px;color:var(--muted);margin-left:auto}
+
+.cm-card-text{margin:0;font-size:14.5px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere}
+
+.cm-card-foot{display:flex;align-items:center;gap:10px;margin-top:2px}
+.cm-action-btn{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);background:none;border:0;padding:2px 6px;border-radius:6px;cursor:pointer;transition:all .15s}
+.cm-delete-btn:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.cm-report-btn:hover{color:var(--laterite);background:color-mix(in srgb,var(--laterite) 12%,transparent)}
+
+/* Modern comment composer at bottom */
+.cm-composer{padding:10px 0 2px;border-top:1px solid var(--line);background:var(--surface);position:sticky;bottom:0;z-index:2}
+.cm-composer-row{display:flex;align-items:center;gap:10px}
+.cm-composer-av{width:34px;height:34px;border-radius:50%;font-size:12px;font-weight:700;display:grid;place-items:center;background:var(--laterite);color:var(--on-primary);flex-shrink:0}
+.cm-input-shell{flex:1;position:relative;display:flex;align-items:center}
+.cm-input-shell input{width:100%;height:40px;border-radius:20px;background:var(--paper);border:1.5px solid var(--line);padding:0 50px 0 14px;font-size:14px;color:var(--ink);transition:all .15s ease}
+.cm-input-shell input:focus{outline:0;border-color:var(--laterite);box-shadow:0 0 0 3px color-mix(in srgb,var(--laterite) 20%,transparent)}
+.cm-char-counter{position:absolute;right:12px;font-size:11px;color:var(--muted);pointer-events:none;font-variant-numeric:tabular-nums}
+.cm-send-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--muted);border:0;flex-shrink:0;cursor:not-allowed;transition:all .2s cubic-bezier(0.34,1.56,0.64,1)}
+.cm-send-btn.active{background:var(--laterite);color:var(--on-primary);cursor:pointer;box-shadow:0 3px 10px color-mix(in srgb,var(--laterite) 45%,transparent);transform:scale(1.04)}
+.cm-send-btn.active:hover{transform:scale(1.1);filter:brightness(1.08)}
+
+.cm-guest-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:14px;background:var(--paper);border:1px solid var(--line);font-size:13.5px;color:var(--muted);margin-top:6px}
+
+/* Comments legacy compatibility */
 .comments-sheet .c-muted{color:var(--muted);font-size:14px}
 .comment-list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:10px}
 .comment{border-bottom:1px solid var(--line);padding-bottom:8px}

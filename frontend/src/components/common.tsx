@@ -6,6 +6,7 @@
  * a careless template (SPEC §10.5, AC-23).
  */
 import { useEffect, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
 import { rupees } from '../lib/format';
 import { useApp } from '../lib/app-state';
@@ -110,7 +111,13 @@ export function TipNote({
   return (
     <p className={`tip ${className}`.trim()}>
       {text}
-      {by && <span>@{by}</span>}
+      {by && (
+        <span>
+          <Link to={`/u/${by}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+            @{by}
+          </Link>
+        </span>
+      )}
     </p>
   );
 }
@@ -251,9 +258,19 @@ export function BottomSheet({
       >
         <div className="grab" />
         {title && (
-          <h4 style={{ font: "400 22px/1.15 var(--f-display)", margin: '0 0 8px' }}>
-            {title}
-          </h4>
+          <div className="sheet-head-row">
+            <h4 style={{ font: "400 22px/1.15 var(--f-display)", margin: 0 }}>
+              {title}
+            </h4>
+            <button
+              type="button"
+              className="sheet-close-btn"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <Icon name="i-x" size={16} />
+            </button>
+          </div>
         )}
         {children}
       </div>

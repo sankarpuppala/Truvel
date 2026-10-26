@@ -9,6 +9,7 @@
  * cross-fades instead of flying off.
  */
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useDrag } from '@use-gesture/react';
 
 import { categoryIcon, categoryLabel, categoryScene } from '../lib/categories';
@@ -189,7 +190,14 @@ export function DeckCard({
         <div className="card-text">
           {place.found_by && (
             <div className="by">
-              {place.found_by.official ? 'Posted by' : 'Found by'} <b>@{place.found_by.username}</b>
+              {place.found_by.official ? 'Posted by' : 'Found by'}{' '}
+              <Link
+                to={`/u/${place.found_by.username}`}
+                onClick={(e) => e.stopPropagation()}
+                className="deck-creator-link"
+              >
+                <b>@{place.found_by.username}</b>
+              </Link>
             </div>
           )}
           <NameBlock name={place.name} primaryClass="pname" secondaryClass="lname" as="h3" />

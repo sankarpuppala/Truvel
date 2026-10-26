@@ -1,15 +1,34 @@
 /** Comments on one video (SPEC §8.11, Tier 2): newest first, ≤ 300 characters,
  * delete your own, report anyone else's. Three reports hide a comment. */
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
-import { date } from '../lib/format';
+import { date, initials } from '../lib/format';
 import type { CommentItem } from '../lib/types';
 import { BottomSheet } from './common';
 import { Icon } from './Icon';
 
 const MAX = 300;
+
+function timeAgo(dateString: string): string {
+  try {
+    const d = new Date(dateString);
+    const now = new Date();
+    const diffSec = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (diffSec < 45) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date(dateString);
+  } catch {
+    return date(dateString);
+  }
+}
 
 export function CommentsSheet({ mediaId, onClose }: { mediaId: number; onClose: () => void }) {
   const { me, toast } = useApp();
@@ -33,12 +52,14 @@ export function CommentsSheet({ mediaId, onClose }: { mediaId: number; onClose: 
   }
 
   async function post() {
-    if (!text.trim()) return;
+    const trimmed = text.trim();
+    if (!trimmed || busy) return;
     setBusy(true);
     try {
-      const comment = await api.addComment(mediaId, text);
+      const comment = await api.addComment(mediaId, trimmed);
       setComments((list) => [comment, ...(list ?? [])]);
       setText('');
+      toast('Comment posted', 'plain');
     } catch (error) {
       fail(error);
     } finally {
@@ -50,6 +71,7 @@ export function CommentsSheet({ mediaId, onClose }: { mediaId: number; onClose: 
     try {
       await api.deleteComment(id);
       setComments((list) => (list ?? []).filter((c) => c.id !== id));
+      toast('Comment deleted', 'plain');
     } catch (error) {
       fail(error);
     }
@@ -65,67 +87,163 @@ export function CommentsSheet({ mediaId, onClose }: { mediaId: number; onClose: 
     }
   }
 
+  const count = comments?.length ?? 0;
+
   return (
-    <BottomSheet open onClose={onClose} title="Comments" className="comments-sheet">
-      {comments === null ? (
-        <p className="c-muted">Loading…</p>
-      ) : comments.length === 0 ? (
-        <p className="c-muted">No comments yet. Been here? Say how it was.</p>
-      ) : (
-        <ul className="comment-list">
-          {comments.map((c) => (
-            <li key={c.id} className="comment">
-              <div className="comment-head">
-                <b>@{c.user.username}</b>
-                <span className="c-muted">{date(c.at)}</span>
+    <BottomSheet open onClose={onClose} className="comments-sheet">
+      <div className="cm-header">
+        <div className="cm-title-wrap">
+          <h3 className="cm-title">Comments</h3>
+          {comments !== null && (
+            <span className="cm-count-badge">{count}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          className="sheet-close-btn"
+          onClick={onClose}
+          aria-label="Close comments"
+        >
+          <Icon name="i-x" size={16} />
+        </button>
+      </div>
+
+      <div className="cm-content-area">
+        {comments === null ? (
+          <div className="cm-loading">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="cm-skeleton">
+                <div className="cm-skel-av" />
+                <div className="cm-skel-body">
+                  <div className="cm-skel-line skel-short" />
+                  <div className="cm-skel-line skel-long" />
+                </div>
               </div>
-              <p>{c.text}</p>
-              {c.mine ? (
-                <button type="button" className="btn btn-text btn-sm" onClick={() => void remove(c.id)}>
-                  <Icon name="i-trash" size={15} /> Delete
-                </button>
-              ) : (
-                me && (
-                  <button type="button" className="btn btn-text btn-sm" onClick={() => void report(c.id)}>
-                    <Icon name="i-flag" size={15} /> Report
-                  </button>
-                )
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+            ))}
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="cm-empty">
+            <div className="cm-empty-bubble">
+              <Icon name="i-comment" size={28} />
+            </div>
+            <h4 className="cm-empty-title">No comments yet</h4>
+            <p className="cm-empty-text">
+              Been here or planning to go? Share your thoughts, tips, or questions!
+            </p>
+          </div>
+        ) : (
+          <ul className="cm-list">
+            {comments.map((c) => {
+              const isMine = Boolean(c.mine || (me && me.username === c.user.username));
+              return (
+                <li key={c.id} className="cm-card">
+                  <Link
+                    to={`/u/${c.user.username}`}
+                    onClick={onClose}
+                    className="cm-av-link"
+                    aria-label={`Open @${c.user.username}'s profile`}
+                  >
+                    <span className="avatar cm-avatar">
+                      {initials(c.user.display_name || c.user.username)}
+                    </span>
+                  </Link>
+
+                  <div className="cm-card-main">
+                    <div className="cm-card-head">
+                      <Link
+                        to={`/u/${c.user.username}`}
+                        onClick={onClose}
+                        className="cm-user-link"
+                      >
+                        <span className="cm-name">
+                          {c.user.display_name || c.user.username}
+                        </span>
+                        <span className="cm-handle">@{c.user.username}</span>
+                      </Link>
+                      {isMine && <span className="cm-you-pill">You</span>}
+                      <span className="cm-time">{timeAgo(c.at)}</span>
+                    </div>
+
+                    <p className="cm-card-text">{c.text}</p>
+
+                    <div className="cm-card-foot">
+                      {isMine ? (
+                        <button
+                          type="button"
+                          className="cm-action-btn cm-delete-btn"
+                          onClick={() => void remove(c.id)}
+                          aria-label="Delete comment"
+                        >
+                          <Icon name="i-trash" size={13} />
+                          <span>Delete</span>
+                        </button>
+                      ) : (
+                        me && (
+                          <button
+                            type="button"
+                            className="cm-action-btn cm-report-btn"
+                            onClick={() => void report(c.id)}
+                            aria-label="Report comment"
+                          >
+                            <Icon name="i-flag" size={13} />
+                            <span>Report</span>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       {me ? (
         <form
-          className="comment-form"
+          className="cm-composer"
           onSubmit={(event) => {
             event.preventDefault();
             void post();
           }}
         >
-          <label className="sr-only" htmlFor="comment-text">
-            Add a comment
-          </label>
-          <textarea
-            id="comment-text"
-            rows={2}
-            maxLength={MAX}
-            value={text}
-            placeholder="Add a comment"
-            onChange={(event) => setText(event.target.value)}
-          />
-          <div className="comment-actions">
-            <span className="c-muted">
-              {text.length} / {MAX}
+          <div className="cm-composer-row">
+            <span className="avatar cm-composer-av">
+              {initials(me.display_name || me.username)}
             </span>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={busy || !text.trim()}>
-              Post
+            <div className="cm-input-shell">
+              <input
+                id="comment-text"
+                type="text"
+                maxLength={MAX}
+                value={text}
+                placeholder="Add a comment..."
+                autoComplete="off"
+                onChange={(event) => setText(event.target.value)}
+              />
+              {text.length > 0 && (
+                <span className="cm-char-counter">
+                  {text.length}/{MAX}
+                </span>
+              )}
+            </div>
+            <button
+              type="submit"
+              className={`cm-send-btn ${text.trim() ? 'active' : ''}`}
+              disabled={busy || !text.trim()}
+              aria-label="Post comment"
+            >
+              <Icon name="i-nav" size={16} />
             </button>
           </div>
         </form>
       ) : (
-        <p className="c-muted">Sign in to comment.</p>
+        <div className="cm-guest-bar">
+          <span>Sign in to join the discussion</span>
+          <Link to="/signin" className="btn btn-xs btn-primary" onClick={onClose}>
+            Sign in
+          </Link>
+        </div>
       )}
     </BottomSheet>
   );

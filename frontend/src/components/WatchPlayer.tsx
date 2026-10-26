@@ -275,7 +275,17 @@ export function WatchPlayer({
 
       <div className="wbody">
         <div className="wcreator">
-          <b>@{media.creator?.username ?? 'someone'}</b>
+          {media.creator?.username ? (
+            <Link
+              to={`/u/${media.creator.username}`}
+              className="wcreator-link"
+              aria-label={`Open @${media.creator.username}'s profile`}
+            >
+              <b>@{media.creator.username}</b>
+            </Link>
+          ) : (
+            <b>@{media.creator?.username ?? 'someone'}</b>
+          )}
           {item.following && <span className="pill pill-outline">Following</span>}
           {media.shot_here && (
             <span className="shot">
