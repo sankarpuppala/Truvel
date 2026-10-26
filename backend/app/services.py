@@ -254,14 +254,37 @@ def lead_media(session: Session, place_id: int) -> Media | None:
 def maps_url(place: Place, name: str = "", city: str = "") -> str:
     """The free Google Maps directions link -- the only Google we use (SPEC §6.6).
 
-    Coordinates are exact, but Google snaps a pin to the nearest thing it knows,
-    and inside a large site that is the wrong thing: the Salar Jung Museum's pin
-    opened "Metal Ware Gallery", one hall within it. A place with a Wikidata
-    item is a notable, unambiguous thing, so it is sent by name and city, which
-    Google resolves to the place itself. Everything else keeps its coordinates.
+    Coordinates are exact, but Google snaps a pin to the nearest thing it knows
+    when given bare coordinates (e.g. snapping a park to an adjacent police station
+    or a museum pin to an interior gallery). Notable places (from Wikidata or OSM,
+    or with verified fame) are sent by name with geographic context (area, city,
+    locality, state), which Google resolves to the place itself. Unnamed or hidden
+    community pins and fragile places keep exact coordinates.
     """
-    if place.wikidata and name:
-        target = quote_plus(", ".join(part for part in (name, city) if part))
+    if place.fragile:
+        target = f"{place.lat},{place.lng}"
+        return f"https://www.google.com/maps/dir/?api=1&destination={target}"
+
+    is_notable = bool(
+        place.wikidata
+        or place.source == "osm"
+        or place.osm_id
+        or place.fame in ("famous", "known")
+    )
+    if is_notable and name:
+        parts: list[str] = [name]
+        if place.area and place.area not in parts:
+            parts.append(place.area)
+
+        city_or_loc = city or place.locality or ""
+        if city_or_loc and city_or_loc not in parts:
+            parts.append(city_or_loc)
+
+        state = place.state or ""
+        if state and not city and state not in parts:
+            parts.append(state)
+
+        target = quote_plus(", ".join(parts))
     else:
         target = f"{place.lat},{place.lng}"
     return f"https://www.google.com/maps/dir/?api=1&destination={target}"
