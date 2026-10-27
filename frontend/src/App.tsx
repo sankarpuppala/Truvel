@@ -83,6 +83,7 @@ export function App() {
               <Route path="/add/pulse" element={<AddPulse />} />
               <Route path="/you" element={<You />} />
               <Route path="/u/:handle" element={<Profile />} />
+              <Route path="/users/:handle" element={<Profile />} />
               <Route path="/following" element={<Following />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/signin" element={<SignIn />} />

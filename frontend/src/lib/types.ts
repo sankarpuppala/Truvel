@@ -226,6 +226,7 @@ export type Passport = {
   streak: { weeks: number; rain_checks_left: number };
   stamps: Stamp[];
   found: Place[];
+  places_found?: number;
   visits_caused: number;
   want_to_go: Place[];
   ledger: LedgerLine[];

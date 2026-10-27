@@ -16,7 +16,7 @@ import { Icon, StatusBar } from '../components/Icon';
 import { num } from '../lib/format';
 import type { DeckResponse, Place } from '../lib/types';
 
-const RADII = [5, 10, 25];
+const RADII = [5, 10, 25, 50];
 
 export function Nearby() {
   const { me, position, requestPosition, toast, config } = useApp();
@@ -254,6 +254,13 @@ export function Nearby() {
                     </button>
                   )
                 )}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => navigate('/explore')}
+                >
+                  Explore {homeCity || 'Hyderabad'}
+                </button>
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"

@@ -279,7 +279,7 @@ export function You() {
               </small>
             </div>
             <div className="ppc">
-              <b>{passport.found.length}</b>
+              <b>{num(passport.places_found ?? passport.found.length)}</b>
               <span>places found</span>
               <small>caused {num1(passport.visits_caused)} visits</small>
             </div>
@@ -341,11 +341,33 @@ export function You() {
                     }
                   />
                 ) : (
-                  <ol className="rows" style={{ flex: 'none' }}>
-                    {passport.found.map((place) => (
-                      <PlaceRow key={place.id} place={place} showRank={false} />
-                    ))}
-                  </ol>
+                  <>
+                    {(passport.places_found ?? passport.found.length) > passport.found.length && (
+                      <div
+                        style={{
+                          padding: '8px 14px',
+                          margin: '8px 16px 4px',
+                          borderRadius: '8px',
+                          background: 'rgba(47, 93, 80, 0.08)',
+                          fontSize: '0.82rem',
+                          color: 'var(--ink-secondary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Icon name="i-info" size={15} />
+                        <span>
+                          Showing latest {passport.found.length} of {num(passport.places_found ?? passport.found.length)} places added
+                        </span>
+                      </div>
+                    )}
+                    <ol className="rows" style={{ flex: 'none' }}>
+                      {passport.found.map((place) => (
+                        <PlaceRow key={place.id} place={place} showRank={false} />
+                      ))}
+                    </ol>
+                  </>
                 )}
               </>
             )}

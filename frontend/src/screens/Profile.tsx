@@ -175,6 +175,26 @@ export function Profile() {
         {profile.found.length > 0 ? (
           <section className="sec" style={{ padding: '0 0 14px' }}>
             <h4 style={{ padding: '0 16px' }}>Places they found</h4>
+            {profile.places_found > profile.found.length && (
+              <div
+                style={{
+                  padding: '8px 14px',
+                  margin: '0 16px 8px',
+                  borderRadius: '8px',
+                  background: 'rgba(47, 93, 80, 0.08)',
+                  fontSize: '0.82rem',
+                  color: 'var(--ink-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Icon name="i-info" size={15} />
+                <span>
+                  Showing latest {profile.found.length} of {num(profile.places_found)} places added
+                </span>
+              </div>
+            )}
             <ol className="rows" style={{ flex: 'none' }}>
               {profile.found.map((place) => (
                 <PlaceRow key={place.id} place={place} showRank={false} />
