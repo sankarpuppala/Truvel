@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truvel — Interview / Viva Preparation</title>
+<style>
+  :root{
+    --ink:#1C2420; --muted:#5B6660; --line:#E3E0D6; --surface:#FBF9F3; --paper:#FFFFFF;
+    --marigold:#E8A33D; --laterite:#B5502F; --lake:#2F6E63; --bad:#B5502F;
+    --code-bg:#F3F1E8; --chip:#EFEAD9;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EDEAE0; --muted:#AEB6AE; --line:#30362F; --surface:#15190F0; --surface:#171B15;
+      --paper:#1C211A; --code-bg:#20251C; --chip:#242A1F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDEAE0; --muted:#AEB6AE; --line:#30362F; --surface:#171B15;
+    --paper:#1C211A; --code-bg:#20251C; --chip:#242A1F;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--surface); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:28px 20px 90px}
+  header.top{
+    position:sticky; top:0; z-index:5; background:var(--surface);
+    border-bottom:1px solid var(--line); padding:14px 20px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  header.top h1{font-size:16px;margin:0;flex:1;min-width:200px}
+  header.top .sub{color:var(--muted);font-size:13px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  button.tool{
+    font:600 12.5px/1 inherit; padding:8px 12px; border-radius:999px;
+    border:1px solid var(--line); background:var(--paper); color:var(--ink); cursor:pointer;
+  }
+  button.tool:hover{border-color:var(--lake)}
+  input#q{
+    font:14px/1 inherit; padding:9px 14px; border-radius:999px; border:1px solid var(--line);
+    background:var(--paper); color:var(--ink); min-width:200px; flex:1;
+  }
+  h1.title{font:800 30px/1.2 Georgia,serif;margin:30px 0 4px}
+  p.tagline{color:var(--muted);margin:0 0 26px;font-size:15px}
+  .pitch{
+    background:var(--paper); border:1px solid var(--line); border-left:4px solid var(--marigold);
+    border-radius:10px; padding:16px 20px; margin:0 0 26px; font-size:15px;
+  }
+  .pitch b{color:var(--laterite)}
+  .cheatsheet{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px;
+    margin:0 0 30px;
+  }
+  .cheatsheet .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+  }
+  .cheatsheet .card h4{margin:0 0 6px;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--lake)}
+  .cheatsheet .card p{margin:0;font-size:13.5px;color:var(--ink)}
+  .cheatsheet .card code{font-size:12px}
+  nav.toc{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:14px 18px; margin:0 0 30px;
+  }
+  nav.toc h4{margin:0 0 8px;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  nav.toc ol{margin:0;padding-left:20px;columns:2;font-size:13.5px}
+  nav.toc a{color:var(--ink);text-decoration:none}
+  nav.toc a:hover{color:var(--lake);text-decoration:underline}
+  section.block{margin:0 0 34px}
+  section.block > h2{
+    font-size:20px; margin:0 0 14px; padding-bottom:8px; border-bottom:2px solid var(--line);
+    display:flex; align-items:center; gap:10px; scroll-margin-top:70px;
+  }
+  section.block > h2 .letter{
+    display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+    border-radius:50%; background:var(--lake); color:#fff; font-size:13px; font-weight:800;
+  }
+  details.qa{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    margin:0 0 10px; overflow:hidden;
+  }
+  details.qa[open]{border-color:var(--lake)}
+  details.qa summary{
+    padding:13px 16px; cursor:pointer; font-weight:600; font-size:14.5px; list-style:none;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  details.qa summary::-webkit-details-marker{display:none}
+  details.qa summary::before{
+    content:"+"; flex:none; width:18px; color:var(--lake); font-weight:800; font-size:16px;
+  }
+  details.qa[open] summary::before{content:"\2212"}
+  details.qa .a{padding:0 16px 16px 44px;color:var(--ink);font-size:14.5px}
+  details.qa .a b{color:var(--laterite)}
+  details.qa .a code, p code, li code{
+    background:var(--code-bg); padding:1px 6px; border-radius:5px; font-size:12.8px;
+    font-family:"SFMono-Regular",Consolas,monospace;
+  }
+  details.qa .a pre{
+    background:var(--code-bg); padding:10px 12px; border-radius:8px; overflow-x:auto;
+    font-size:12.8px; font-family:"SFMono-Regular",Consolas,monospace;
+  }
+  .tagrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tag{
+    font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; background:var(--chip);
+    color:var(--muted);
+  }
+  .hidden{display:none !important}
+  .nomatch{color:var(--muted); font-size:14px; padding:30px 0; text-align:center}
+  footer{color:var(--muted);font-size:12.5px;text-align:center;margin-top:50px;padding-top:20px;border-top:1px solid var(--line)}
+  mark{background:var(--marigold);color:#1C2420;border-radius:3px;padding:0 2px}
+  @media print{
+    header.top, nav.toc, .toolbar{display:none}
+    details.qa{break-inside:avoid; border:none; border-bottom:1px solid #ccc; border-radius:0}
+    details.qa summary::before{display:none}
+    body{background:#fff;color:#000}
+    .a{display:block !important}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Truvel — Interview / Viva Prep</h1>
+  <input id="q" type="search" placeholder="Search a question or keyword…" aria-label="Search questions">
+  <div class="toolbar">
+    <button class="tool" id="expandAll">Expand all</button>
+    <button class="tool" id="collapseAll">Collapse all</button>
+    <button class="tool" id="themeToggle">Toggle theme</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1 class="title">Interview &amp; Viva Preparation</h1>
+  <p class="tagline">Built from <code>docs/VIVA.md</code>, <code>SPEC.md</code> and the project's own git history. Learn the
+    <b>bold line</b> of each answer first — the rest is backup if they push.</p>
+
+  <div class="pitch">
+    <b>30-second pitch:</b> Truvel is a travel, social and creator app for India where people
+    discover places to visit — including hidden ones that aren't on Google Maps — in their own
+    language, and creators are rewarded mainly for the real visits they cause, not for likes or
+    views. It runs on FastAPI + SQLite + React, uses only free/open data (OpenStreetMap, Wikidata,
+    Wikimedia Commons), stores no real money and no user coordinates, and every ranking/learning/
+    fraud-detection algorithm in it is a small, tested, pure function evaluated by simulation.
+  </div>
+
+  <div class="cheatsheet">
+    <div class="card"><h4>Stack</h4><p>FastAPI + SQLModel (SQLite+FTS5) · React 18 + TS · MapLibre/OpenFreeMap · zero paid services</p></div>
+    <div class="card"><h4>Ranking</h4><p>Wilson lower bound of likes/viewers — the cautious end of a 95% CI, not a raw ratio</p></div>
+    <div class="card"><h4>Deck personalisation</h4><p>Thompson sampling, Beta(α,β) per category, save→α+1, skip→β+1</p></div>
+    <div class="card"><h4>Attribution</h4><p>Time-decay: weight = 2^(−age_days / 7), normalised to sum to 1 per visit</p></div>
+    <div class="card"><h4>Fraud</h4><p>Rules (engaged-view definition) + spike rule: &gt;4σ over 7-day hourly mean &amp; &gt;50 views</p></div>
+    <div class="card"><h4>Duplicate places</h4><p>&lt;300m &amp; ≥80% fuzzy name match (any language), or &lt;100m &amp; same category</p></div>
+    <div class="card"><h4>Stolen photos</h4><p>Perceptual hash (pHash), 64-bit fingerprint, reject within 8 bits Hamming distance</p></div>
+    <div class="card"><h4>Verified visit</h4><p>&lt;150m at ≤100m GPS accuracy + impossible-travel check (&gt;120 km/h)</p></div>
+    <div class="card"><h4>Creator pool</h4><p>Same 55% as YouTube Partner Program; split so 1 visit caused = 25 engaged views</p></div>
+    <div class="card"><h4>Eligibility</h4><p>30+ day account, no strikes, 10+ verified pieces, 300 visits <i>or</i> 100k views / 90 days</p></div>
+    <div class="card"><h4>Privacy</h4><p>No lat/lng columns anywhere; check-in keeps only distance + accuracy, discards coordinates</p></div>
+    <div class="card"><h4>Data sources</h4><p>Wikidata (CC0) · Commons photos (credited, allowlisted licences) · OSM (ODbL, 1 deep city)</p></div>
+  </div>
+
+  <nav class="toc" id="toc">
+    <h4>Jump to a section</h4>
+    <ol>
+      <li><a href="#sec-a">A — The idea</a></li>
+      <li><a href="#sec-b">B — Money &amp; the Partner Program</a></li>
+      <li><a href="#sec-c">C — Data &amp; languages</a></li>
+      <li><a href="#sec-d">D — Algorithms (the data-science part)</a></li>
+      <li><a href="#sec-e">E — Evaluation</a></li>
+      <li><a href="#sec-f">F — Engineering</a></li>
+      <li><a href="#sec-g">G — Push-back questions</a></li>
+      <li><a href="#sec-h">H — "Defend a number" (results walk-throughs)</a></li>
+      <li><a href="#sec-i">I — Bugs found &amp; how</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== SECTION A ===================== -->
+  <section class="block" id="sec-a">
+    <h2><span class="letter">A</span> The idea</h2>
+
+    <details class="qa"><summary>What is your project, in one sentence?</summary>
+      <div class="a"><b>A travel, social and creator app for India where people discover places to visit,
+      including hidden ones that aren't on Google Maps, in their own language, and creators are
+      rewarded mainly for the visits they cause.</b></div>
+    </details>
+
+    <details class="qa"><summary>Isn't this just Google Maps, Instagram or YouTube?</summary>
+      <div class="a"><b>Each feature exists somewhere; the combination doesn't.</b> Google Local Guides
+      rewards reviewing places already on Maps. YouTube/Instagram reward views, which favours
+      entertainment over going outside. Tripoto/Explurger are trip-post social apps. Truvel has
+      <i>verified, unmapped places</i> with last-mile directions and live conditions, and creator
+      rewards tied to real visits, not engagement.</div>
+    </details>
+
+    <details class="qa"><summary>What makes people come back?</summary>
+      <div class="a"><b>Things that pull them outside:</b> the nearby deck, short videos with a "Go here"
+      button, live conditions (Pulse), a fog map cleared by visiting, passport stamps, a
+      <i>weekly</i> (not daily) streak, and kadam credit when someone visits a place they found. The
+      deck deliberately ends — no infinite feed — and Watch nudges you after 20 minutes. The habit
+      being built is going outside, not scrolling.</div>
+    </details>
+
+    <details class="qa"><summary>What's your moat? Couldn't Google copy you?</summary>
+      <div class="a"><b>Google could copy any one feature; it's harder to copy the data and the
+      incentives.</b> Verified unmapped places, last-mile steps and Pulse get better with every
+      visitor per city — a network effect. Paying for visits caused (not views) draws genuinely
+      useful content. All scheduled Indian languages from day one, plus never storing location, build
+      trust a general-purpose map app has no reason to offer.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION B ===================== -->
+  <section class="block" id="sec-b">
+    <h2><span class="letter">B</span> Money &amp; the Partner Program</h2>
+
+    <details class="qa"><summary>How do creators earn? Is it like YouTube?</summary>
+      <div class="a"><b>Similar idea, different measure.</b> YouTube shares 55% of ad revenue on
+      long-form (45% on Shorts) with Partners. Truvel uses the same 55% pool figure, but splits it by
+      a score where <b>one visit caused counts as much as 25 engaged views</b>, plus small amounts for
+      helpful last-mile directions and confirmed live (Pulse) reports.</div>
+    </details>
+
+    <details class="qa"><summary>Does your app pay real money?</summary>
+      <div class="a"><b>No. The pool is a simulated figure from <code>config.yaml</code>, and every ₹ on
+      screen carries a "Simulated" label.</b> Real payouts would need real revenue, identity/bank
+      verification, TDS and a payment partner — that's roadmap; the engine and the maths are already
+      built and tested, so turning it on is a business/compliance step, not an engineering one.</div>
+    </details>
+
+    <details class="qa"><summary>Where would the real money come from?</summary>
+      <div class="a">Local businesses near places (pay per verified visit sent their way), clearly
+      labelled sponsored cards (at most 1 in 15), sponsored trails from tourism boards, and an
+      optional Plus subscription. Rank itself is never for sale — a place never outranks another by
+      paying.</div>
+    </details>
+
+    <details class="qa"><summary>Why not pay per like, like the original idea?</summary>
+      <div class="a"><b>Likes are cheap to fake and reward looks, not usefulness.</b> Paying per like
+      invites bought likes, stolen photos and dangerous stunts for engagement. A visit means someone
+      physically went there — much harder to fake, and it's the actual outcome the product exists
+      for.</div>
+    </details>
+
+    <details class="qa"><summary>Who is eligible to earn?</summary>
+      <div class="a"><b>Accounts 30+ days old, no strikes, 10+ pieces of verified content, and in the
+      last 90 days either 300 visits caused or 100,000 engaged views.</b> The thresholds exist
+      specifically to stop fresh/fake accounts from farming small amounts.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION C ===================== -->
+  <section class="block" id="sec-c">
+    <h2><span class="letter">C</span> Data &amp; languages</h2>
+
+    <details class="qa"><summary>Where does your place data come from? Did you copy Google Maps?</summary>
+      <div class="a"><b>No.</b> Famous places across India come from <b>Wikidata (CC0)</b>, photos from
+      <b>Wikimedia Commons</b> (free licences, with attribution), and one city seeded deeply from
+      <b>OpenStreetMap (ODbL)</b> — now extended to ten cities. Copying Google Maps would break its
+      terms and the photographers' copyright; its Places API also forbids use with a non-Google map,
+      limits how long coordinates can be cached, and is paid beyond a free tier. The app only uses the
+      free "Open in Google Maps" link for directions, nothing more.</div>
+    </details>
+
+    <details class="qa"><summary>How do you get photos, and what licences are allowed?</summary>
+      <div class="a">From each Wikidata item's linked Commons image, fetched once and cached on the
+      server, shown with author and licence on every photo. Only <b>CC0, public domain, CC BY and CC
+      BY-SA</b> are accepted — anything else is hidden rather than shown without credit. Users add
+      their own photos for hidden places, and the server strips EXIF from every upload.</div>
+    </details>
+
+    <details class="qa"><summary>How do you support India's many languages?</summary>
+      <div class="a">Place names come in <b>all 22 scheduled languages + English</b> from OSM's
+      <code>name:xx</code> tags, Wikidata labels, and verified visitors adding a name in their own
+      language. Each place shows the primary name plus the regional language's name in its own
+      script. Fonts are self-hosted per script via <code>@fontsource</code> and only download when
+      that script actually appears on screen.</div>
+    </details>
+
+    <details class="qa"><summary>Is the whole interface translated into 22 languages?</summary>
+      <div class="a"><b>No — place names are; the UI is English first, then languages a native speaker
+      has actually reviewed.</b> A machine-translated UI presented as finished would be invariant 11
+      territory: it stays behind a "Beta" label until reviewed. A bad translation damages trust more
+      than plain English does.</div>
+    </details>
+
+    <details class="qa"><summary>Why hide country/state borders on the map?</summary>
+      <div class="a">India has strict rules on how its external boundaries must be depicted, and free
+      map data may not match the official depiction. The app doesn't need borders for anything it
+      does, so those layers are hidden outright and <code>state</code> comes from Wikidata's
+      administrative hierarchy instead of a boundary file.</div>
+    </details>
+
+    <details class="qa"><summary>What do you store about a user's location?</summary>
+      <div class="a"><b>Nothing.</b> At check-in the phone sends its position once; the server computes
+      and keeps only the <i>distance</i> to the place and the GPS accuracy, then discards the
+      coordinates. <code>Visit</code>, <code>Pulse</code> and <code>Touch</code> have no lat/lng
+      columns at all — it's not just policy, the schema can't hold it.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION D ===================== -->
+  <section class="block" id="sec-d">
+    <h2><span class="letter">D</span> Algorithms (the data-science part)</h2>
+
+    <details class="qa"><summary>How do you rank places? Why not sort by raw likes?</summary>
+      <div class="a"><b>By the Wilson lower bound of likes ÷ viewers</b> — the cautious end of a 95%
+      confidence interval for the true like rate. Raw likes favour old places that have simply existed
+      longer; a raw ratio favours 1 like out of 1 viewer. Worked example: 1/1 scores 0.21, 8/10 scores
+      0.49, 80/100 scores 0.71 — a place needs real evidence, not a lucky early visitor, to rank high.
+      <div class="tagrow"><span class="tag">app/ranking/wilson.py</span></div></div>
+    </details>
+
+    <details class="qa"><summary>Give me the Wilson formula.</summary>
+      <div class="a">With <code>p̂ = k/n</code> (likes/viewers) and <code>z = 1.96</code>:
+      <pre>(p̂ + z²/2n − z·√(p̂(1−p̂)/n + z²/4n²)) / (1 + z²/n)</pre></div>
+    </details>
+
+    <details class="qa"><summary>How does the swipe deck learn what you like?</summary>
+      <div class="a"><b>Thompson sampling</b> — a multi-armed bandit. Each category keeps a
+      <code>Beta(α, β)</code> belief, starting at <code>Beta(1,1)</code> (uniform prior, assumes
+      nothing about a new user). Save → α+1, skip → β+1, open → no change (opening says "I wanted to
+      look", not "I wanted to go"). Each deck draws one random sample per category from its belief and
+      ranks by the draw, not the mean — a category with little data has a wide belief so its draw is
+      sometimes high (exploration), costing nothing when it's genuinely bad since the draw is usually
+      low too; a category saved many times has a narrow belief centred high and reliably wins
+      (exploitation). Needs no training data and is fully explainable.
+      <div class="tagrow"><span class="tag">app/deck/thompson.py</span></div></div>
+    </details>
+
+    <details class="qa"><summary>What's the full deck scoring formula?</summary>
+      <div class="a"><pre>score = 0.40·q + 0.25·prox + 0.25·pref + 0.10·fresh</pre>
+      <code>q</code> = percentile rank of the place's Wilson bound among current candidates ·
+      <code>prox</code> = <code>exp(−distance_km / 4)</code> (4km scores ~0.37, 1km ~0.78, 25km ~0.002) ·
+      <code>pref</code> = the Thompson draw for that category · <code>fresh</code> = 1 if added in the
+      last 14 days or seen by fewer than 10 people, else 0.
+      The weights say what the deck is <i>for</i>: mostly "is it good" and "can I get there", a quarter
+      "is it my kind of thing", a tenth reserved so a good new find isn't invisible until it collects
+      viewers.</div>
+    </details>
+
+    <details class="qa"><summary>How is the Watch feed ranked?</summary>
+      <div class="a"><b>35% quality (Wilson of completions/engaged views) + 20% closeness + 20% taste
+      (same Thompson sampling) + 15% freshness + 10% following</b>, with a diversity re-rank capping
+      any one creator at 2 videos in a row.</div>
+    </details>
+
+    <details class="qa"><summary>What counts as an "engaged view"?</summary>
+      <div class="a"><b>At least 3 seconds watched (or half of a very short video); 90% watched counts as
+      a completion.</b> Views by the creator themself, by accounts under 24 hours old, or repeats by
+      the same user within 24 hours, don't count toward anything.</div>
+    </details>
+
+    <details class="qa"><summary>How do you decide which creator "caused" a visit?</summary>
+      <div class="a"><b>Time-decay attribution.</b> On a person's first visit to a place, look at
+      everything they engaged with about that place in the previous 30 days — the place page (credits
+      the discoverer), videos, last-mile steps. Each touch gets weight
+      <code>2^(−age_days / 7)</code> — a video seen yesterday counts more than one seen 3 weeks ago.
+      Weights are normalised so the visit's total credit sums to exactly 1, split across whoever
+      touched it.
+      <div class="tagrow"><span class="tag">app/partner/attribution.py</span></div></div>
+    </details>
+
+    <details class="qa"><summary>Why time-decay and not simple last-touch or linear?</summary>
+      <div class="a"><b>Because real-world decay is unknown, and time-decay is never far from best at
+      any decay constant — the other two collapse at the opposite extreme.</b> A sweep across
+      ground-truth decay from 2 to 30 days: last-touch ranges 0.77–0.93 (great when recency is
+      everything, poor otherwise), linear ranges 0.74–0.87 (the mirror case), time-decay stays
+      0.85–0.91 throughout. Since this rule divides real money between real people, robustness to being
+      wrong about the world matters more than winning the best case. The half-life is a config value
+      (<code>attribution.half_life_days</code>), tunable once real data exists.</div>
+    </details>
+
+    <details class="qa"><summary>How do you catch fake views?</summary>
+      <div class="a"><b>Rules plus a spike detector.</b> On top of the engaged-view rules above: if an
+      item's views in one hour exceed its 7-day hourly mean by <b>4 standard deviations</b> (and are
+      over 50 in absolute terms), the excess is held out of earnings for review. Tier 2 adds an
+      Isolation Forest (unsupervised anomaly detector) over daily creator features.</div>
+    </details>
+
+    <details class="qa"><summary>How do you detect duplicate places?</summary>
+      <div class="a"><b>Distance plus fuzzy name matching, across every language the place has a name
+      in.</b> Within 300m <i>and</i> ≥80% name similarity to any candidate name (generic words like
+      "lake"/"cheruvu"/"talab" stripped first), <i>or</i> within 100m and the same category. The app
+      never silently merges — it asks "is it one of these?" and the person decides. (A stricter,
+      automated variant with a plain character-ratio floor runs for bulk imports, since an unattended
+      merge is worse than leaving a duplicate.)
+      <div class="tagrow"><span class="tag">app/integrity/dedupe.py</span></div></div>
+    </details>
+
+    <details class="qa"><summary>How do you catch stolen photos?</summary>
+      <div class="a"><b>Perceptual hashing (pHash)</b> — a 64-bit fingerprint of how an image <i>looks</i>,
+      not its bytes. Copies that have been resized or recompressed stay within 8 bits (Hamming
+      distance) of the original, so a near-identical re-upload is rejected. It can't catch a photo the
+      app has never seen before — that's an accepted limitation, not a gap in the rule.</div>
+    </details>
+
+    <details class="qa"><summary>How do you know someone actually visited a place?</summary>
+      <div class="a"><b>Geolocation at check-in: within 150m of the pin, at ≤100m GPS accuracy</b>, plus
+      an impossible-travel check (&gt;120 km/h between two check-ins is flagged). GPS can be spoofed by
+      a determined user — the honest claim is that this raises the cost of cheating, not that it makes
+      cheating impossible.</div>
+    </details>
+
+    <details class="qa"><summary>What is Pulse?</summary>
+      <div class="a"><b>Live conditions, postable only by people who checked in there in the last 2
+      hours:</b> water flowing/dry, crowd level, path condition, open/closed. A report is "live" for 6
+      hours, "recent" for 48. If recent reports disagree, the app shows the majority and says "mixed
+      reports" rather than picking one silently.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION E ===================== -->
+  <section class="block" id="sec-e">
+    <h2><span class="letter">E</span> Evaluation</h2>
+
+    <details class="qa"><summary>How did you evaluate all this without real users?</summary>
+      <div class="a"><b>Simulations with known ground truth, each over many random seeds with 95%
+      confidence intervals</b>, plus a real-data coverage table and the acceptance tests. Simulations
+      prove the methods work under their stated assumptions — they don't prove real users behave that
+      way. A user study is explicitly future work, not a swapped-in substitute.
+      <div class="tagrow"><span class="tag">sim/ranking_sim.py</span><span class="tag">sim/bandit_sim.py</span>
+      <span class="tag">sim/attribution_sim.py</span><span class="tag">sim/fraud_sim.py</span></div></div>
+    </details>
+
+    <details class="qa"><summary>What did the simulations actually measure?</summary>
+      <div class="a">Ranking: Wilson vs raw-ratio precision@10. Bandit: Thompson save-rate vs
+      popularity/random, early vs settled window. Attribution: time-decay vs last-touch vs linear
+      Spearman correlation across decay constants. Fraud: precision/recall of the rule set and its
+      effect on fraud's share of the simulated pool. See Section H below for how to defend the actual
+      numbers under push-back.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION F ===================== -->
+  <section class="block" id="sec-f">
+    <h2><span class="letter">F</span> Engineering</h2>
+
+    <details class="qa"><summary>What's the architecture?</summary>
+      <div class="a"><b>React web app → FastAPI (Python) → SQLite, media on disk.</b> Seed scripts pull
+      from OpenStreetMap and Wikidata; the server proxies and caches Commons photos server-side so the
+      frontend never calls a third party except map tiles. Maps use MapLibre with free OpenFreeMap
+      tiles. It all runs on one laptop; a phone connects over HTTPS on the same Wi-Fi for testing.</div>
+    </details>
+
+    <details class="qa"><summary>Why a web app and not a native app?</summary>
+      <div class="a"><b>Zero budget, one codebase, installable straight from the browser.</b> A Play
+      Store listing needs a paid developer account, which the project's hard constraints rule out.</div>
+    </details>
+
+    <details class="qa"><summary>How does the "fog of war" city map work?</summary>
+      <div class="a">A semi-transparent layer over the whole city with a ~1km hole punched around each
+      verified visit (circles unioned and subtracted using Turf.js). Progress is counted in
+      <i>neighbourhoods</i>: each visit belongs to the nearest neighbourhood point, equivalent to asking
+      which Voronoi cell it falls in. The denominator only counts neighbourhoods that contain at least
+      one real place — a neighbourhood with nowhere to go isn't somewhere the app can meaningfully send
+      you (this was itself a discovered spec bug — see Section I).</div>
+    </details>
+
+    <details class="qa"><summary>What are the known limitations and next steps?</summary>
+      <div class="a">Simulations, not user studies; one (now ten) deeply-seeded cities out of thousands
+      of Indian towns; GPS is spoofable by a determined attacker; money is simulated; the UI isn't yet
+      translated beyond English + reviewed languages. Next, in priority order: a real outdoor user
+      trip (unblocks several real-world measurements), a pHash robustness run against real photos
+      instead of generated stand-ins, then CLIP embeddings — because the pHash result shows cropping
+      defeats a plain hash completely, and CLIP cosine similarity is the documented Tier-2 answer to
+      exactly that gap.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION G ===================== -->
+  <section class="block" id="sec-g">
+    <h2><span class="letter">G</span> Push-back questions</h2>
+
+    <details class="qa"><summary>"Is this really AI, or just rules?"</summary>
+      <div class="a">It's applied data science inside a product, not a chatbot wrapper: ranking under
+      uncertainty (Wilson score), online/reinforcement learning (Thompson bandit), attribution
+      modelling (time-decay evaluated against two baselines), anomaly detection (a statistical spike
+      rule now, Isolation Forest as Tier 2), similarity search (fuzzy name matching, perceptual
+      hashing, CLIP as Tier 2), and neural transliteration (IndicXlit) — all evaluated by simulation
+      with confidence intervals, not asserted to work.</div>
+    </details>
+
+    <details class="qa"><summary>"Isn't paying for visits gameable?"</summary>
+      <div class="a">A visit needs physical presence (GPS + impossible-travel check); attribution
+      ignores self-touches, brand-new accounts and flagged visits; there are eligibility thresholds
+      before anyone earns anything; a statistical spike rule holds suspicious bursts out of the pool;
+      and removing bad content reverses the kadam/earnings it produced. It's harder to game than
+      view-counting — not claimed to be impossible.</div>
+    </details>
+
+    <details class="qa"><summary>"What about dangerous or risky places?"</summary>
+      <div class="a">The safety card is never hidden or collapsible (invariant 9); fragile places are
+      redacted (no exact pin, no last-mile steps) until a pledge; nothing in any ranking formula boosts
+      risky content; emergency number 112 is always shown on a place page.</div>
+    </details>
+
+    <details class="qa"><summary>"Did you actually write this code, or did an AI?"</summary>
+      <div class="a">Built with Claude Code using spec-driven development: the spec and every phase plan
+      were written and approved by the student, each phase was reviewed and tested before moving on,
+      and every algorithm (<code>wilson.py</code>, <code>thompson.py</code>, <code>attribution.py</code>,
+      <code>split.py</code>) can be explained line by line — which is the actual bar CLAUDE.md sets
+      ("the student must explain every line in the viva").</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION H ===================== -->
+  <section class="block" id="sec-h">
+    <h2><span class="letter">H</span> "Defend a number" — results walk-throughs</h2>
+    <p style="color:var(--muted);font-size:14px;margin-top:-6px">These are the exact traps an examiner
+    sets: a metric that looks bad at first glance. Each answer below leads with <i>why the headline
+    metric is the wrong one to read</i>, then gives the metric that actually matters.</p>
+
+    <details class="qa"><summary>Your simulation shows plain like-ratio beats Wilson on Kendall τ (0.621
+      vs 0.554). So why use Wilson?</summary>
+      <div class="a"><b>Because τ scores the whole list, including places nobody will ever scroll to —
+      and on precision@10, the only part a user reads, Wilson wins: 0.452 vs 0.356.</b> Wilson
+      deliberately shrinks a place seen by six people toward zero, because six people isn't evidence;
+      that shrinkage misorders the long tail (hurting τ) but is exactly what stops 2-likes-of-2 beating
+      1,600-of-2,000 at the top. Mean true like-rate of the top 10 is 0.651 under Wilson vs 0.592 under
+      raw ratio — reporting both numbers rather than only the flattering one is itself part of the
+      answer.</div>
+    </details>
+
+    <details class="qa"><summary>Your bandit sim shows Thompson sampling is 8.4% <i>worse</i> than
+      popularity over the first 30 swipes. Why ship it?</summary>
+      <div class="a"><b>Because the same simulation shows it's 7.0% better once it's learned — and the
+      deck is built for people who come back, not a one-visit kiosk.</b> Over the first 30 swipes
+      Thompson is still drawing from a uniform prior across 8 categories, i.e. paying to learn what you
+      like (~1 save in 30). By the settled window (last 30 of 150) it beats popularity 0.155 to 0.145.
+      That crossover <i>is</i> the exploration/exploitation trade-off, stated honestly rather than
+      hidden. (Next step if asked: seed the prior from population-average taste instead of uniform —
+      the sim's own "fixed weights" baseline already shows what that looks like.)</div>
+    </details>
+
+    <details class="qa"><summary>Your fraud rules have recall of 0.786 — a quarter of fraud gets
+      through. Isn't that a failure?</summary>
+      <div class="a"><b>Recall is the wrong headline; precision is 1.000, and fraud's share of the pool
+      drops from 0.598 to 0.278 — that's the number that matters.</b> Precision 1.000 over 50 runs means
+      the rules never once flagged an honest view (a false positive here takes real money from a real
+      creator — worse than letting a bot view through). The rules remove 53.6% of what fraud would have
+      earned. Crucially the sim scores views <i>only</i>, to isolate the view rules — the real defence
+      is that a visit is worth 25 views in <code>partner.weights</code>, and a visit needs a person
+      physically present with GPS accuracy under 100m, no impossible travel, and two independent
+      confirmations before a brand-new place counts at all. Honest conclusion: these rules raise the
+      cost of fraud, they don't end it. A patient attacker with aged accounts, one view each, at human
+      pace, would evade all four rules.</div>
+    </details>
+
+    <details class="qa"><summary>Why is time-decay "right" when your own sweep shows last-touch wins at
+      2-day decay and linear wins at 30?</summary>
+      <div class="a"><b>Because nobody knows the true decay constant, and time-decay is the only one of
+      the three that's never far from best at any of them.</b> See the full answer in Section D. The
+      short version for a quick follow-up: picking last-touch or linear is a bet on a parameter that
+      hasn't been measured; time-decay costs a little at both extremes and never collapses, which is
+      the right trade when the thing being decided divides real money between real people.</div>
+    </details>
+  </section>
+
+  <!-- ===================== SECTION I ===================== -->
+  <section class="block" id="sec-i">
+    <h2><span class="letter">I</span> Bugs found in the spec or code, and how</h2>
+
+    <details class="qa"><summary>What bugs did you find in your own spec, and how?</summary>
+      <div class="a">
+        <p><b>1. Four Wikidata class QIDs were wrong.</b> SPEC says "verify each QID in the query
+        service" — doing that showed Q842425 is a chef, not a gurdwara; Q1066288 is "figurine", not a
+        stepwell; Q2082441 is a record producer, not a ghat. Skipping the check would have silently
+        returned zero results for those classes.</p>
+        <p><b>2. The kadam daily caps were ambiguous</b> — "pulse +3, 5 per day" reads as five events a
+        day, not five kadam. Implemented as event counts and documented in <code>kadam.py</code>.</p>
+        <p><b>3. The deck's diversity re-rank had a real bug</b> — the obvious greedy ("best card that
+        doesn't extend the current run") strands a long run at the very end of the list. Found by
+        writing a test that stressed the <i>tail</i>, not the head. Fixed with a closed-form check:
+        <code>largest_group &lt;= k * (total - largest_group + 1)</code>.</p>
+        <p><b>4. The fog-map denominator didn't survive real data</b> — real OSM data gives ~1,400
+        neighbourhood-tagged nodes for one city, mostly residential colonies with nothing to visit, so
+        the honest count read "6 of 1,408 (0%)". Changed the denominator to neighbourhoods containing
+        at least one real place (244 for Hyderabad) — flagged explicitly as a spec change needing
+        sign-off, not silently patched in.</p>
+      </div>
+    </details>
+
+    <details class="qa"><summary>What real security/privacy bugs did a focused review find later?</summary>
+      <div class="a">
+        <p><b>Fragile-place coordinates were recoverable without ever pledging.</b> The API correctly
+        rounded the <i>returned</i> lat/lng, but computed the distance field from the viewer's point to
+        the place's <i>true, unrounded</i> coordinates. Three distance readings from three known points
+        is enough to trilaterate the exact pin. One-line fix: derive distance from the already-fuzzed
+        coordinates, never from the row underneath them — and the same bug existed independently in the
+        duplicate-candidates endpoint.</p>
+        <p><b>A kadam/earnings shortcut existed for video/photo "touches".</b> Real engaged-view touches
+        are already created server-side the moment a watch session is classified as engaged — but a
+        separate code path let a client claim a video/photo touch directly with no verification at all.
+        Fixed by deleting the unverifiable path, since the verified one already existed elsewhere (two
+        ways to create the same row is itself the vulnerability, because only one of them was ever
+        checked).</p>
+        <p><b>A genuine check-in race condition</b> — two simultaneous requests (two tabs, a retry, a
+        scripted double-call) could both pass a "haven't checked in today" read before either commit
+        landed, double-paying kadam. Fixed with a lock keyed by <code>(user_id, place_id)</code> around
+        the whole read-then-write section — reasonable given the whole app runs as one process on one
+        laptop. A 5-thread concurrent test proves exactly one ledger entry results.</p>
+      </div>
+    </details>
+  </section>
+
+  <p class="nomatch hidden" id="nomatch">No question matches that search.</p>
+
+  <footer>
+    Built from this project's own <code>docs/VIVA.md</code>, <code>SPEC.md</code> and phase notes.
+    Verify every number against the current <code>results/*.json</code> before the actual viva —
+    code and metrics may have moved on since this page was generated.
+  </footer>
+</div>
+
+<script>
+  var q = document.getElementById('q');
+  var items = Array.prototype.slice.call(document.querySelectorAll('details.qa'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.block'));
+  var nomatch = document.getElementById('nomatch');
+
+  q.addEventListener('input', function () {
+    var term = q.value.trim().toLowerCase();
+    var anyVisible = false;
+    sections.forEach(function (sec) {
+      var sectionHasMatch = false;
+      sec.querySelectorAll('details.qa').forEach(function (d) {
+        var text = d.textContent.toLowerCase();
+        var match = term === '' || text.indexOf(term) !== -1;
+        d.classList.toggle('hidden', !match);
+        if (match) { sectionHasMatch = true; anyVisible = true; if (term) d.open = true; }
+        if (!term) d.open = false;
+      });
+      sec.classList.toggle('hidden', !sectionHasMatch && term !== '');
+    });
+    nomatch.classList.toggle('hidden', anyVisible || term === '');
+  });
+
+  document.getElementById('expandAll').addEventListener('click', function () {
+    items.forEach(function (d) { d.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function () {
+    items.forEach(function (d) { d.open = false; });
+  });
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    var el = document.documentElement;
+    var current = el.getAttribute('data-theme');
+    el.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>
