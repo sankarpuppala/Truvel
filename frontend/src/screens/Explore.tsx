@@ -52,7 +52,7 @@ export function Explore() {
   } | null>(null);
 
   useEffect(() => {
-    void requestPosition();
+    void requestPosition(true);
   }, [requestPosition]);
 
   const update = useCallback(

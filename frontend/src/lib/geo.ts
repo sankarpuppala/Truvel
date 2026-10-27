@@ -90,32 +90,38 @@ export function getPosition(timeoutMs = 15_000): Promise<Position> {
 }
 
 /** A coarse position for the deck and Explore, where a cached fix is fine. */
-export async function getCoarsePosition(timeoutMs = 4_000): Promise<Position> {
-  // 1. Try browser geolocation first
-  try {
-    if ('geolocation' in navigator && window.isSecureContext) {
-      const pos = await new Promise<Position>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (position) =>
-            resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-            }),
-          (err) => reject(err),
-          { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 60_000 },
-        );
-      });
-      return pos;
+export async function getCoarsePosition(timeoutMs = 1500): Promise<Position> {
+  // 1. Fast path: check if browser geolocation is already explicitly granted
+  if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext && 'permissions' in navigator) {
+    try {
+      const status = await navigator.permissions.query({ name: 'geolocation' });
+      if (status.state === 'granted') {
+        try {
+          return await new Promise<Position>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) =>
+                resolve({
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy,
+                }),
+              (err) => reject(err),
+              { enableHighAccuracy: false, timeout: 2000, maximumAge: 60_000 },
+            );
+          });
+        } catch {
+          // Fall through
+        }
+      }
+    } catch {
+      // Permissions API not supported or errored
     }
-  } catch {
-    // Geolocation unavailable or denied, fall through to IP location
   }
 
-  // 2. Try same-origin /api/here/detect (never blocked by CORS or adblockers)
+  // 2. Immediate same-origin network / IP geolocation (resolves in ~50ms, never blocked)
   try {
     const res = await fetch('/api/here/detect', {
-      signal: AbortSignal.timeout(3500),
+      signal: AbortSignal.timeout(2500),
     });
     if (res.ok) {
       const data = await res.json();
@@ -131,29 +137,31 @@ export async function getCoarsePosition(timeoutMs = 4_000): Promise<Position> {
     // Fallback if local endpoint unreachable
   }
 
-  // 3. Try ipwho.is (public CORS enabled, not ad-blocked)
+  // 3. Try browser geolocation prompt with short timeout if permission was not yet granted
   try {
-    const res = await fetch('https://ipwho.is/', {
-      signal: AbortSignal.timeout(3500),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
-        return {
-          lat: data.latitude,
-          lng: data.longitude,
-          accuracy: 5000,
-        };
-      }
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext) {
+      const pos = await new Promise<Position>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) =>
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            }),
+          (err) => reject(err),
+          { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 60_000 },
+        );
+      });
+      return pos;
     }
   } catch {
-    // Fallback
+    // Geolocation unavailable or denied, fall through
   }
 
-  // 4. Try ipapi.co
+  // 4. Try ipwho.is (public CORS enabled)
   try {
-    const res = await fetch('https://ipapi.co/json/', {
-      signal: AbortSignal.timeout(3500),
+    const res = await fetch('https://ipwho.is/', {
+      signal: AbortSignal.timeout(2500),
     });
     if (res.ok) {
       const data = await res.json();

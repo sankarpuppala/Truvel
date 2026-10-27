@@ -33,7 +33,7 @@ export function Nearby() {
   const radii = config?.deck.radii_km ?? RADII;
 
   useEffect(() => {
-    void requestPosition();
+    void requestPosition(true);
   }, [requestPosition]);
 
   // The header should say where someone actually *is* ("Tirupati"), not

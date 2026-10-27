@@ -378,34 +378,35 @@ def detect_location(
         except ValueError:
             is_public = False
 
-    # Try ipwho.is with client_ip if public, else use server/caller public IP
-    try:
-        url = f"https://ipwho.is/{client_ip}" if is_public else "https://ipwho.is/"
-        req = urllib.request.Request(url, headers={"User-Agent": "Truvel/1.0"})
-        with urllib.request.urlopen(req, timeout=3.5) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if data.get("success") is not False and data.get("latitude") and data.get("longitude"):
-                lat = float(data["latitude"])
-                lng = float(data["longitude"])
-                city_name = data.get("city")
-                state_name = data.get("region")
-    except Exception:
-        pass
-
-    # Fallback to ipapi.co if needed
-    if lat is None or lng is None:
+    # Try ipwho.is only with real public client IP, avoiding live external lookups in tests (PLAN.md)
+    if is_public:
         try:
-            url = f"https://ipapi.co/{client_ip}/json/" if is_public else "https://ipapi.co/json/"
+            url = f"https://ipwho.is/{client_ip}"
             req = urllib.request.Request(url, headers={"User-Agent": "Truvel/1.0"})
             with urllib.request.urlopen(req, timeout=3.5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                if data.get("latitude") and data.get("longitude"):
+                if data.get("success") is not False and data.get("latitude") and data.get("longitude"):
                     lat = float(data["latitude"])
                     lng = float(data["longitude"])
                     city_name = data.get("city")
                     state_name = data.get("region")
         except Exception:
             pass
+
+        # Fallback to ipapi.co if needed
+        if lat is None or lng is None:
+            try:
+                url = f"https://ipapi.co/{client_ip}/json/"
+                req = urllib.request.Request(url, headers={"User-Agent": "Truvel/1.0"})
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if data.get("latitude") and data.get("longitude"):
+                        lat = float(data["latitude"])
+                        lng = float(data["longitude"])
+                        city_name = data.get("city")
+                        state_name = data.get("region")
+            except Exception:
+                pass
 
     # Check against seeded cities in DB
     all_cities = session.exec(select(City)).all()

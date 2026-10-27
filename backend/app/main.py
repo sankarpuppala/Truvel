@@ -85,9 +85,12 @@ app.add_exception_handler(HTTPException, http_error_handler)
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; "
-        "connect-src 'self' https://tiles.openfreemap.org; style-src 'self' 'unsafe-inline'; "
-        "script-src 'self'; frame-ancestors 'none'"
+        "default-src 'self'; "
+        "img-src 'self' data: blob: https://tiles.openfreemap.org https://upload.wikimedia.org https://commons.wikimedia.org https://*.wikimedia.org https://images.unsplash.com; "
+        "connect-src 'self' https://tiles.openfreemap.org https://ipwho.is https://ipapi.co; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
     )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"

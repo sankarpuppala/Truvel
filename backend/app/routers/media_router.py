@@ -110,23 +110,29 @@ def commons_photo(
     if not commons.resolve_media(session, media):
         raise not_found("That photo is not available.", "no_photo")
     cached = commons.cached_path(media.path_display)
-    if cached is None:
-        # Already credited but never downloaded (a batch run can credit many
-        # more photos than it has time to cache) -- fetch the bytes now, once,
-        # so the place is not stuck showing its illustration forever.
-        try:
-            photo = commons.fetch_and_cache(media.path_display)
-        except Exception:  # noqa: BLE001 - offline or rate-limited: try again later
-            photo = None
-        if photo is None or photo.cached_path is None:
-            raise not_found("That photo is not available.", "no_photo")
-        cached = commons.cache_dir() / photo.cached_path
+    if cached is not None and cached.exists() and cached.stat().st_size > 0:
+        response = ranged_response(cached, request)
+        response.headers["X-Attribution"] = media.attribution or ""
+        response.headers["X-Licence"] = media.licence or ""
+        response.headers["Cache-Control"] = "public, max-age=604800, immutable"
+        return response
 
-    response = ranged_response(cached, request)
-    # The attribution travels with the bytes, so it cannot be lost downstream.
-    response.headers["X-Attribution"] = media.attribution or ""
-    response.headers["X-Licence"] = media.licence or ""
-    return response
+    # If not locally cached on disk (e.g. fresh container on Render/Railway),
+    # return an immediate 307 redirect to Wikimedia Commons resized thumbnail CDN.
+    # This prevents the backend from blocking or timing out on multi-megabyte downloads.
+    import urllib.parse
+    from fastapi.responses import RedirectResponse
+    encoded = urllib.parse.quote(media.path_display)
+    cdn_url = f"https://commons.wikimedia.org/wiki/Special:FilePath/{encoded}?width=800"
+    return RedirectResponse(
+        url=cdn_url,
+        status_code=307,
+        headers={
+            "Cache-Control": "public, max-age=604800",
+            "X-Attribution": media.attribution or "",
+            "X-Licence": media.licence or "",
+        },
+    )
 
 
 @router.get("/media/file/{path:path}")

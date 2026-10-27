@@ -149,8 +149,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [setMe]);
 
+  const requestPosition = useCallback(async (force = false) => {
+    if (simulated) return simulated;
+    if (!force && position) return position;
+    try {
+      const next = await getCoarsePosition();
+      setPosition(next);
+      try {
+        const hereInfo = await api.here(next.lat, next.lng);
+        if (hereInfo && hereInfo.name) {
+          setActiveCityName(hereInfo.name);
+        }
+      } catch {
+        // Ignore here lookup error
+      }
+      return next;
+    } catch {
+      // Location denied or unavailable fallback
+      return position;
+    }
+  }, [simulated, position, setPosition, setActiveCityName]);
+
   useEffect(() => {
     void refreshMe();
+    void requestPosition(true);
     void api
       .config()
       .then(setConfig)
@@ -164,7 +186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .then((health) => setDevTools(Boolean(health.dev_fake_location)))
         .catch(() => setDevTools(false));
     }
-  }, [refreshMe]);
+  }, [refreshMe, requestPosition]);
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'plain') => {
     const id = ++toastId.current;
@@ -174,19 +196,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setToasts((current) => current.filter((t) => t.id !== id));
     }, 2500);
   }, []);
-
-  const requestPosition = useCallback(async (force = false) => {
-    if (simulated) return simulated;
-    if (!force && position) return position;
-    try {
-      const next = await getCoarsePosition();
-      setPosition(next);
-      return next;
-    } catch {
-      // Location denied or unavailable fallback
-      return position;
-    }
-  }, [simulated, position, setPosition]);
 
   const logout = useCallback(async () => {
     try {

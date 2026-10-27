@@ -72,13 +72,39 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     body = JSON.stringify(options.body);
   }
 
-  const response = await fetch(BASE + path, {
-    method,
-    headers,
-    body,
-    credentials: 'include',
-    signal: options.signal,
-  });
+  let response: Response;
+  try {
+    response = await fetch(BASE + path, {
+      method,
+      headers,
+      body,
+      credentials: 'include',
+      signal: options.signal,
+    });
+    if (method === 'GET' && (response.status === 502 || response.status === 503 || response.status === 504)) {
+      await new Promise((r) => setTimeout(r, 1000));
+      response = await fetch(BASE + path, {
+        method,
+        headers,
+        body,
+        credentials: 'include',
+        signal: options.signal,
+      });
+    }
+  } catch (err) {
+    if (method === 'GET' && !options.signal?.aborted) {
+      await new Promise((r) => setTimeout(r, 1000));
+      response = await fetch(BASE + path, {
+        method,
+        headers,
+        body,
+        credentials: 'include',
+        signal: options.signal,
+      });
+    } else {
+      throw err;
+    }
+  }
 
   if (response.status === 204) return undefined as T;
 

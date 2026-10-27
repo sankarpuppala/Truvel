@@ -52,24 +52,29 @@ def get_deck(
     """One page of deck cards, ranked by SPEC §9.4."""
     now = utcnow()
 
-    # Location denied -> detect via IP or use the city centre and say so (SPEC §8.2).
     fallback = False
     if lat is None or lng is None:
-        city = None
-        if user is not None and user.home_city_id:
-            city = session.get(City, user.home_city_id)
-        if city is None:
-            from .places import detect_location
+        from .places import detect_location
 
-            try:
-                detected = detect_location(request, session, user)
-                if detected and detected.get("lat") and detected.get("lng"):
-                    lat, lng = float(detected["lat"]), float(detected["lng"])
-                    fallback = True
-            except Exception:
-                pass
+        # 1. Try detecting client location dynamically from IP / network headers
+        try:
+            detected = detect_location(request, session, user)
+            if detected and detected.get("lat") and detected.get("lng") and detected.get("source") != "fallback":
+                lat, lng = float(detected["lat"]), float(detected["lng"])
+                fallback = True
+                # If detected matched a seeded city and user had default home city, sync it
+                if user is not None and detected.get("city_id") and user.home_city_id != detected.get("city_id"):
+                    user.home_city_id = detected["city_id"]
+                    session.add(user)
+                    session.commit()
+        except Exception:
+            pass
 
+        # 2. If IP detection failed or returned fallback, use user's configured home city or city_default
         if lat is None or lng is None:
+            city = None
+            if user is not None and user.home_city_id:
+                city = session.get(City, user.home_city_id)
             if city is None:
                 city = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
             if city is None:

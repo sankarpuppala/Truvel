@@ -90,11 +90,20 @@ def register(
     if session.exec(select(User).where(User.email == email)).first() is not None:
         raise bad_request("An account already uses that email address.", "email_taken")
 
-    # New accounts start in the default city so the deck and Explore have
-    # somewhere to open (SPEC §8.2 location-denied fallback).
+    # Initialize account in user's detected location, or default city if undetected
     from ..config import cfg
+    from .places import detect_location
 
-    city = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
+    city = None
+    try:
+        detected = detect_location(request, session, None)
+        if detected and detected.get("city_id"):
+            city = session.get(City, detected["city_id"])
+    except Exception:
+        pass
+
+    if city is None:
+        city = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
 
     user = User(
         username=username,
@@ -137,6 +146,18 @@ def login(
     if user is None or not password_ok:
         auth.record_login_failure(keys)
         raise unauthorized("That email and password do not match.")
+
+    # If the user is logging in and their home city was still default/unset, sync it
+    try:
+        from .places import detect_location
+        detected = detect_location(request, session, user)
+        if detected and detected.get("city_id") and (user.home_city_id is None or user.home_city_id == 1):
+            user.home_city_id = detected["city_id"]
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+    except Exception:
+        pass
 
     auth.clear_login_failures(keys)
     token = auth.start_session(session, response, user)
