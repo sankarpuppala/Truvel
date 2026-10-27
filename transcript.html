@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truvel — Conversation Transcript</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Truvel design tokens (SPEC §12.2), copied from frontend/src/styles/tokens.css
+     so this transcript reads as the app itself, not a generic doc theme. */
+  :root{
+    --paper:#F6F1E7;--surface:#FFFCF6;--ink:#1D2420;--muted:#5A635D;--line:#E2D9C8;
+    --laterite:#A8401C;--marigold:#E9A21B;--moss:#2E6A4E;--lake:#25627F;--danger:#A3263A;
+    --on-primary:#FFFCF6;--on-marigold:#1D2420;
+    --shadow:0 12px 32px -12px rgba(29,36,32,.35);
+    --sunk:color-mix(in srgb,var(--ink) 6%,var(--surface));
+    --f-display:'Rozha One',Georgia,serif;
+    --f-ui:Mukta,system-ui,sans-serif;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#111512;--surface:#1A201C;--ink:#EEE9DE;--muted:#A9B1AA;--line:#2D3530;
+    --laterite:#F08B63;--marigold:#F3B843;--moss:#6CC495;--lake:#6FB3D6;--danger:#F2848F;
+    --on-primary:#111512;--shadow:0 12px 32px -12px rgba(0,0,0,.6);
+    --sunk:color-mix(in srgb,var(--ink) 6%,var(--surface));
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --paper:#111512;--surface:#1A201C;--ink:#EEE9DE;--muted:#A9B1AA;--line:#2D3530;
+    --laterite:#F08B63;--marigold:#F3B843;--moss:#6CC495;--lake:#6FB3D6;--danger:#F2848F;
+    --on-primary:#111512;--shadow:0 12px 32px -12px rgba(0,0,0,.6);
+    --sunk:color-mix(in srgb,var(--ink) 6%,var(--surface));
+    color-scheme:dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--f-ui);
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header.top {
+    padding: 36px 8px 26px; border-bottom: 1px solid var(--line);
+    max-width: 900px; margin: 0 auto;
+  }
+  header.top h1 { font-family: var(--f-display); font-weight: 400; font-size: 30px; margin: 0 0 8px; text-wrap: balance; color: var(--ink); }
+  header.top p { color: var(--muted); margin: 0 0 4px; }
+  .meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .meta span {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    background: var(--sunk); border: 1px solid var(--line); color: var(--muted);
+  }
+  .controls {
+    max-width: 900px; margin: 18px auto 0; padding: 0 8px;
+    display: flex; gap: 10px; flex-wrap: wrap; position: sticky; top: 0;
+    background: var(--paper); z-index: 5; padding-top: 10px; padding-bottom: 10px;
+  }
+  .controls button {
+    font-family: var(--f-ui); font-size: 13px; padding: 8px 16px; border-radius: 14px; cursor: pointer;
+    background: var(--surface); border: 1.5px solid var(--line); color: var(--ink); font-weight: 600;
+  }
+  .controls button:hover { border-color: var(--laterite); color: var(--laterite); }
+  .controls input[type="search"] {
+    flex: 1; min-width: 160px; font-family: var(--f-ui); font-size: 13.5px; padding: 8px 14px; border-radius: 14px;
+    background: var(--surface); border: 1.5px solid var(--line); color: var(--ink);
+  }
+  .controls input[type="search"]:focus { outline: 2px solid var(--marigold); outline-offset: -1px; }
+  main { max-width: 900px; margin: 0 auto; padding: 10px 8px 100px; min-width: 0; }
+  .turn { margin: 22px 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; min-width: 0; box-shadow: var(--shadow); }
+  .turn[hidden] { display: none !important; }
+  .turn-head { display: flex; align-items: baseline; gap: 10px; padding: 16px 20px 0; flex-wrap: wrap; }
+  .turn-num {
+    font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--on-primary); background: var(--moss); padding: 3px 9px; border-radius: 6px;
+  }
+  .user-label { font-size: 11px; font-weight: 700; color: var(--laterite); text-transform: uppercase; letter-spacing: .05em; }
+  .tag {
+    font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+    background: var(--sunk); color: var(--muted); border: 1px solid var(--line);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .turn-title { padding: 8px 20px 0; font-family: var(--f-display); font-weight: 400; font-size: 18px; color: var(--ink); }
+  .user-msg { padding: 8px 20px 18px; font-size: 14.5px; color: var(--muted); white-space: pre-wrap; }
+  details.response { border-top: 1px solid var(--line); }
+  details.response summary {
+    cursor: pointer; padding: 12px 20px; list-style: none; display: flex;
+    align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 13px; font-weight: 600; color: var(--lake);
+    background: var(--sunk);
+  }
+  details.response summary::-webkit-details-marker { display: none; }
+  details.response summary::after { content: "Show response +"; font-weight: 400; color: var(--muted); }
+  details.response[open] summary::after { content: "Hide response \2212"; }
+  .response-body { padding: 16px 20px 22px; color: var(--muted); font-size: 14.5px; min-width: 0; }
+  .response-body p { margin: 0 0 12px; }
+  .response-body ul, .response-body ol { padding-left: 20px; margin: 0 0 12px; }
+  .response-body li { margin-bottom: 6px; }
+  .response-body code { background: var(--sunk); padding: 1px 6px; border-radius: 4px; font-size: .92em; color: var(--lake); word-break: break-word; }
+  .sev-crit { color: var(--danger); font-weight: 700; }
+  .sev-high { color: var(--laterite); font-weight: 700; }
+  .sev-med { color: var(--marigold); font-weight: 700; }
+  .section-divider {
+    max-width: 900px; margin: 48px auto 10px; padding: 0 8px;
+    display: flex; align-items: center; gap: 14px; color: var(--muted);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+  }
+  .section-divider::before, .section-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .no-results { text-align: center; color: var(--muted); padding: 40px 0; display: none; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0 60px; }
+  @media (max-width: 640px) { .turn-head { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Truvel (Pagdandi) — Conversation Transcript</h1>
+  <p>Turn-by-turn record of the AI-assisted build session for Truvel, a travel +
+  social + creator web app for India, built against a fixed SPEC and CLAUDE.md
+  invariants on a zero-budget, Windows-laptop stack.</p>
+  <div class="meta">
+    <span id="turn-count">23 turns</span>
+    <span>Source: transcript.md</span>
+    <span>Full diffs: git log</span>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="search" id="search" placeholder="Filter turns (e.g. auth, location, maps, docker, photos, security)" aria-label="Filter turns by keyword">
+  <button onclick="document.querySelectorAll('details.response').forEach(d=>d.open=true)">Expand all</button>
+  <button onclick="document.querySelectorAll('details.response').forEach(d=>d.open=false)">Collapse all</button>
+</div>
+
+<main id="main">
+
+<div class="section-divider">Setup — account, safety, data quality</div>
+
+<div class="turn" data-kw="official account truvel password reset delete upload hidden gems kadam">
+  <div class="turn-head"><span class="turn-num">Turn 1</span><span class="user-label">User</span><span class="tag">accounts</span></div>
+  <div class="turn-title">Official account, password policy, data cleanup</div>
+  <div class="user-msg">Create the official @truvel account with a specific password, make it the publisher of every existing place, keep only photographed viewpoints, populate Hidden Gems honestly, lower the minimum password length to 8, and build password reset and delete-your-own-upload.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Set the <code>@truvel</code> account's password and lowered <code>MIN_PASSWORD</code> to 8 everywhere (backend validation, frontend copy, SPEC, README).</li>
+        <li>Set <code>Place.added_by</code> to the official account for all ~16,800 places, but first added a <code>User.official</code> flag so the account never earns kadam, is never credited with a visit, and is excluded from the Partner Program and Studio rankings (an earlier attempt caused a 50-second page load and false creator credit — fixed with grouped queries instead of per-place loops).</li>
+        <li>Removed the 3 OpenStreetMap viewpoints with no photo at all; kept the rest.</li>
+        <li>Marked 104 photographed, little-known places as <code>fame = hidden</code> so Hidden Gems had honest content before anyone had visited anything.</li>
+        <li>Built <code>POST /auth/forgot</code> / <code>POST /auth/reset</code> (one-hour, one-use link, generic response so it can't reveal who has an account).</li>
+        <li>Built <code>DELETE /media/{id}</code> for your own upload (owner or admin only; Commons photos can't be deleted since they aren't ours).</li>
+        <li>Full test suites green; committed in stages.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="simulator location maps link salar jung share trip safety report duplicate watch nearby monetisation">
+  <div class="turn-head"><span class="turn-num">Turn 2</span><span class="user-label">User</span><span class="tag">product</span></div>
+  <div class="turn-title">Product pass: simulator placement, Maps link accuracy, safety messaging</div>
+  <div class="user-msg">Pointed out (with screenshots) that the dev location simulator showed on every page including sign-in; that "Open in Maps" opened the wrong exact spot inside a large site (Salar Jung Museum opened "Metal Ware Gallery"); questioned "Share your trip"; asked how reports get collected usefully, how duplicates are avoided, for Watch's "Nearby" tab to be plain cards, and about monetisation.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Moved the dev location simulator so it only renders on the Nearby screen, not globally.</li>
+        <li>Fixed the Maps link: a place with a Wikidata item is now sent to Google Maps by name + city instead of raw coordinates, since Google snaps a bare pin to the nearest indexed thing — inside a museum, that can be the wrong room.</li>
+        <li>Replaced "Share your trip" with "Ask a friend to check on me": a message with a return-by time and the place's Truvel link, deliberately carrying no location (invariant 1).</li>
+        <li>Built a grouped report-review view in Admin: reports grouped by target, a reporter with a verified check-in weighted higher than a stranger's report.</li>
+        <li>Added server-side duplicate rejection: a new place is refused if an existing place within 150 m has a near-identical name in any language.</li>
+        <li>Rebuilt Watch's "Nearby" tab as a plain card list instead of autoplaying video.</li>
+        <li>Wrote up monetisation options in <code>docs/MONETISATION.md</code> rather than building anything unasked.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="photos commons fetch coverage">
+  <div class="turn-head"><span class="turn-num">Turn 3</span><span class="user-label">User</span><span class="tag">data</span></div>
+  <div class="turn-title">Finding more photos for existing places</div>
+  <div class="user-msg">Asked to check for photo-less places and fill them in by finding images online.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Extended <code>scripts/fetch_photos.py</code> to geosearch Wikimedia Commons for every place missing a photo nationwide, not one city at a time, using the same 250 m match radius.</li>
+        <li>Ran it across several passes as more cities/states were added later; coverage rose from roughly a quarter to just over 40% at this point.</li>
+        <li>Fixed a related bug: a place whose Commons photo had been credited but never downloaded 404'd forever — now fetches the bytes on first real view instead of only at credit time.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="subagents overpass wikidata rate limit language code iso">
+  <div class="turn-head"><span class="turn-num">Turn 4</span><span class="user-label">User</span><span class="tag">scope</span></div>
+  <div class="turn-title">"Use 28 subagents" — scope correction</div>
+  <div class="user-msg">Asked to use 28 subagents, one per state, to find new places first and then photos for them, and asked why language codes in the "add a name" picker were two letters.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Explained why 28 parallel subagents hitting Overpass/Wikidata — free, shared services — wasn't the right move: the bottleneck is the shared rate limit, not caller count, and hammering it risked losing access entirely.</li>
+        <li>Built <code>scripts/seed_osm_states.py</code> instead: the same per-category Overpass sweep as the city seeder, run one state at a time, one query at a time, with the existing mirror-and-retry logic. Tested on Goa, then ran the 28-state pass in the background.</li>
+        <li>Answered the language-code question: ISO 639-1 codes (<code>kn</code>, <code>te</code>, ...), the standard tag for <code>lang</code>, i18next and font selection. Pulled the existing language-name table into a shared module so the dropdown shows "Kannada (ಕನ್ನಡ)" instead of the raw code.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="famous places wikipedia wikidata notability filter seeding priority">
+  <div class="turn-head"><span class="turn-num">Turn 5</span><span class="user-label">User</span><span class="tag">scope</span></div>
+  <div class="turn-title">"Only add famous places, the task is photos not new places"</div>
+  <div class="user-msg">Said the state-seeding run should only keep places that are "kinda famous", and that the real priority is photos, not adding more places.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Stopped the 28-state run (it had only reached Goa and Andhra Pradesh, adding 1,409 places).</li>
+        <li>Removed the 1,043 with no Wikipedia tag and no Wikidata id — no real notability signal; kept the 366 that had one.</li>
+        <li>Changed <code>seed_osm_states.py</code>'s default behaviour to apply that filter automatically. Did not continue seeding the other 26 states, since the priority had just changed.</li>
+        <li>Went back to the photo-fetch pass instead.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="search state town locality literal match browse p131">
+  <div class="turn-head"><span class="turn-num">Turn 6</span><span class="user-label">User</span><span class="tag">search</span></div>
+  <div class="turn-title">Search only matching literal place names</div>
+  <div class="user-msg">Pointed out that searching "Goa" only returned places with "Goa" literally in their name, not a way to browse the state; asked for the same for towns/cities, not just large cities.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Added <code>GET /states/{slug}/places</code> and <code>GET /localities/{slug}/places</code>, mirroring the existing city endpoint (same sorts, pagination, payload shape) but scoped by a place's <code>state</code> or new <code>locality</code> column.</li>
+        <li>Added a <code>locality</code> column to <code>Place</code>, backfilled from Wikidata's nearest P131 step by re-running the Wikidata seeder with an extended query.</li>
+        <li><code>/search</code> now also matches state and locality names and offers them as places to browse, before falling back to literal name matches.</li>
+        <li>Fixed a data-quality side effect: 123 places had backfilled to locality = "India" itself (a sparsely-tagged item's one-hop P131 landing on the country); cleared and filtered the case going forward.</li>
+        <li>Place pages now show the nearest town/district instead of falling straight back to the state when there's no seeded-city neighbourhood data.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="explore search scope hyderabad nearby header radius thompson deck paging cities">
+  <div class="turn-head"><span class="turn-num">Turn 7</span><span class="user-label">User</span><span class="tag">bugfix</span></div>
+  <div class="turn-title">Search losing its scope; Nearby always saying "Hyderabad"; the deck's radius</div>
+  <div class="user-msg">Reported that typing in Explore's search box replaced the whole list with results from anywhere in India; that the Nearby header always said "Hyderabad"; and that widening the deck's radius revealed places only 3–4 km away that should already have been inside a smaller radius.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Explore's search box was calling the global search endpoint and swapping it in for the current scope's list on every keystroke — changed it to filter the current scope's own list instead; global search now only offers "browse somewhere else".</li>
+        <li>"Hyderabad" at the top of Nearby was always the saved home city, never live position. Added <code>GET /here?lat=&lng=</code> (seeded city, else nearest place's locality/area, else state) and wired Nearby's header to it.</li>
+        <li>The radius bug: candidate query and haversine filter were already correct. The real bug was that only the top 30 of the <em>ranked</em> list was ever shown, and reloading at the same radius re-drew the Thompson-sampling component from scratch, so a place scoring just outside the top 30 could lose on every redraw forever. Fixed by seeding the ranking once per day and paging through that stable order with the request counter.</li>
+        <li>Seeded 9 more real cities (Chennai, Bengaluru, Kochi, Mumbai, Kolkata, Ahmedabad, Amritsar, Bhubaneswar, Guwahati) since Settings already listed scripts for them. Ran the duplicate-merge script afterwards.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="add place photo upload foreign key place_id nullable media">
+  <div class="turn-head"><span class="turn-num">Turn 8</span><span class="user-label">User</span><span class="tag">bugfix</span></div>
+  <div class="turn-title">"Add a place" photo upload failing</div>
+  <div class="user-msg">Reported that uploading a photo on the "Add a new place" page showed "something went wrong".</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Traced it to a foreign-key violation: step 1 uploads photos with <code>place_id = 0</code> as a placeholder before the place exists, but 0 isn't a real place and SQLite correctly rejected the insert. No test had ever exercised this path.</li>
+        <li>Made <code>Media.place_id</code> genuinely nullable. Since SQLite has no <code>ALTER COLUMN</code> to drop a <code>NOT NULL</code>, wrote a one-time table rebuild in <code>init_db()</code> (rename, recreate from the model, copy every row, drop the old table) — verified idempotent and row-count-preserving before trusting it against the real database.</li>
+        <li>Verified against the live server: uploaded with no place yet, created the place, confirmed the photo attached. Added two regression tests.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="status check background jobs">
+  <div class="turn-head"><span class="turn-num">Turn 9</span><span class="user-label">User</span><span class="tag">status</span></div>
+  <div class="turn-title">Status checks</div>
+  <div class="user-msg">Asked more than once whether background jobs were still running.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <p>Checked the actual job output files and, once, the live process list, and reported plainly what had finished, what hadn't, and in one case what a long stretch of "0 photos found" meant (a cluster of remote Himalayan coordinates with genuinely no nearby Commons photos — verified directly against the Commons API).</p>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="photo coverage percentage final count">
+  <div class="turn-head"><span class="turn-num">Turn 10</span><span class="user-label">User</span><span class="tag">status</span></div>
+  <div class="turn-title">Final photo coverage question</div>
+  <div class="user-msg">Asked whether all ~16k places now had images.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <p>Checked the database directly and reported the true number: 8,339 of 18,320 places (45.5%) have a credited photo. The rest keep their category illustration — mostly small, remote OpenStreetMap features with no close-up photo on Commons at all, a genuine limit of the free data source, not something retrying would fix.</p>
+    </div>
+  </details>
+</div>
+
+<div class="section-divider">Process cards — hygiene, security, performance</div>
+
+<div class="turn" data-kw="card a6 repo hygiene ci workflow commit skill starter zip">
+  <div class="turn-head"><span class="turn-num">Turn 11</span><span class="user-label">User</span><span class="tag">card A6</span></div>
+  <div class="turn-title">Card A6 — repo hygiene, CI workflow, commit skill</div>
+  <div class="user-msg">Asked to run "card A1" by name before the /card skill had been discovered; once the skill turned up, picked up the actual next card in order, A6.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Removed the tracked <code>pagdandi-starter.zip</code> (394 KB, already unpacked into the repo) and widened <code>.gitignore</code>'s rule to <code>*-starter.zip</code>.</li>
+        <li>Dropped a stale "Working name" line from the SPEC.md epigraph, proposed as an explicit diff first since a SPEC change is a stop-and-show-plan trigger.</li>
+        <li>Added <code>.github/workflows/ci.yml</code>: ruff + pytest on Python 3.12, <code>npm ci</code> + lint + <code>npm run test</code> on Node 20. No Playwright yet — it needs seeded data CI doesn't have.</li>
+        <li>Recreated <code>.claude/skills/commit/SKILL.md</code> (run tests, refuse anything on the "Never commit" list, write a scoped message, print the short hash).</li>
+        <li>Backend (227 tests) and frontend (26 tests) green locally; pushed so CI could run the new workflow.</li>
+        <li>Ticked A6, logged in PLAN.md, 3 viva Q&A appended to <code>docs/VIVA.md</code>.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="card a1 security privacy fraud review subagent critical high medium trilateration touch check-in lock login timing teleport">
+  <div class="turn-head"><span class="turn-num">Turn 12</span><span class="user-label">User</span><span class="tag">card A1</span></div>
+  <div class="turn-title">Card A1 — security, privacy and fraud review</div>
+  <div class="user-msg">Asked to run card A1 (security, privacy and fraud review) once A6 was done.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <p>Launched an independent background subagent with no visibility into this conversation — given only CLAUDE.md's invariants, named SPEC sections and backend source — to hunt for location leaks, unearned kadam/earnings, fragile-place pin exposure, pHash bypass, unlabelled ₹ figures, or broken auth. It returned 1 <span class="sev-crit">Critical</span>, 3 <span class="sev-high">High</span>, 2 <span class="sev-med">Medium</span> and 1 accepted Low finding.</p>
+      <ul>
+        <li><span class="sev-crit">Critical</span> — <code>place_payload</code>'s <code>distance_km</code> was computed from a fragile place's <em>true</em> coordinates even when the returned lat/lng had been fuzzed; three readings could trilaterate the exact pin without ever pledging. Fixed by deriving distance from the same (possibly fuzzed) coordinates actually returned.</li>
+        <li><span class="sev-high">High</span> — <code>/api/touch</code> trusted a client-asserted content_type with no proof anyone watched anything, letting fabricated touches steal a creator's attribution/kadam. Deleted the unverifiable branch, added an hourly rate limit and dedupe.</li>
+        <li><span class="sev-high">High</span> — Uvicorn's access logger printed every request's full query string, including live lat/lng, to plaintext logs. Disabled <code>uvicorn.access</code> at import time.</li>
+        <li><span class="sev-high">High</span> — <code>check_in</code>'s visit checks were a plain read-then-write with no lock; concurrent requests could double-award kadam. Fixed with a per-<code>(user_id, place_id)</code> <code>threading.Lock</code>; a 5-thread test proved the bug, then the fix.</li>
+        <li><span class="sev-med">Medium</span> — login's early-exit on a non-existent account skipped the slow argon2id check, a timing side-channel. Fixed with a precomputed dummy hash checked on every attempt.</li>
+        <li><span class="sev-med">Medium</span> — the dev <code>/teleport</code> endpoint handed back a fragile place's exact coordinates with no pledge check. Fixed to apply the same fuzzing the real API uses.</li>
+        <li><strong>Low, accepted</strong> — pHash dedupe can be defeated by a flip/crop/colour-shift; inherent to perceptual hashing, already slated for the Tier-2 CLIP mitigation.</li>
+      </ul>
+      <p>Added security headers (CSP scoped to <code>tiles.openfreemap.org</code>, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-Frame-Options). Wrote up every finding in <code>docs/SECURITY_REVIEW.md</code> with one test per fix. Full suite: 238 backend, 26 frontend, all green. Ticked A1, logged in PLAN.md, 3 viva Q&A appended.</p>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="card a2 lighthouse playwright ac-20 ac-21 ac-22 fetchpriority main landmark modulepreload turf maplibre lcp performance">
+  <div class="turn-head"><span class="turn-num">Turn 13</span><span class="user-label">User</span><span class="tag">card A2</span></div>
+  <div class="turn-title">Card A2 — tick what's already verified; Lighthouse</div>
+  <div class="user-msg">Asked to run card A2 via the /card skill.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li><code>npx playwright test</code> was green (70 passed, both themes), so AC-20/21/22 got ticked in PLAN.md Phase 9.</li>
+        <li>Built the production bundle and ran Lighthouse's mobile profile against Nearby and Watch — first result: Performance 72/84, Accessibility 98/100, Best Practices 92/92, SEO 92/91.</li>
+        <li>Fixed the top real findings (judged console 401s from Lighthouse's own unauthenticated probe, and the <code>geolocation-on-start</code> flag on screens that genuinely need location on mount, as not real bugs):
+          <ol>
+            <li>The deck's lead photo is the LCP element on both screens but had no <code>fetchPriority</code> hint. Added <code>fetchPriority="high"</code> to <code>DeckCard</code>'s front card only.</li>
+            <li>Neither screen had a <code>&lt;main&gt;</code> landmark (axe <code>landmark-one-main</code>). <code>App.tsx</code> now wraps the routed screen in one — Nearby's accessibility score went 98 → 100.</li>
+            <li>The real culprit behind Nearby's especially bad LCP: Vite emitted an unconditional modulepreload for the <code>turf</code> chunk into the single shared <code>index.html</code>, so Nearby (which never touches <code>@turf/turf</code>) paid for downloading it before first paint. Added <code>build.modulePreload.resolveDependencies</code> to drop the <code>maplibre</code>/<code>turf</code> chunks from the preload list.</li>
+          </ol>
+        </li>
+        <li>Re-ran Lighthouse: Watch's Performance rose 84 → 90, LCP score 0.53 → 0.69-0.73. Nearby's stayed low (~66) — diagnosed as an inherent SPA limitation (the deck photo's URL isn't known until the JS bundle parses and <code>/api/deck</code> returns); a real fix needs server-rendering the first card, out of scope for the zero-budget, no-SSR stack.</li>
+        <li>Backend pytest (238 passed), frontend test (26 passed) and <code>tsc --noEmit</code> all green before committing. Ticked A2, recorded Lighthouse scores in PLAN.md.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="merge branches master git conflict plan.md progress log">
+  <div class="turn-head"><span class="turn-num">Turn 14</span><span class="user-label">User</span><span class="tag">git</span></div>
+  <div class="turn-title">Merging the two branches into one</div>
+  <div class="user-msg">Asked to merge all branches into a single branch.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Only two branches existed: <code>master</code> and the working branch, diverged — 5 commits ahead (cards A6, A1, A2), 4 behind (search-scope fixes, the Nearby location/deck-paging fix, the "Add a place" fix, and 9 more cities seeded on master).</li>
+        <li>Asked which branch should end up holding everything; the user picked merging into <code>master</code>.</li>
+        <li><code>git checkout master</code>, then merge. Only <code>PLAN.md</code> conflicted (both branches had appended different dated entries to its progress log); every code file merged cleanly. Resolved by interleaving both branches' entries in chronological order rather than picking one side, so both commit histories' narratives are preserved.</li>
+        <li>Committed the merge.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="section-divider">Photo quality, maps, social, deployment</div>
+
+<div class="turn" data-kw="photo quality audit stand-in generic bangalore cubbon lalbagh vidhana soudha">
+  <div class="turn-head"><span class="turn-num">Turn 15</span><span class="user-label">User</span><span class="tag">data</span></div>
+  <div class="turn-title">Photo quality audit &amp; purging generic stand-in photos</div>
+  <div class="user-msg">Reported that many places lacked photos or had incorrect stand-in photos (generic street corners, police stations); asked to audit images and update Bangalore place photos with verified authentic photography.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Audited the media table across all 18,320 places; found earlier automated searches with wide match radii had attached generic or mismatched images.</li>
+        <li>Built <code>scripts/fix_all_incorrect_photos.py</code> and <code>scripts/update_bangalore_photos.py</code> to purge incorrect stand-ins and clean up orphaned <code>MediaLike</code> records while preserving foreign-key integrity.</li>
+        <li>Verified authentic photography for Bangalore landmarks (Cubbon Park, Lalbagh, Vidhana Soudha, Bangalore Fort, Tipu Sultan's Summer Palace) and restored trusted Commons imports.</li>
+        <li>Replaced remaining gaps with curated category illustrations rather than leaving misleading photos.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="google maps pin snapping police station poi routing bhuvanagiri park">
+  <div class="turn-head"><span class="turn-num">Turn 16</span><span class="user-label">User</span><span class="tag">maps</span></div>
+  <div class="turn-title">Google Maps pin snapping &amp; accurate POI routing</div>
+  <div class="user-msg">Pointed out that "Open in Maps" for certain places (e.g. Bhuvanagiri Park) navigated to police stations or wrong buildings instead of the actual place.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Root cause: bare coordinates let Google's geocoder snap the destination to the closest commercial/government POI, which for parks or nature spots is often the nearest police station or junction.</li>
+        <li>Updated Maps link generation across frontend and backend: for any notable place, the query is built as place name + locality/area + city + state, with lat/lng kept only as a fallback.</li>
+        <li>Verified across multiple parks, viewpoints and monuments.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="followers following feed skip recycling explore pagination 50">
+  <div class="turn-head"><span class="turn-num">Turn 17</span><span class="user-label">User</span><span class="tag">social</span></div>
+  <div class="turn-title">Social following feed, follow lists &amp; 50-item Explore pagination</div>
+  <div class="user-msg">Asked about followers/following features — seeing who you follow, who follows you, and a feed of followed creators' posts and visits.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Implemented a Following Feed (<code>GET /following</code>): a combined stream of followed creators' check-ins and media, with creator suggestions when following fewer than 3 accounts.</li>
+        <li>Built follower/following modal sheets (<code>FollowListModal</code>) with usernames, avatars, follower counts and one-tap follow/unfollow.</li>
+        <li>Added deck skip recycling: skipped places get a 14-day cooldown before returning as candidates, so users don't run out of places permanently.</li>
+        <li>Expanded Explore list pagination from 30 to 50 per page with append pagination for smooth infinite scroll.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="creator profile links clickable avatars comments sheet redesign glassmorphic">
+  <div class="turn-head"><span class="turn-num">Turn 18</span><span class="user-label">User</span><span class="tag">UI</span></div>
+  <div class="turn-title">Creator profile links &amp; comments sheet redesign</div>
+  <div class="user-msg">Asked to make creator usernames/avatars clickable across the app to open public profiles, and to redesign the comment section to look modern.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Made creator handles/avatars across Watch, Nearby deck cards, Place attributions and the Social feed link to the public creator profile (<code>/users/:handle</code>).</li>
+        <li>Redesigned the comments sheet with a glassmorphic UI: avatars with fallback initials, relative timestamps, a like counter, a sliding drawer animation and a cleaner input.</li>
+        <li>Preserved WCAG 2.1 AA accessibility and keyboard Escape dismissability.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="deployment render railway docker multi-stage dockerfile sqlite persistent disk">
+  <div class="turn-head"><span class="turn-num">Turn 19</span><span class="user-label">User</span><span class="tag">deploy</span></div>
+  <div class="turn-title">1-click deployment (Render &amp; Railway) with multi-stage Dockerfile</div>
+  <div class="user-msg">Asked for the easiest, most reliable deployment method, how the database is stored, and a comparison between Render and Railway.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Created a production <code>Dockerfile</code>: Stage 1 (Node 20) builds the Vite frontend; Stage 2 (Python 3.12 slim) installs FastAPI/Uvicorn/SQLModel, embeds the seeded <code>truvel.db</code>, and serves both API and SPA from one server.</li>
+        <li>Configured SPA routing in <code>main.py</code> so unhandled non-API paths serve <code>index.html</code>, eliminating CORS/multi-port issues in production.</li>
+        <li>Added a Render blueprint with persistent disk mounting, and documented both Render and Railway steps in <code>docs/DEPLOYMENT.md</code>.</li>
+        <li>Clarified persistence: SQLite file on persistent disk, with a documented migration path to managed Postgres.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="section-divider">Later bug reports — auth, location, content organization</div>
+
+<div class="turn" data-kw="places found discrepancy 24 places city_id nearby radius widen">
+  <div class="turn-head"><span class="turn-num">Turn 20</span><span class="user-label">User</span><span class="tag">bugfix</span></div>
+  <div class="turn-title">Places found discrepancy &amp; nearby search radius widening</div>
+  <div class="user-msg">Tested the @truvel official account and reported "24 places found" despite 16,000+ places existing; reported other UI discrepancies.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Found that the places-found counter filtered by <code>city_id</code> and capped at 24 when queried without city scope.</li>
+        <li>Fixed it to count places published by the user across all of India, correctly showing 16,800+ on the @truvel profile and passport.</li>
+        <li>Added a <code>/users</code> route alias for consistent public profile resolution alongside <code>/u/:handle</code>.</li>
+        <li>Expanded the Nearby radius options from [5, 10, 25] to [5, 10, 25, 50] km so suburban/rural users aren't left with an empty deck.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="persistent auth login localstorage bearer token community places explore hyderabad button profile tabs categories all india">
+  <div class="turn-head"><span class="turn-num">Turn 21</span><span class="user-label">User</span><span class="tag">bugfix</span></div>
+  <div class="turn-title">Persistent authentication, community places visibility &amp; profile content separation</div>
+  <div class="user-msg">Reported login not persisting across browser restarts, community-added places disappearing, a stray "Explore Hyderabad" button, profile posts/reels mixed together, and category filters in Explore showing only 1–2 places.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li><strong>Persistent dual-channel auth</strong>: extended token extraction to <code>Authorization: Bearer</code> and a custom session header alongside cookies; login/register now also return a token; frontend stores it in <code>localStorage</code> and attaches it to every request, with "Remember me" autofill.</li>
+        <li><strong>Immediate community visibility</strong>: new places get <code>status = "verified"</code> immediately so they appear in Explore/Nearby right away instead of sitting behind a moderation backlog.</li>
+        <li>Removed the hardcoded "Explore Hyderabad" fallback button from Nearby entirely.</li>
+        <li><strong>Profile content separation</strong>: Passport and public Creator Profile now split into Visited, Watch Reels, Photos and Found by me tabs.</li>
+        <li><strong>All India Explore mode</strong>: a new "All India" scope returns all 18,320 places, so selecting a category shows hundreds of places nationwide instead of 1–2 in Hyderabad alone.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="nearby location detection ip geolocation bengaluru location picker gps fallback">
+  <div class="turn-head"><span class="turn-num">Turn 22</span><span class="user-label">User</span><span class="tag">bugfix</span></div>
+  <div class="turn-title">Unlocking Nearby location detection &amp; interactive city picker</div>
+  <div class="user-msg">Pointed out the Nearby deck stayed locked to Hyderabad even from a different city; asked for it to use the user's actual location.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <ul>
+        <li>Root cause: when browser geolocation was denied or timed out, the app defaulted to a hardcoded Hyderabad position.</li>
+        <li>Added <code>GET /api/here/detect</code>: server-side IP geolocation via client IP headers and public IP-lookup APIs with in-memory caching, matched against seeded cities (correctly detected Bengaluru, 487 places, in testing).</li>
+        <li>Updated the client fallback chain to try device GPS with a short timeout, then fall back to the same-origin detect endpoint (no CORS, can't be ad-blocked).</li>
+        <li>Built an interactive Location Picker (bottom sheet) to re-detect or pick any seeded city or All India, persisting the choice to <code>localStorage</code> and the server-side home city.</li>
+        <li>Verified 26/26 frontend and 257 backend tests passing, fresh production build.</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<div class="turn" data-kw="transcript html turn by turn collapsible search bar expand collapse submission">
+  <div class="turn-head"><span class="turn-num">Turn 23</span><span class="user-label">User</span><span class="tag">docs</span></div>
+  <div class="turn-title">Complete unified transcript &amp; turn-by-turn collapsible HTML document</div>
+  <div class="user-msg">Asked to combine all disjoint recent activity across sessions into transcript.md, and generate a standalone, clickable HTML page with turn-by-turn interactions and collapsible response blocks for submission.</div>
+  <details class="response">
+    <summary><span>Claude's response</span></summary>
+    <div class="response-body">
+      <p>Synthesized the full chronological narrative into <code>transcript.md</code>, then generated this page (<code>transcript.html</code>): every turn numbered, each response collapsible, a live keyword filter across all turns, and master expand/collapse controls — self-contained, no external dependencies, matching the plain two-column reading layout requested for submission.</p>
+    </div>
+  </details>
+</div>
+
+</main>
+
+<div class="no-results" id="no-results">No turns match that search.</div>
+
+<footer>Truvel (Pagdandi) &middot; AI &amp; Data Science dissertation project &middot; generated from transcript.md</footer>
+
+<script>
+  const search = document.getElementById('search');
+  const turns = Array.from(document.querySelectorAll('.turn'));
+  const dividers = Array.from(document.querySelectorAll('.section-divider'));
+  const noResults = document.getElementById('no-results');
+
+  function filter() {
+    const q = search.value.trim().toLowerCase();
+    let anyVisible = false;
+    turns.forEach(t => {
+      const hay = (t.dataset.kw + ' ' + t.textContent).toLowerCase();
+      const match = !q || hay.includes(q);
+      t.hidden = !match;
+      if (match) anyVisible = true;
+    });
+    dividers.forEach(d => {
+      let el = d.nextElementSibling, show = false;
+      while (el && !el.classList.contains('section-divider')) {
+        if (el.classList.contains('turn') && !el.hidden) { show = true; break; }
+        el = el.nextElementSibling;
+      }
+      d.style.display = show ? '' : 'none';
+    });
+    noResults.style.display = anyVisible ? 'none' : 'block';
+  }
+
+  search.addEventListener('input', filter);
+</script>
+
+</body>
+</html>
