@@ -339,7 +339,7 @@ def run_add_photos(download_sample: int = 50) -> None:
         initial_missing = missing_count(session)
         initial_with = total_places - initial_missing
 
-        print(f"\nStatus at start:", flush=True)
+        print("\nStatus at start:", flush=True)
         print(f"  Total places:        {total_places}", flush=True)
         print(f"  With photos:         {initial_with} ({initial_with/total_places*100:.2f}%)", flush=True)
         print(f"  Missing photos:      {initial_missing} ({initial_missing/total_places*100:.2f}%)", flush=True)

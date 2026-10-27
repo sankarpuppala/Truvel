@@ -8,6 +8,7 @@ __pycache__/
 # Data and media — never committed (CLAUDE.md "Git")
 backend/media/
 *.db
+!backend/truvel.db
 *.db-journal
 *.db-wal
 *.db-shm

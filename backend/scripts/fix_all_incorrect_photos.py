@@ -123,7 +123,7 @@ def run_cleanup():
             # Default: If no distinctive match, remove to prevent wrong photos
             to_remove.append((m, "no_name_match"))
 
-        print(f"\nAudit Results:")
+        print("\nAudit Results:")
         print(f"  Total Commons photos:   {len(rows)}")
         print(f"  Verified GENUINE photos to keep: {len(to_keep)}")
         print(f"  INCORRECT photos to delete:      {len(to_remove)}")

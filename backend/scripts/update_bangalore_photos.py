@@ -10,7 +10,6 @@ with real, authentic, freely-licensed photographs from Wikimedia Commons:
 """
 from __future__ import annotations
 
-import json
 import re
 import sys
 import time
@@ -270,7 +269,7 @@ def run_update_bangalore():
             else:
                 verified_good.append(p)
 
-        print(f"\nAudit results:")
+        print("\nAudit results:")
         print(f"  Verified authentic Bangalore photos: {len(verified_good)}")
         print(f"  Incorrect/generic photos to replace: {len(wrong_places)}")
 

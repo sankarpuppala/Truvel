@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: truvel
+    env: docker
+    region: singapore
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: TRUVEL_CONFIG
+        value: /app/config.yaml
+      - key: TRUVEL_DB
+        value: /app/backend/truvel.db
+      - key: TRUVEL_HTTPS
+        value: "1"

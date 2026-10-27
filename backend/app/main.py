@@ -11,9 +11,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import DB_PATH, cfg, dev_allow_fake_location, load_config
+from .config import DB_PATH, ROOT_DIR, cfg, dev_allow_fake_location, load_config
 from .db import init_db
 from .errors import ApiError, api_error_handler, http_error_handler
 from .media_store import media_root
@@ -162,3 +163,16 @@ def public_config() -> dict:
 # Uploaded media. Range support for videos lives in media_router; this mount is
 # the fast path for images.
 app.mount("/media", StaticFiles(directory=str(media_root())), name="media")
+
+# In production (or when built), serve the frontend SPA from frontend/dist:
+dist_dir = ROOT_DIR / "frontend" / "dist"
+if dist_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(dist_dir / "assets")), name="frontend_assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        target = dist_dir / full_path
+        if full_path and target.is_file():
+            return FileResponse(target)
+        return FileResponse(dist_dir / "index.html")
+
