@@ -439,8 +439,8 @@ def detect_location(
             "slug": matched_city.slug,
             "city_id": matched_city.id,
             "state": matched_city.state,
-            "lat": matched_city.centre_lat,
-            "lng": matched_city.centre_lng,
+            "lat": lat if (lat is not None and lng is not None) else matched_city.centre_lat,
+            "lng": lng if (lat is not None and lng is not None) else matched_city.centre_lng,
             "kind": "city",
             "source": "ip_city",
         }

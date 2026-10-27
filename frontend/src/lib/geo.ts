@@ -90,31 +90,25 @@ export function getPosition(timeoutMs = 15_000): Promise<Position> {
 }
 
 /** A coarse position for the deck and Explore, where a cached fix is fine. */
-export async function getCoarsePosition(timeoutMs = 1500): Promise<Position> {
-  // 1. Fast path: check if browser geolocation is already explicitly granted
-  if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext && 'permissions' in navigator) {
+export async function getCoarsePosition(timeoutMs = 2500): Promise<Position> {
+  // 1. Try real device geolocation first so the user gets their actual live location
+  if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext) {
     try {
-      const status = await navigator.permissions.query({ name: 'geolocation' });
-      if (status.state === 'granted') {
-        try {
-          return await new Promise<Position>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(
-              (pos) =>
-                resolve({
-                  lat: pos.coords.latitude,
-                  lng: pos.coords.longitude,
-                  accuracy: pos.coords.accuracy,
-                }),
-              (err) => reject(err),
-              { enableHighAccuracy: false, timeout: 2000, maximumAge: 60_000 },
-            );
-          });
-        } catch {
-          // Fall through
-        }
-      }
+      const pos = await new Promise<Position>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) =>
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            }),
+          (err) => reject(err),
+          { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 60_000 },
+        );
+      });
+      return pos;
     } catch {
-      // Permissions API not supported or errored
+      // Permission denied or timed out; fall through to network IP detection
     }
   }
 
@@ -137,28 +131,7 @@ export async function getCoarsePosition(timeoutMs = 1500): Promise<Position> {
     // Fallback if local endpoint unreachable
   }
 
-  // 3. Try browser geolocation prompt with short timeout if permission was not yet granted
-  try {
-    if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext) {
-      const pos = await new Promise<Position>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (position) =>
-            resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-            }),
-          (err) => reject(err),
-          { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 60_000 },
-        );
-      });
-      return pos;
-    }
-  } catch {
-    // Geolocation unavailable or denied, fall through
-  }
-
-  // 4. Try ipwho.is (public CORS enabled)
+  // 3. Try ipwho.is (public CORS enabled)
   try {
     const res = await fetch('https://ipwho.is/', {
       signal: AbortSignal.timeout(2500),

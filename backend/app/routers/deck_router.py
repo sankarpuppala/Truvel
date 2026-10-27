@@ -196,7 +196,37 @@ def get_deck(
     # (it was not: every in-radius place is always a candidate here, see the
     # haversine filter above -- it just never got *shown*).
     rng = deck_rng(int(user.id) if user else 0, now.date().isoformat(), 0)
-    ranked = diversify(score_candidates(candidates, prefs, now, rng))
+    # Stratify candidates into distance bands across the requested radius so Nearby
+    # deck cards reflect the full chosen exploration radius (e.g. 5, 10, 25 km)
+    # instead of clustering 100% of the first 30 cards within < 2 km.
+    if radius_km >= 5.0 and len(candidates) > 10:
+        b1 = [c for c in candidates if c.distance_km < radius_km / 3]
+        b2 = [c for c in candidates if radius_km / 3 <= c.distance_km < 2 * radius_km / 3]
+        b3 = [c for c in candidates if c.distance_km >= 2 * radius_km / 3]
+        s1 = score_candidates(b1, prefs, now, rng)
+        s2 = score_candidates(b2, prefs, now, rng)
+        s3 = score_candidates(b3, prefs, now, rng)
+        interleaved: list[Candidate] = []
+        i1 = i2 = i3 = 0
+        while len(interleaved) < len(candidates):
+            added = False
+            if i1 < len(s1):
+                interleaved.append(s1[i1])
+                i1 += 1
+                added = True
+            if i2 < len(s2):
+                interleaved.append(s2[i2])
+                i2 += 1
+                added = True
+            if i3 < len(s3):
+                interleaved.append(s3[i3])
+                i3 += 1
+                added = True
+            if not added:
+                break
+        ranked = diversify(interleaved)
+    else:
+        ranked = diversify(score_candidates(candidates, prefs, now, rng))
     page_size = int(cfg("deck.page_size", 30))
     start = max(0, request_no) * page_size
     window = ranked[start : start + page_size]

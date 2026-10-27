@@ -110,9 +110,13 @@ export function SignIn() {
       );
       navigate('/');
     } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : 'That did not work. Try again.',
-      );
+      if (caught instanceof ApiError) {
+        setError(caught.message);
+      } else if (caught instanceof Error && caught.message) {
+        setError(caught.message);
+      } else {
+        setError('That did not work. Try again.');
+      }
     } finally {
       setBusy(false);
     }

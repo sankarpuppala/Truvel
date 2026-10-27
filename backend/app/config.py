@@ -51,7 +51,7 @@ def dev_allow_fake_location() -> bool:
 
 def is_https() -> bool:
     """Set when the app is served over TLS, so session cookies get Secure."""
-    return os.environ.get("TRUVEL_HTTPS") == "1"
+    return os.environ.get("TRUVEL_HTTPS") == "1" or os.environ.get("RENDER") == "true"
 
 
 def regional_langs(state: str | None) -> list[str]:

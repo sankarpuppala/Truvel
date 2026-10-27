@@ -209,12 +209,20 @@ def start_session(session: DbSession, response: Response, user: User) -> str:
 
 def end_session(session: DbSession, request: Request, response: Response) -> None:
     """Delete the session row and clear the cookie."""
-    token = request.cookies.get(COOKIE_NAME)
-    if token:
-        row = session.get(Session, _hash_token(token))
-        if row is not None:
-            session.delete(row)
-            session.commit()
+    tokens_to_delete = []
+    cookie_token = request.cookies.get(COOKIE_NAME)
+    if cookie_token:
+        tokens_to_delete.append(cookie_token)
+    auth_hdr = request.headers.get("authorization") or request.headers.get("x-truvel-session")
+    if auth_hdr:
+        tokens_to_delete.append(auth_hdr.replace("Bearer ", "").replace("bearer ", "").strip())
+
+    for token in tokens_to_delete:
+        if token:
+            row = session.get(Session, _hash_token(token))
+            if row is not None:
+                session.delete(row)
+                session.commit()
     response.delete_cookie(COOKIE_NAME, path="/")
 
 
@@ -222,22 +230,32 @@ def current_user_optional(
     request: Request,
     session: DbSession = Depends(get_session),
 ) -> User | None:
-    """The signed-in user, or None. Expired sessions are deleted as we find them."""
-    token = request.cookies.get(COOKIE_NAME)
-    if not token:
-        auth_hdr = request.headers.get("authorization") or request.headers.get("x-truvel-session")
-        if auth_hdr:
-            token = auth_hdr.replace("Bearer ", "").replace("bearer ", "").strip()
-    if not token:
-        return None
-    row = session.get(Session, _hash_token(token))
-    if row is None:
-        return None
-    if row.expires_at < utcnow():
-        session.delete(row)
-        session.commit()
-        return None
-    return session.get(User, row.user_id)
+    """The signed-in user, or None. Checks both headers and cookies so stale cookies never block valid bearer tokens."""
+    candidate_tokens: list[str] = []
+
+    auth_hdr = request.headers.get("authorization") or request.headers.get("x-truvel-session")
+    if auth_hdr:
+        t = auth_hdr.replace("Bearer ", "").replace("bearer ", "").strip()
+        if t and t not in candidate_tokens:
+            candidate_tokens.append(t)
+
+    cookie_token = request.cookies.get(COOKIE_NAME)
+    if cookie_token and cookie_token not in candidate_tokens:
+        candidate_tokens.append(cookie_token)
+
+    for token in candidate_tokens:
+        row = session.get(Session, _hash_token(token))
+        if row is None:
+            continue
+        if row.expires_at < utcnow():
+            session.delete(row)
+            session.commit()
+            continue
+        user = session.get(User, row.user_id)
+        if user is not None:
+            return user
+
+    return None
 
 
 def current_user(user: User | None = Depends(current_user_optional)) -> User:

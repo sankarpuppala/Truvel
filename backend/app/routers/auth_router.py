@@ -76,6 +76,7 @@ def user_payload(session: DbSession, user: User) -> dict:
 
 @router.post("/register")
 def register(
+    request: Request,
     body: Registration,
     response: Response,
     session: DbSession = Depends(get_session),

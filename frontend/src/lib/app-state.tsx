@@ -75,42 +75,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadingMe, setLoadingMe] = useState(true);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [devTools, setDevTools] = useState(false);
-  const [position, setPositionState] = useState<Position | null>(() => {
-    try {
-      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_user_position') : null;
-      return stored ? (JSON.parse(stored) as Position) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [position, setPosition] = useState<Position | null>(null);
+  const [activeCityName, setActiveCityName] = useState<string | null>(null);
 
-  const [activeCityName, setActiveCityNameState] = useState<string | null>(() => {
+  useEffect(() => {
     try {
-      return typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_user_city_name') : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const setPosition = useCallback((newPos: Position | null) => {
-    setPositionState(newPos);
-    if (typeof localStorage !== 'undefined') {
-      if (newPos) {
-        localStorage.setItem('truvel_user_position', JSON.stringify(newPos));
-      } else {
+      if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('truvel_user_position');
-      }
-    }
-  }, []);
-
-  const setActiveCityName = useCallback((name: string | null) => {
-    setActiveCityNameState(name);
-    if (typeof localStorage !== 'undefined') {
-      if (name) {
-        localStorage.setItem('truvel_user_city_name', name);
-      } else {
         localStorage.removeItem('truvel_user_city_name');
       }
+    } catch {
+      // ignore
     }
   }, []);
 
