@@ -11,6 +11,7 @@ import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
 import { Chip, EmptyState, Loading, Segmented, Tabs } from '../components/common';
 import { Icon, StatusBar } from '../components/Icon';
+import { LocationPicker } from '../components/LocationPicker';
 import { PlaceRow } from '../components/PlaceRow';
 import { FogMap } from '../components/FogMap';
 import { FILTER_CHIPS, SORTS } from '../lib/categories';
@@ -18,7 +19,7 @@ import { num } from '../lib/format';
 import type { City, Place } from '../lib/types';
 
 export function Explore() {
-  const { me, position, requestPosition, toast } = useApp();
+  const { position, requestPosition, toast } = useApp();
   const [params, setParams] = useSearchParams();
 
   const view = (params.get('view') === 'map' ? 'map' : 'list') as 'list' | 'map';
@@ -30,9 +31,10 @@ export function Explore() {
   const citySlug =
     stateSlug || localitySlug
       ? null
-      : (params.get('city') ?? me?.home_city?.slug ?? 'hyderabad');
+      : (params.get('city') ?? 'all');
   const scoped = Boolean(stateSlug || localitySlug);
 
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [query, setQuery] = useState('');
   // Debounced: what the scoped list and the "browse elsewhere" suggestions
   // actually search for, so every keystroke does not re-fetch.
@@ -84,7 +86,7 @@ export function Explore() {
       ? api.statePlaces(stateSlug, options)
       : localitySlug
         ? api.localityPlaces(localitySlug, options)
-        : api.cityPlaces(citySlug ?? 'hyderabad', options);
+        : api.cityPlaces(citySlug ?? 'all', options);
     request
       .then((response) => {
         if (cancelled) return;
@@ -227,7 +229,26 @@ export function Explore() {
       {header}
 
       <div className="ex-head">
-        <h3 className="ex-city">{city?.name ?? '—'}</h3>
+        <button
+          type="button"
+          onClick={() => setLocationPickerOpen(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'transparent',
+            border: 0,
+            padding: 0,
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+          aria-label={`City: ${city?.name ?? 'All India'}. Tap to change city.`}
+        >
+          <h3 className="ex-city" style={{ margin: 0 }}>
+            {city?.name ?? 'All India'}
+          </h3>
+          <Icon name="i-chev" size={18} />
+        </button>
         <div className="ex-sub">
           {city ? (
             <>
@@ -238,6 +259,19 @@ export function Explore() {
           )}
         </div>
       </div>
+
+      <LocationPicker
+        open={locationPickerOpen}
+        onClose={() => setLocationPickerOpen(false)}
+        showAllIndia
+        onSelectCity={(selected) => {
+          if (selected.slug === 'all') {
+            update({ city: null, state: null, locality: null });
+          } else {
+            update({ city: selected.slug, state: null, locality: null });
+          }
+        }}
+      />
 
       <Tabs
         label="Sort the list"

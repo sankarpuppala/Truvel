@@ -13,13 +13,14 @@ import { DeckActions, DeckCard, DeckCardBack, type SwipeAction } from '../compon
 import { EmptyState, Loading } from '../components/common';
 import { DevTools } from '../components/DevTools';
 import { Icon, StatusBar } from '../components/Icon';
+import { LocationPicker } from '../components/LocationPicker';
 import { num } from '../lib/format';
 import type { DeckResponse, Place } from '../lib/types';
 
 const RADII = [5, 10, 25, 50];
 
 export function Nearby() {
-  const { me, position, requestPosition, toast, config } = useApp();
+  const { me, position, activeCityName, requestPosition, toast, config } = useApp();
   const navigate = useNavigate();
   const [radius, setRadius] = useState(10);
   const [deck, setDeck] = useState<DeckResponse | null>(null);
@@ -27,6 +28,7 @@ export function Nearby() {
   const [loading, setLoading] = useState(true);
   const [requestNo, setRequestNo] = useState(0);
   const [hereName, setHereName] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const radii = config?.deck.radii_km ?? RADII;
 
@@ -145,13 +147,18 @@ export function Nearby() {
   // Signed out, or an account with no home city yet: the header still needs a
   // word, but the sentence below it must not read "the centre of Nearby".
   const homeCity = me?.home_city?.name ?? null;
-  const cityName = hereName ?? homeCity ?? 'Nearby';
+  const cityName = hereName ?? activeCityName ?? homeCity ?? 'Nearby';
   const kadam = me?.kadam ?? 0;
 
   const header = useMemo(
     () => (
       <div className="topbar">
-        <button className="city" type="button" onClick={() => navigate('/explore')}>
+        <button
+          className="city"
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          aria-label={`Location: ${cityName}. Tap to change.`}
+        >
           {cityName} <Icon name="i-chev" size={18} />
         </button>
         <div className="tb-r">
@@ -177,7 +184,7 @@ export function Nearby() {
         </div>
       </div>
     ),
-    [cityName, kadam, me, navigate, radii, radius],
+    [cityName, kadam, me, radii, radius],
   );
 
   return (
@@ -186,15 +193,27 @@ export function Nearby() {
       {header}
 
       {deck?.location_fallback && (
-        <div className="golden" role="note">
+        <div
+          className="golden"
+          role="note"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setPickerOpen(true)}
+        >
           <Icon name="i-info" size={18} />
           <span>
-            {homeCity
-              ? `Showing places near the centre of ${homeCity} — location is switched off, so distances are from there.`
-              : 'Location is switched off, so distances are measured from the city centre.'}
+            {`Showing places near ${cityName} — tap here to change or detect your location.`}
           </span>
         </div>
       )}
+
+      <LocationPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelectCity={(city) => {
+          if (city.name) setHereName(city.name);
+          void load(radius, false, 0);
+        }}
+      />
 
       <div className="scr-body">
         {loading && !cards.length ? (

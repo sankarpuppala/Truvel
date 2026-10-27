@@ -90,7 +90,7 @@ export function getPosition(timeoutMs = 15_000): Promise<Position> {
 }
 
 /** A coarse position for the deck and Explore, where a cached fix is fine. */
-export async function getCoarsePosition(timeoutMs = 6_000): Promise<Position> {
+export async function getCoarsePosition(timeoutMs = 4_000): Promise<Position> {
   // 1. Try browser geolocation first
   try {
     if ('geolocation' in navigator && window.isSecureContext) {
@@ -112,7 +112,45 @@ export async function getCoarsePosition(timeoutMs = 6_000): Promise<Position> {
     // Geolocation unavailable or denied, fall through to IP location
   }
 
-  // 2. Try IP-based location lookup so laptop/PC users get their actual location
+  // 2. Try same-origin /api/here/detect (never blocked by CORS or adblockers)
+  try {
+    const res = await fetch('/api/here/detect', {
+      signal: AbortSignal.timeout(3500),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+        return {
+          lat: data.lat,
+          lng: data.lng,
+          accuracy: 5000,
+        };
+      }
+    }
+  } catch {
+    // Fallback if local endpoint unreachable
+  }
+
+  // 3. Try ipwho.is (public CORS enabled, not ad-blocked)
+  try {
+    const res = await fetch('https://ipwho.is/', {
+      signal: AbortSignal.timeout(3500),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+        return {
+          lat: data.latitude,
+          lng: data.longitude,
+          accuracy: 5000,
+        };
+      }
+    }
+  } catch {
+    // Fallback
+  }
+
+  // 4. Try ipapi.co
   try {
     const res = await fetch('https://ipapi.co/json/', {
       signal: AbortSignal.timeout(3500),
@@ -128,7 +166,7 @@ export async function getCoarsePosition(timeoutMs = 6_000): Promise<Position> {
       }
     }
   } catch {
-    // Fallback if network blocked
+    // Fallback
   }
 
   throw new LocationError('unavailable', 'Location is not available.');

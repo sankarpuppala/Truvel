@@ -31,13 +31,16 @@ type State = {
   devTools: boolean;
   theme: 'system' | 'light' | 'dark';
   position: Position | null;
+  setPosition: (pos: Position | null) => void;
+  activeCityName: string | null;
+  setActiveCityName: (name: string | null) => void;
   /** A simulated position from the dev tools, used instead of the real one. */
   simulated: Position | null;
   toasts: Toast[];
   setMe: (me: Me | null) => void;
   refreshMe: () => Promise<void>;
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
-  requestPosition: () => Promise<Position | null>;
+  requestPosition: (force?: boolean) => Promise<Position | null>;
   setSimulated: (position: Position | null) => void;
   toast: (text: string, kind?: Toast['kind']) => void;
   logout: () => Promise<void>;
@@ -72,7 +75,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadingMe, setLoadingMe] = useState(true);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [devTools, setDevTools] = useState(false);
-  const [position, setPosition] = useState<Position | null>(null);
+  const [position, setPositionState] = useState<Position | null>(() => {
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_user_position') : null;
+      return stored ? (JSON.parse(stored) as Position) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [activeCityName, setActiveCityNameState] = useState<string | null>(() => {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_user_city_name') : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setPosition = useCallback((newPos: Position | null) => {
+    setPositionState(newPos);
+    if (typeof localStorage !== 'undefined') {
+      if (newPos) {
+        localStorage.setItem('truvel_user_position', JSON.stringify(newPos));
+      } else {
+        localStorage.removeItem('truvel_user_position');
+      }
+    }
+  }, []);
+
+  const setActiveCityName = useCallback((name: string | null) => {
+    setActiveCityNameState(name);
+    if (typeof localStorage !== 'undefined') {
+      if (name) {
+        localStorage.setItem('truvel_user_city_name', name);
+      } else {
+        localStorage.removeItem('truvel_user_city_name');
+      }
+    }
+  }, []);
+
   const [simulated, setSimulated] = useState<Position | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [theme, setThemeState] = useState<'system' | 'light' | 'dark'>(() => {
@@ -134,18 +175,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 2500);
   }, []);
 
-  const requestPosition = useCallback(async () => {
+  const requestPosition = useCallback(async (force = false) => {
     if (simulated) return simulated;
+    if (!force && position) return position;
     try {
       const next = await getCoarsePosition();
       setPosition(next);
       return next;
     } catch {
-      // Location denied is a normal state, not an error: the deck falls back to
-      // the city centre and says so (SPEC §8.2).
-      return null;
+      // Location denied or unavailable fallback
+      return position;
     }
-  }, [simulated]);
+  }, [simulated, position, setPosition]);
 
   const logout = useCallback(async () => {
     try {
@@ -164,6 +205,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       devTools,
       theme,
       position: simulated ?? position,
+      setPosition,
+      activeCityName,
+      setActiveCityName,
       simulated,
       toasts,
       setMe,
@@ -181,6 +225,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       devTools,
       theme,
       position,
+      setPosition,
+      activeCityName,
+      setActiveCityName,
       simulated,
       toasts,
       refreshMe,

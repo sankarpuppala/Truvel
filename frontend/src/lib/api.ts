@@ -168,6 +168,18 @@ export const api = {
 
   // --- places and explore ------------------------------------------------ //
   cities: () => request<{ cities: City[] }>('/cities'),
+  /** Detect location from client IP or server-side geo lookup */
+  detectLocation: () =>
+    request<{
+      name: string;
+      slug: string | null;
+      city_id: number | null;
+      state: string;
+      lat: number;
+      lng: number;
+      kind: string;
+      source: string;
+    }>('/here/detect'),
   /** The town/village/city at a live position, for Nearby's header. */
   here: (lat: number, lng: number) =>
     request<{ name: string | null; state: string | null; kind: string }>(

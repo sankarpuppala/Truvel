@@ -8,9 +8,11 @@ an unchecked place should not be recommended, only findable.
 """
 from __future__ import annotations
 
+import json
+import urllib.request
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel import Session as DbSession
 from sqlmodel import func, select
 
@@ -297,7 +299,7 @@ def _scoped_query(base: Place, sort: str, cat: str | None, verified: int):
     query = select(Place).where(base, Place.status != "hidden")
     if cat and cat != "all":
         query = query.where(Place.category == cat)
-    if verified:
+    if verified or sort in ("top", "gems", "trending"):
         query = query.where(Place.status == "verified")
     if sort == "gems":
         query = query.where(Place.fragile == False)  # noqa: E712
@@ -328,6 +330,162 @@ def all_india_payload(session: DbSession) -> dict:
 def list_cities(session: DbSession = Depends(get_session)) -> dict:
     cities = session.exec(select(City).order_by(City.name_en)).all()
     return {"cities": [all_india_payload(session), *[city_payload(session, c) for c in cities]]}
+
+
+_IP_GEO_CACHE: dict[str, tuple[float, dict]] = {}
+
+
+@router.get("/here/detect")
+def detect_location(
+    request: Request,
+    session: DbSession = Depends(get_session),
+    user: User | None = Depends(current_user_optional),
+) -> dict:
+    """Detect location from client IP or network fallback so PC/laptop users get their actual location."""
+    now_ts = datetime.utcnow().timestamp()
+
+    # 1. Determine client IP
+    client_ip = (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-real-ip")
+        or (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        or (request.client.host if request.client else "")
+    )
+
+    cache_key = client_ip or "default"
+    if cache_key in _IP_GEO_CACHE:
+        cached_time, cached_res = _IP_GEO_CACHE[cache_key]
+        if now_ts - cached_time < 600:
+            return cached_res
+
+    lat: float | None = None
+    lng: float | None = None
+    city_name: str | None = None
+    state_name: str | None = None
+
+    import ipaddress
+
+    is_public = False
+    if client_ip:
+        try:
+            ip_obj = ipaddress.ip_address(client_ip)
+            is_public = not (
+                ip_obj.is_private
+                or ip_obj.is_loopback
+                or ip_obj.is_reserved
+                or ip_obj.is_link_local
+            )
+        except ValueError:
+            is_public = False
+
+    # Try ipwho.is with client_ip if public, else use server/caller public IP
+    try:
+        url = f"https://ipwho.is/{client_ip}" if is_public else "https://ipwho.is/"
+        req = urllib.request.Request(url, headers={"User-Agent": "Truvel/1.0"})
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("success") is not False and data.get("latitude") and data.get("longitude"):
+                lat = float(data["latitude"])
+                lng = float(data["longitude"])
+                city_name = data.get("city")
+                state_name = data.get("region")
+    except Exception:
+        pass
+
+    # Fallback to ipapi.co if needed
+    if lat is None or lng is None:
+        try:
+            url = f"https://ipapi.co/{client_ip}/json/" if is_public else "https://ipapi.co/json/"
+            req = urllib.request.Request(url, headers={"User-Agent": "Truvel/1.0"})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data.get("latitude") and data.get("longitude"):
+                    lat = float(data["latitude"])
+                    lng = float(data["longitude"])
+                    city_name = data.get("city")
+                    state_name = data.get("region")
+        except Exception:
+            pass
+
+    # Check against seeded cities in DB
+    all_cities = session.exec(select(City)).all()
+    matched_city: City | None = None
+
+    if lat is not None and lng is not None:
+        # Check bbox
+        for c in all_cities:
+            bbox = c.bbox or []
+            if len(bbox) == 4 and bbox[0] <= lat <= bbox[2] and bbox[1] <= lng <= bbox[3]:
+                matched_city = c
+                break
+        # Check distance to centre (< 50 km)
+        if matched_city is None:
+            for c in all_cities:
+                if haversine_km(lat, lng, c.centre_lat, c.centre_lng) <= 50.0:
+                    matched_city = c
+                    break
+
+    # If city_name matches any city name (e.g., Bengaluru, Hyderabad, Chennai)
+    if matched_city is None and city_name:
+        for c in all_cities:
+            if c.name_en.lower() in city_name.lower() or city_name.lower() in c.name_en.lower():
+                matched_city = c
+                break
+
+    if matched_city is not None:
+        result = {
+            "name": matched_city.name_en,
+            "slug": matched_city.slug,
+            "city_id": matched_city.id,
+            "state": matched_city.state,
+            "lat": matched_city.centre_lat,
+            "lng": matched_city.centre_lng,
+            "kind": "city",
+            "source": "ip_city",
+        }
+    elif lat is not None and lng is not None:
+        result = {
+            "name": city_name or "Nearby",
+            "slug": None,
+            "city_id": None,
+            "state": state_name or "",
+            "lat": lat,
+            "lng": lng,
+            "kind": "coords",
+            "source": "ip_coords",
+        }
+    else:
+        # Fallback to user's home city or default
+        home = None
+        if user and user.home_city_id:
+            home = session.get(City, user.home_city_id)
+        if home is None:
+            home = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
+        if home:
+            result = {
+                "name": home.name_en,
+                "slug": home.slug,
+                "city_id": home.id,
+                "state": home.state,
+                "lat": home.centre_lat,
+                "lng": home.centre_lng,
+                "kind": "city",
+                "source": "fallback",
+            }
+        else:
+            result = {
+                "name": "All India",
+                "slug": "all",
+                "city_id": None,
+                "state": "",
+                "lat": 20.5937,
+                "lng": 78.9629,
+                "kind": "all",
+                "source": "fallback",
+            }
+
+    _IP_GEO_CACHE[cache_key] = (now_ts, result)
+    return result
 
 
 @router.get("/here")

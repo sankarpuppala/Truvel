@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlmodel import Session as DbSession
 from sqlmodel import func, select
@@ -41,6 +41,7 @@ router = APIRouter(tags=["deck"])
 
 @router.get("/deck")
 def get_deck(
+    request: Request,
     lat: float | None = None,
     lng: float | None = None,
     radius_km: float = Query(10.0, ge=1, le=100),
@@ -51,18 +52,30 @@ def get_deck(
     """One page of deck cards, ranked by SPEC §9.4."""
     now = utcnow()
 
-    # Location denied -> use the city centre and say so (SPEC §8.2).
+    # Location denied -> detect via IP or use the city centre and say so (SPEC §8.2).
     fallback = False
     if lat is None or lng is None:
         city = None
         if user is not None and user.home_city_id:
             city = session.get(City, user.home_city_id)
         if city is None:
-            city = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
-        if city is None:
-            raise not_found("No city is seeded yet.", "no_city")
-        lat, lng = city.centre_lat, city.centre_lng
-        fallback = True
+            from .places import detect_location
+
+            try:
+                detected = detect_location(request, session, user)
+                if detected and detected.get("lat") and detected.get("lng"):
+                    lat, lng = float(detected["lat"]), float(detected["lng"])
+                    fallback = True
+            except Exception:
+                pass
+
+        if lat is None or lng is None:
+            if city is None:
+                city = session.exec(select(City).where(City.slug == str(cfg("city_default")))).first()
+            if city is None:
+                raise not_found("No city is seeded yet.", "no_city")
+            lat, lng = city.centre_lat, city.centre_lng
+            fallback = True
 
     # bbox prefilter, then exact haversine (SPEC §15).
     box = bbox_around(lat, lng, radius_km)
