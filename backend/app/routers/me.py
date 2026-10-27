@@ -191,6 +191,23 @@ def passport(
     level_name, next_level, floor, next_floor = kadam.level(balance)
     fog = fog_data(session, uid, home) if home else {"explored": 0, "total": 0}
 
+    user_videos = list(
+        session.exec(
+            select(Media)
+            .where(Media.user_id == uid, Media.kind == "video", Media.status == "ok")
+            .order_by(Media.created_at.desc())
+            .limit(30)
+        ).all()
+    )
+    user_photos = list(
+        session.exec(
+            select(Media)
+            .where(Media.user_id == uid, Media.kind == "photo", Media.status == "ok")
+            .order_by(Media.created_at.desc())
+            .limit(60)
+        ).all()
+    )
+
     return {
         "user": user_payload(session, user),
         "kadam": balance,
@@ -205,6 +222,10 @@ def passport(
         "visits_caused": round(caused, 1),
         "want_to_go": want_to_go,
         "ledger": ledger_out,
+        "videos": [services.media_payload(m, user) for m in user_videos],
+        "posts": [
+            {**services.media_payload(m, user), "place_id": m.place_id} for m in user_photos
+        ],
         "neighbourhoods_explored": fog.get("explored", 0),
         "neighbourhoods_total": fog.get("total", 0),
     }

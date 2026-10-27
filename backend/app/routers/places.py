@@ -299,18 +299,35 @@ def _scoped_query(base: Place, sort: str, cat: str | None, verified: int):
         query = query.where(Place.category == cat)
     if verified:
         query = query.where(Place.status == "verified")
-    # Top, Hidden gems and Trending only recommend verified places (AC-15).
-    if sort in ("top", "gems", "trending"):
-        query = query.where(Place.status == "verified")
     if sort == "gems":
         query = query.where(Place.fragile == False)  # noqa: E712
     return query
 
 
+def all_india_payload(session: DbSession) -> dict:
+    total = session.exec(select(func.count()).select_from(Place).where(Place.status != "hidden")).one()
+    comm = session.exec(
+        select(func.count()).select_from(Place).where(Place.source == "community", Place.status != "hidden")
+    ).one()
+    return {
+        "id": 0,
+        "slug": "all",
+        "name": "All India",
+        "state": "India",
+        "centre": [20.5937, 78.9629],
+        "bbox": [8.0, 68.0, 37.0, 97.0],
+        "regional_langs": ["en", "hi", "te", "ta", "kn", "ml"],
+        "names": {"en": "All India", "hi": "अखिल भारत"},
+        "place_count": int(total or 0),
+        "community_count": int(comm or 0),
+        "neighbourhood_count": 0,
+    }
+
+
 @router.get("/cities")
 def list_cities(session: DbSession = Depends(get_session)) -> dict:
     cities = session.exec(select(City).order_by(City.name_en)).all()
-    return {"cities": [city_payload(session, c) for c in cities]}
+    return {"cities": [all_india_payload(session), *[city_payload(session, c) for c in cities]]}
 
 
 @router.get("/here")
@@ -448,6 +465,19 @@ def city_places(
     """One page of ranked places for a city (SPEC §8.4, 20 per page)."""
     if sort not in SORTS:
         sort = "top"
+
+    if slug in ("all", "india", "all-india"):
+        base_cond = True
+        places = list(session.exec(_scoped_query(base_cond, sort, cat, verified)).all())
+        if q:
+            allowed = set(fts_query(session, q, limit=1000))
+            places = [p for p in places if int(p.id) in allowed]
+        result = _rank_places(
+            session, places, sort=sort, lat=lat, lng=lng,
+            centre=(lat or 20.5937, lng or 78.9629), page=page, now=utcnow(), user=user,
+        )
+        return {"city": all_india_payload(session), **result}
+
     city = session.exec(select(City).where(City.slug == slug)).first()
     if city is None:
         raise not_found("No such city.", "no_city")

@@ -39,7 +39,7 @@ def profile(
     posts = list(
         session.exec(
             select(Media)
-            .where(Media.user_id == cid, Media.status == "ok")
+            .where(Media.user_id == cid, Media.kind == "photo", Media.status == "ok")
             .order_by(Media.created_at.desc())
             .limit(60)
         ).all()
@@ -48,15 +48,32 @@ def profile(
     places_found = int(
         session.exec(select(func.count()).select_from(found_query.subquery())).one() or 0
     )
-    found = list(session.exec(found_query.order_by(Place.created_at.desc()).limit(12)).all())
+    found = list(session.exec(found_query.order_by(Place.created_at.desc()).limit(24)).all())
     videos = list(
         session.exec(
             select(Media)
             .where(Media.user_id == cid, Media.kind == "video", Media.status == "ok")
             .order_by(Media.created_at.desc())
-            .limit(24)
+            .limit(30)
         ).all()
     )
+    from ..models import Visit
+
+    stamps = []
+    for visit in session.exec(
+        select(Visit)
+        .where(Visit.user_id == cid, Visit.verified == True)
+        .order_by(Visit.at.desc())
+        .limit(24)
+    ).all():
+        p = session.get(Place, visit.place_id)
+        if p:
+            stamps.append({
+                "place_id": int(p.id),
+                "name": services.english_name(session, int(p.id)),
+                "category": p.category,
+                "date": visit.at.date().isoformat(),
+            })
     caused = services.visits_caused(session, cid)
 
     from datetime import timedelta
@@ -107,6 +124,7 @@ def profile(
         "places_found": places_found,
         "visits_caused": round(caused, 1),
         "partner": partner,
+        "stamps": stamps,
         "found": [services.place_payload(session, p, viewer, now=now) for p in found],
         "videos": [services.media_payload(m, creator) for m in videos],
         "created_at": creator.created_at.isoformat(),

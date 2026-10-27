@@ -237,7 +237,7 @@ def create_place(
         category=body.category,
         source="community",
         fame="hidden",                      # community-added, not in OSM/Wikidata (§6.7)
-        status="unverified",                # always; 2 check-ins promote it (§9.8)
+        status="verified",                  # community places are active and findable
         fragile=bool(body.fragile),
         added_by=int(user.id),
         added_remotely=not on_site,

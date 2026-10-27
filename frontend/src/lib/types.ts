@@ -230,6 +230,8 @@ export type Passport = {
   visits_caused: number;
   want_to_go: Place[];
   ledger: LedgerLine[];
+  videos?: MediaItem[];
+  posts?: (MediaItem & { place_id: number })[];
   neighbourhoods_explored: number;
   neighbourhoods_total: number;
 };
@@ -344,6 +346,7 @@ export type Profile = {
   partner: boolean;
   found: Place[];
   videos: MediaItem[];
+  stamps?: Stamp[];
   created_at: string;
 };
 

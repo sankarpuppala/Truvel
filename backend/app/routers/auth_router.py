@@ -107,8 +107,8 @@ def register(
     session.commit()
     session.refresh(user)
 
-    auth.start_session(session, response, user)
-    return {"user": user_payload(session, user)}
+    token = auth.start_session(session, response, user)
+    return {"user": user_payload(session, user), "token": token}
 
 
 @router.post("/login")
@@ -139,8 +139,8 @@ def login(
         raise unauthorized("That email and password do not match.")
 
     auth.clear_login_failures(keys)
-    auth.start_session(session, response, user)
-    return {"user": user_payload(session, user)}
+    token = auth.start_session(session, response, user)
+    return {"user": user_payload(session, user), "token": token}
 
 
 @router.post("/logout")

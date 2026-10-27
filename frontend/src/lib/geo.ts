@@ -90,23 +90,48 @@ export function getPosition(timeoutMs = 15_000): Promise<Position> {
 }
 
 /** A coarse position for the deck and Explore, where a cached fix is fine. */
-export function getCoarsePosition(timeoutMs = 8_000): Promise<Position> {
-  return new Promise((resolve, reject) => {
-    if (!('geolocation' in navigator) || !window.isSecureContext) {
-      reject(new LocationError('unavailable', 'Location is not available.'));
-      return;
+export async function getCoarsePosition(timeoutMs = 6_000): Promise<Position> {
+  // 1. Try browser geolocation first
+  try {
+    if ('geolocation' in navigator && window.isSecureContext) {
+      const pos = await new Promise<Position>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) =>
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            }),
+          (err) => reject(err),
+          { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 60_000 },
+        );
+      });
+      return pos;
     }
-    navigator.geolocation.getCurrentPosition(
-      (position) =>
-        resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        }),
-      () => reject(new LocationError('denied', 'Location is not available.')),
-      { enableHighAccuracy: false, timeout: timeoutMs, maximumAge: 120_000 },
-    );
-  });
+  } catch {
+    // Geolocation unavailable or denied, fall through to IP location
+  }
+
+  // 2. Try IP-based location lookup so laptop/PC users get their actual location
+  try {
+    const res = await fetch('https://ipapi.co/json/', {
+      signal: AbortSignal.timeout(3500),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+        return {
+          lat: data.latitude,
+          lng: data.longitude,
+          accuracy: 5000,
+        };
+      }
+    }
+  } catch {
+    // Fallback if network blocked
+  }
+
+  throw new LocationError('unavailable', 'Location is not available.');
 }
 
 /** Whether the browser is on a metered or slow connection (SPEC §8.3). */

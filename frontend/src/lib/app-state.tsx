@@ -48,7 +48,27 @@ const AppContext = createContext<State | null>(null);
 const THEME_KEY = 'truvel.theme';
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMeState] = useState<Me | null>(() => {
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_user') : null;
+      return stored ? (JSON.parse(stored) as Me) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setMe = useCallback((user: Me | null) => {
+    setMeState(user);
+    if (typeof localStorage !== 'undefined') {
+      if (user) {
+        localStorage.setItem('truvel_user', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('truvel_user');
+        localStorage.removeItem('truvel_token');
+      }
+    }
+  }, []);
+
   const [loadingMe, setLoadingMe] = useState(true);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [devTools, setDevTools] = useState(false);
@@ -78,17 +98,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setThemeState(user.theme);
       }
     } catch (error) {
-      // A 401 just means nobody is signed in; anything else is still not worth
-      // blocking the app for.
-      if (!(error instanceof ApiError) || error.status !== 401) {
-        // eslint-disable-next-line no-console
+      if (error instanceof ApiError && error.status === 401) {
+        setMe(null);
+      } else {
         console.warn('could not load the signed-in user', error);
       }
-      setMe(null);
     } finally {
       setLoadingMe(false);
     }
-  }, []);
+  }, [setMe]);
 
   useEffect(() => {
     void refreshMe();

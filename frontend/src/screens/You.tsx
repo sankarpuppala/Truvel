@@ -21,7 +21,7 @@ import {
   Segmented,
   Tabs,
 } from '../components/common';
-import { Icon, StatusBar } from '../components/Icon';
+import { Icon, Scene, StatusBar } from '../components/Icon';
 import { PlaceRow } from '../components/PlaceRow';
 import {
   EarningsCard,
@@ -32,11 +32,11 @@ import {
   StampTile,
   TopContentTable,
 } from '../components/StudioParts';
-import { categoryMeta } from '../lib/categories';
-import { ago, hours, num, num1, stampDate } from '../lib/format';
+import { categoryMeta, categoryScene } from '../lib/categories';
+import { ago, clock, hours, num, num1, stampDate } from '../lib/format';
 import type { Passport, Studio } from '../lib/types';
 
-type PassportTab = 'stamps' | 'found' | 'want' | 'kadam';
+type PassportTab = 'stamps' | 'reels' | 'photos' | 'found' | 'want' | 'kadam';
 
 export function You() {
   const navigate = useNavigate();
@@ -296,9 +296,11 @@ export function You() {
             label="Passport sections"
             className="tabs-pp"
             value={tab}
-            onChange={setTab}
+            onChange={(val) => setTab(val as PassportTab)}
             options={[
-              { key: 'stamps', label: 'Stamps' },
+              { key: 'stamps', label: 'Visited' },
+              { key: 'reels', label: 'Watch Reels' },
+              { key: 'photos', label: 'Photos' },
               { key: 'found', label: 'Found by me' },
               { key: 'want', label: 'Want to go' },
               { key: 'kadam', label: 'Kadam' },
@@ -325,6 +327,65 @@ export function You() {
                 })}
                 <EmptyStamp />
               </div>
+            )}
+
+            {tab === 'reels' && (
+              <>
+                {(!passport.videos || passport.videos.length === 0) ? (
+                  <EmptyState
+                    icon="i-video"
+                    title="No reels uploaded yet"
+                    body="Share vertical videos of hidden gems to the Watch feed."
+                    action={
+                      <Link className="btn btn-primary btn-sm" to="/add/media">
+                        Upload a reel
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <div className="vids" style={{ padding: '12px 16px' }}>
+                    {passport.videos.map((video) => (
+                      <Link className="vid" key={video.id} to="/watch" aria-label={video.caption || 'Reel'}>
+                        {video.poster ? (
+                          <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
+                        ) : (
+                          <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
+                        )}
+                        <i>
+                          <Icon name="i-play" size={14} />
+                          {clock(video.duration_s)}
+                        </i>
+                        <span>{video.caption || `@${passport.user.username}`}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {tab === 'photos' && (
+              <>
+                {(!passport.posts || passport.posts.length === 0) ? (
+                  <EmptyState
+                    icon="i-camera"
+                    title="No photos posted yet"
+                    body="Photos you add to places will appear in your gallery here."
+                    action={
+                      <Link className="btn btn-primary btn-sm" to="/add/media">
+                        Upload a photo
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <div className="post-grid" style={{ padding: '12px 16px' }}>
+                    {passport.posts.map((post) => (
+                      <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
+                        <img src={post.thumb ?? post.url} alt="" loading="lazy" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {tab === 'found' && (

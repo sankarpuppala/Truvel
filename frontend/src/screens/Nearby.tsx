@@ -256,13 +256,6 @@ export function Nearby() {
                 )}
                 <button
                   type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => navigate('/explore')}
-                >
-                  Explore {homeCity || 'Hyderabad'}
-                </button>
-                <button
-                  type="button"
                   className="btn btn-ghost btn-sm"
                   onClick={() => navigate('/you')}
                 >

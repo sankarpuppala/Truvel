@@ -55,6 +55,15 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   // Required on anything that changes state; harmless on a GET.
   if (method !== 'GET') headers['X-Requested-With'] = 'truvel';
 
+  // Attach persistent auth token if stored in localStorage
+  if (typeof localStorage !== 'undefined') {
+    const token = localStorage.getItem('truvel_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['X-Truvel-Session'] = token;
+    }
+  }
+
   let body: BodyInit | undefined;
   if (options.form) {
     body = options.form;              // let the browser set the boundary
@@ -67,7 +76,7 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     method,
     headers,
     body,
-    credentials: 'same-origin',
+    credentials: 'include',
     signal: options.signal,
   });
 
@@ -112,16 +121,42 @@ export const api = {
   config: () => request<AppConfig>('/config'),
 
   // --- accounts --------------------------------------------------------- //
-  register: (body: {
+  register: async (body: {
     email: string;
     username: string;
     password: string;
     display_name?: string;
-  }) => request<{ user: Me }>('/auth/register', { method: 'POST', body }),
+  }) => {
+    const res = await request<{ user: Me; token?: string }>('/auth/register', { method: 'POST', body });
+    if (res.token && typeof localStorage !== 'undefined') {
+      localStorage.setItem('truvel_token', res.token);
+      localStorage.setItem('truvel_user', JSON.stringify(res.user));
+    }
+    return res;
+  },
   /** `identifier` is an email address or a handle; the server works out which. */
-  login: (identifier: string, password: string) =>
-    request<{ user: Me }>('/auth/login', { method: 'POST', body: { identifier, password } }),
-  logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
+  login: async (identifier: string, password: string) => {
+    const res = await request<{ user: Me; token?: string }>('/auth/login', {
+      method: 'POST',
+      body: { identifier, password },
+    });
+    if (res.token && typeof localStorage !== 'undefined') {
+      localStorage.setItem('truvel_token', res.token);
+      localStorage.setItem('truvel_user', JSON.stringify(res.user));
+    }
+    return res;
+  },
+  logout: async () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('truvel_token');
+        localStorage.removeItem('truvel_user');
+      }
+      return await request<{ ok: boolean }>('/auth/logout', { method: 'POST' });
+    } catch {
+      return { ok: true };
+    }
+  },
   /** Always succeeds, whether or not the address has an account. */
   forgotPassword: (email: string) =>
     request<{ ok: boolean }>('/auth/forgot', { method: 'POST', body: { email } }),

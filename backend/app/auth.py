@@ -225,6 +225,10 @@ def current_user_optional(
     """The signed-in user, or None. Expired sessions are deleted as we find them."""
     token = request.cookies.get(COOKIE_NAME)
     if not token:
+        auth_hdr = request.headers.get("authorization") or request.headers.get("x-truvel-session")
+        if auth_hdr:
+            token = auth_hdr.replace("Bearer ", "").replace("bearer ", "").strip()
+    if not token:
         return None
     row = session.get(Session, _hash_token(token))
     if row is None:

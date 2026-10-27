@@ -8,11 +8,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { api, ApiError } from '../lib/api';
 import { useApp } from '../lib/app-state';
-import { EmptyState, Loading } from '../components/common';
+import { EmptyState, Loading, Tabs } from '../components/common';
 import { Icon, Scene, StatusBar } from '../components/Icon';
 import { PlaceRow } from '../components/PlaceRow';
-import { categoryScene } from '../lib/categories';
-import { clock, date, num, num1 } from '../lib/format';
+import { StampTile } from '../components/StudioParts';
+import { categoryMeta, categoryScene } from '../lib/categories';
+import { clock, date, num, num1, stampDate } from '../lib/format';
 import type { Profile as ProfileData } from '../lib/types';
 
 export function Profile() {
@@ -21,6 +22,7 @@ export function Profile() {
   const { me, toast } = useApp();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'reels' | 'photos' | 'visited' | 'found'>('reels');
 
   useEffect(() => {
     if (!handle) return;
@@ -54,6 +56,10 @@ export function Profile() {
 
   if (loading) return <Loading />;
   if (!profile) return null;
+
+  const photos = profile.posts.filter((p) => p.kind === 'photo');
+  const reels = profile.videos;
+  const stamps = profile.stamps ?? [];
 
   return (
     <>
@@ -117,8 +123,12 @@ export function Profile() {
             <small>lifetime</small>
           </div>
           <div className="ppc">
-            <b>{num(profile.posts.length)}</b>
-            <span>posts</span>
+            <b>{num(reels.length)}</b>
+            <span>reels</span>
+          </div>
+          <div className="ppc">
+            <b>{num(photos.length)}</b>
+            <span>photos</span>
           </div>
         </div>
 
@@ -132,80 +142,114 @@ export function Profile() {
           </div>
         )}
 
-        {profile.posts.length > 0 && (
-          <section className="sec" style={{ padding: '0 16px 14px' }}>
-            <h4>Posts</h4>
-            <div className="post-grid">
-              {profile.posts.map((post) => (
-                <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Post'}>
-                  {post.kind === 'video' ? (
-                    post.poster ? <img src={post.poster} alt="" loading="lazy" /> : <span className="post-ph" />
-                  ) : (
-                    <img src={post.thumb ?? post.url} alt="" loading="lazy" />
-                  )}
-                  {post.kind === 'video' && <Icon name="i-play" size={18} className="post-kind" />}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+        <Tabs
+          label="Profile tabs"
+          className="tabs-pp"
+          value={tab}
+          onChange={(val) => setTab(val as typeof tab)}
+          options={[
+            { key: 'reels', label: `Reels (${reels.length})` },
+            { key: 'photos', label: `Photos (${photos.length})` },
+            { key: 'visited', label: `Visited (${stamps.length})` },
+            { key: 'found', label: `Found (${num(profile.places_found)})` },
+          ]}
+        />
 
-        {profile.videos.length > 0 && (
-          <section className="sec" style={{ padding: '0 16px 14px' }}>
-            <h4>Videos</h4>
-            <div className="vids">
-              {profile.videos.map((video) => (
-                <Link className="vid" key={video.id} to="/watch" aria-label={video.caption}>
-                  {video.poster ? (
-                    <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
-                  ) : (
-                    <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
-                  )}
-                  <i>
-                    <Icon name="i-play" size={14} />
-                    {clock(video.duration_s)}
-                  </i>
-                  <span>@{profile.username}</span>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {profile.found.length > 0 ? (
-          <section className="sec" style={{ padding: '0 0 14px' }}>
-            <h4 style={{ padding: '0 16px' }}>Places they found</h4>
-            {profile.places_found > profile.found.length && (
-              <div
-                style={{
-                  padding: '8px 14px',
-                  margin: '0 16px 8px',
-                  borderRadius: '8px',
-                  background: 'rgba(47, 93, 80, 0.08)',
-                  fontSize: '0.82rem',
-                  color: 'var(--ink-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Icon name="i-info" size={15} />
-                <span>
-                  Showing latest {profile.found.length} of {num(profile.places_found)} places added
-                </span>
+        <div style={{ padding: '12px 0 24px' }}>
+          {tab === 'reels' && (
+            reels.length > 0 ? (
+              <div className="vids" style={{ padding: '0 16px' }}>
+                {reels.map((video) => (
+                  <Link className="vid" key={video.id} to="/watch" aria-label={video.caption || 'Reel'}>
+                    {video.poster ? (
+                      <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
+                    ) : (
+                      <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
+                    )}
+                    <i>
+                      <Icon name="i-play" size={14} />
+                      {clock(video.duration_s)}
+                    </i>
+                    <span>{video.caption || `@${profile.username}`}</span>
+                  </Link>
+                ))}
               </div>
-            )}
-            <ol className="rows" style={{ flex: 'none' }}>
-              {profile.found.map((place) => (
-                <PlaceRow key={place.id} place={place} showRank={false} />
-              ))}
-            </ol>
-          </section>
-        ) : (
-          profile.posts.length === 0 && (
-            <EmptyState icon="i-compass" title="Nothing posted yet" />
-          )
-        )}
+            ) : (
+              <EmptyState icon="i-video" title="No reels yet" body={`@${profile.username} hasn't posted any Watch reels yet.`} />
+            )
+          )}
+
+          {tab === 'photos' && (
+            photos.length > 0 ? (
+              <div className="post-grid" style={{ padding: '0 16px' }}>
+                {photos.map((post) => (
+                  <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
+                    <img src={post.thumb ?? post.url} alt="" loading="lazy" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <EmptyState icon="i-camera" title="No photos yet" body={`@${profile.username} hasn't posted any photos yet.`} />
+            )
+          )}
+
+          {tab === 'visited' && (
+            stamps.length > 0 ? (
+              <div className="stamps" style={{ padding: '0 16px' }}>
+                {stamps.map((stamp, index) => {
+                  const meta = categoryMeta(stamp.category);
+                  return (
+                    <Link to={`/place/${stamp.place_id}`} key={`${stamp.place_id}-${stamp.date}-${index}`}>
+                      <StampTile
+                        name={stamp.name}
+                        icon={meta.icon}
+                        date={stampDate(stamp.date)}
+                        colour={meta.stampColour}
+                        rotation={[-4, 3, -2, 2, -3, 4, -1, 2][index % 8]}
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState icon="i-passport" title="No check-ins yet" body={`@${profile.username} hasn't checked in to any places yet.`} />
+            )
+          )}
+
+          {tab === 'found' && (
+            profile.found.length > 0 ? (
+              <>
+                {profile.places_found > profile.found.length && (
+                  <div
+                    style={{
+                      padding: '8px 14px',
+                      margin: '0 16px 8px',
+                      borderRadius: '8px',
+                      background: 'rgba(47, 93, 80, 0.08)',
+                      fontSize: '0.82rem',
+                      color: 'var(--ink-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Icon name="i-info" size={15} />
+                    <span>
+                      Showing latest {profile.found.length} of {num(profile.places_found)} places added
+                    </span>
+                  </div>
+                )}
+                <ol className="rows" style={{ flex: 'none' }}>
+                  {profile.found.map((place) => (
+                    <PlaceRow key={place.id} place={place} showRank={false} />
+                  ))}
+                </ol>
+              </>
+            ) : (
+              <EmptyState icon="i-pin" title="No places added" body={`@${profile.username} hasn't added any places yet.`} />
+            )
+          )}
+        </div>
       </div>
     </>
   );

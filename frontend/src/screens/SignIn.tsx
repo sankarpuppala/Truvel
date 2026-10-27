@@ -47,7 +47,8 @@ export function SignIn() {
   const { setMe, toast } = useApp();
 
   const [mode, setMode] = useState<Mode>('in');
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(() => (typeof localStorage !== 'undefined' ? localStorage.getItem('truvel_saved_identifier') || '' : ''));
+  const [remember, setRemember] = useState(true);
   const [email, setEmail] = useState('');
   const [handle, setHandle] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -98,6 +99,10 @@ export function SignIn() {
               display_name: displayName.trim(),
             });
       setMe(result.user);
+      if (remember && typeof localStorage !== 'undefined') {
+        const toSave = mode === 'in' ? identifier.trim().toLowerCase() : handle.trim().toLowerCase();
+        localStorage.setItem('truvel_saved_identifier', toSave);
+      }
       toast(
         mode === 'in'
           ? `Welcome back, @${result.user.username}`
@@ -286,6 +291,19 @@ export function SignIn() {
                 ))}
               </ul>
             )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 6px', fontSize: '0.88rem', color: 'var(--ink)' }}>
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: 'var(--marigold)' }}
+              />
+              <label htmlFor="remember-me" style={{ cursor: 'pointer', margin: 0, fontWeight: 500 }}>
+                Remember me on this device
+              </label>
+            </div>
 
             {error && (
               <p className="auth-error" role="alert">

@@ -245,6 +245,177 @@ free data source rather than something retrying would fix.
 
 ---
 
+## 11. Card A6 — repo hygiene, CI workflow, commit skill
+
+**User:** Asked to run "card A1" by name before the `/card` skill had been
+discovered; once the skill turned up (`.claude/skills/card/SKILL.md`), picked
+up the actual next card in order, A6, from `docs/NEXT_LEVEL_PLAN.md`.
+
+**What happened:**
+- Removed the tracked `pagdandi-starter.zip` (394 KB; its contents were
+  already unpacked into the repo from the earlier Truvel rename) and widened
+  `.gitignore`'s rule from the one literal filename `truvel-starter.zip` to
+  `*-starter.zip` so this can't recur under either name.
+- Dropped a stale line from the SPEC.md epigraph — "Working name; check it
+  first (Q1)" — now that the name was settled to Truvel everywhere else in
+  the codebase; proposed this as an explicit diff and waited for approval
+  first, since a SPEC change is one of the card skill's "stop and show the
+  plan" triggers.
+- Added `.github/workflows/ci.yml`: ruff + pytest on Python 3.12, `npm ci` +
+  lint (`tsc --noEmit`) + `npm run test` on Node 20. Deliberately no
+  Playwright yet — it needs seeded data CI doesn't have.
+- Recreated `.claude/skills/commit/SKILL.md` per PROMPT.md Prompt 3 (run
+  tests, refuse anything on the "Never commit" list, write a
+  `phase N:`/`card ID:` message, print the short hash).
+- Backend (227 tests) and frontend (26 tests) green locally; pushed the
+  branch on request so GitHub Actions could actually run the new workflow
+  (confirming it went green was left to the user — no `gh` CLI or repo API
+  access from this session).
+- Ticked A6 in `docs/NEXT_LEVEL_PLAN.md`, logged in `PLAN.md`, 3 viva Q&A
+  appended to `docs/VIVA.md`.
+
+---
+
+## 12. Card A1 — security, privacy and fraud review
+
+**User:** Asked to run card A1 (security, privacy and fraud review) once A6
+was done.
+
+**What happened:**
+- Per the card and PROMPT.md Prompt 8, launched an independent background
+  subagent with *no* visibility into this conversation — given only
+  CLAUDE.md's invariants, the named SPEC sections, and the backend source —
+  to hunt for ways to leak a user's location, get kadam/earnings without a
+  real visit, see a fragile place's pin before pledging, smuggle a bad
+  upload past pHash, show an unlabelled ₹ figure, or break auth.
+- It came back with 1 Critical, 3 High, 2 Medium and 1 accepted Low finding.
+  Traced each to exact code, proposed concrete minimal fixes (no SPEC
+  change needed — these were enforcement bugs against rules already
+  written down), and waited for approval before touching ~10 files.
+- Fixed, each with a new test in `backend/tests/test_security.py`:
+  - **Critical** — `place_payload`'s `distance_km` (and the duplicate-places
+    endpoint's `distance_m`) were computed from a fragile place's *true*
+    coordinates even when the returned `lat`/`lng` had been fuzzed to ~1 km;
+    three distance readings from three known points could trilaterate the
+    exact pin without ever pledging. Fixed by deriving distance from the
+    same (possibly fuzzed) coordinates actually returned.
+  - **High** — `/api/touch` trusted a client-asserted `video`/`photo`
+    content_type with no check that anyone had actually watched anything,
+    letting an account flood fabricated touches for a creator right before
+    a real check-in and walk off with that creator's attribution/kadam.
+    The legitimate path already existed server-side in the watch-view
+    handler (created only from a genuinely engaged `MediaView`), so the
+    fix was to delete the unverifiable branch entirely, add an hourly rate
+    limit, and dedupe repeated place/steps touches.
+  - **High** — Uvicorn's default access logger printed every deck/watch/
+    search request's full query string, including the viewer's live
+    `lat`/`lng`, to plaintext logs — technically outside invariant 1's
+    "never store coordinates" (no DB column was ever touched) but against
+    its spirit. Disabled `uvicorn.access` at import time.
+  - **High** — `check_in`'s "already visited today?"/"first ever visit?"
+    checks were a plain read-then-write with no lock; since FastAPI runs a
+    sync route in a thread pool, two near-simultaneous check-ins could both
+    pass the checks before either committed, double-awarding kadam and
+    running attribution twice for one physical visit. Fixed with a
+    per-`(user_id, place_id)` `threading.Lock` around the whole section —
+    sufficient because this is a single-process, single-SQLite-file app by
+    design (no Postgres/Redis). A 5-thread concurrent test proved the bug
+    and then proved the fix.
+  - **Medium** — `login()`'s `user is None or not verify_password(...)`
+    short-circuited the (deliberately slow) argon2id check whenever no
+    account matched, making a non-existent identifier measurably faster
+    than a wrong password on a real one — a timing side-channel defeating
+    the endpoint's otherwise-identical error message. Fixed with a
+    precomputed dummy hash checked on every login attempt regardless.
+  - **Medium** — the dev `/teleport` endpoint (used for the viva demo) handed
+    back a fragile place's exact coordinates with no pledge check at all.
+    Fixed to apply the same ~1 km fuzzing `place_payload` uses until the
+    caller pledges — matching, not weakening, the real API's behaviour.
+  - **Low, accepted, not fixed** — pHash dedupe can be defeated by a simple
+    flip/crop/colour-shift; this is inherent to perceptual hashing and
+    already slated for the Tier-2 CLIP-embedding mitigation in SPEC.
+- Also added the security headers the card asked for (CSP scoped to
+  `tiles.openfreemap.org` per invariant 7, `X-Content-Type-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`).
+- Wrote up every finding and fix in `docs/SECURITY_REVIEW.md`. Full suite:
+  238 backend tests, 26 frontend tests, all green. Left several unrelated,
+  pre-existing uncommitted changes (stray frontend edits, regenerated
+  Playwright screenshots) untouched rather than folding them into this
+  commit.
+- Ticked A1, logged in `PLAN.md`, 3 viva Q&A appended to `docs/VIVA.md`.
+
+---
+
+## 13. Card A2 — tick what's already verified; Lighthouse
+
+**User:** Asked to run card A2 via the `/card` skill.
+
+**What happened:**
+- The card's premise checked out: `npx playwright test` was green (70
+  passed across both themes), so AC-20/21/22 in `PLAN.md` Phase 9 got
+  ticked.
+- Built the production bundle (`npm run build`) and ran Lighthouse's mobile
+  profile against it (via `npm run preview`) for Nearby (`/`) and Watch
+  (`/watch`), per the card's instruction — first result: Performance
+  72/84, Accessibility 98/100, Best Practices 92/92, SEO 92/91.
+- Fixed the top real findings rather than chasing every audit line
+  (console 401s from Lighthouse's own unauthenticated probe, and the
+  `geolocation-on-start` flag on screens that genuinely need location on
+  mount for their core feature, were both judged not real bugs):
+  1. The deck's lead photo is the LCP element on both screens but had no
+     `fetchPriority` hint and was competing with a 1.3 MB of map/geometry
+     JS for bandwidth. Added `fetchPriority="high"` to `DeckCard`'s front
+     card only (not the peeking back card, which isn't render-critical).
+  2. Neither screen had a `<main>` landmark (axe `landmark-one-main`).
+     `App.tsx` now wraps the routed screen in one, kept outside
+     `<BottomNav>` since persistent chrome isn't page content — Nearby's
+     accessibility score went 98 → 100.
+  3. The real culprit behind Nearby's especially bad LCP: Vite was
+     emitting an unconditional `<link rel="modulepreload">` for the
+     `turf` chunk into the single shared `index.html`, so *every* route —
+     including Nearby, which never touches `@turf/turf` (only the
+     fog-of-war map screen does) — paid for downloading it before first
+     paint. Added `build.modulePreload.resolveDependencies` to
+     `vite.config.ts` to drop the `maplibre` and `turf` chunks from the
+     preload list.
+- Rebuilt and re-ran Lighthouse to confirm: Watch's Performance rose
+  84 → 90 and its LCP score 0.53 → 0.69-0.73. Nearby's Performance stayed
+  low (~66) — diagnosed as an inherent SPA limitation (the deck photo's
+  URL isn't known until the JS bundle parses and `/api/deck` returns, so
+  Lighthouse's simulated-throttling model scores the resulting
+  `resourceLoadDelay` harshly) that would need server-rendering the first
+  card to fix properly; noted as out of scope for the zero-budget,
+  no-SSR stack rather than pursued further.
+- Backend `pytest -q` (238 passed), frontend `npm run test` (26 passed)
+  and `tsc --noEmit` all green before committing. Ticked A2 in
+  `docs/NEXT_LEVEL_PLAN.md`, recorded the Lighthouse scores in `PLAN.md`'s
+  "Measured values" table and logged the session in its progress log.
+
+---
+
+## 14. Merging the two branches into one
+
+**User:** Asked to merge all branches into a single branch.
+
+**What happened:**
+- Only two branches existed: `master` and the working branch
+  `claude/affectionate-bohr-nud480`. They had diverged — the working
+  branch was 5 commits ahead (cards A6, A1, A2) and 4 commits behind
+  (search-scope fixes, the Nearby location/deck-paging fix, the
+  "Add a place" photo-upload fix, and 9 more cities seeded on master).
+- Asked which branch should end up holding everything; the user picked
+  merging into `master`.
+- `git checkout master`, then `git merge claude/affectionate-bohr-nud480`.
+  Only `PLAN.md` conflicted (both branches had appended different dated
+  entries to its progress log); every code file merged cleanly. Resolved
+  by interleaving the two branches' entries in chronological order (by
+  the dates and same-day "later/later still/even later/latest" labels
+  already used in the log), rather than picking one side — both commit
+  histories' narratives are preserved.
+- Committed the merge.
+
+---
+
 ## Where things stand
 
 - One official account (`@truvel`), publisher of every imported place,
@@ -258,3 +429,23 @@ free data source rather than something retrying would fix.
   full ranked candidate list instead of silently dropping places past the
   first 30, and is honest about whether there's more to see.
 - "Add a place" photo upload works end-to-end again.
+- CI runs ruff + pytest and npm lint/test on every push
+  (`.github/workflows/ci.yml`); the starter-archive cruft is gone; a
+  `commit` skill enforces the "never commit media/db/env/venv/node_modules"
+  rule before every commit.
+- An independent security review closed one Critical and three High findings
+  (fragile-place trilateration, unverified attribution touches, logged
+  viewer coordinates, a check-in double-award race) plus two Medium ones
+  (login timing enumeration, a leaky dev teleport), with a test for each in
+  `backend/tests/test_security.py` and the full writeup in
+  `docs/SECURITY_REVIEW.md`. Security headers (CSP, etc.) are on every
+  response.
+- AC-20/21/22 Playwright suite (70 cases, both themes) confirmed green and
+  ticked; Lighthouse mobile measured on the production build — Nearby/Watch
+  Performance 66/90, Accessibility 100/100 — with the deck's LCP photo now
+  fetch-prioritised, a `<main>` landmark on every screen, and the unneeded
+  `maplibre`/`turf` preload hints dropped from the shared `index.html`.
+- `master` and the working branch have been merged into one history on
+  `master`; no branches remain diverged.
+- Next up per `docs/NEXT_LEVEL_PLAN.md`'s stated order: card A5 (split the
+  long handlers, behaviour-preserving).
