@@ -148,18 +148,6 @@ def login(
         auth.record_login_failure(keys)
         raise unauthorized("That email and password do not match.")
 
-    # If the user is logging in and their home city was still default/unset, sync it
-    try:
-        from .places import detect_location
-        detected = detect_location(request, session, user)
-        if detected and detected.get("city_id") and (user.home_city_id is None or user.home_city_id == 1):
-            user.home_city_id = detected["city_id"]
-            session.add(user)
-            session.commit()
-            session.refresh(user)
-    except Exception:
-        pass
-
     auth.clear_login_failures(keys)
     token = auth.start_session(session, response, user)
     return {"user": user_payload(session, user), "token": token}

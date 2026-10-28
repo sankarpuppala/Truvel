@@ -54,6 +54,42 @@ export function Profile() {
     }
   }
 
+  async function deleteVideo(mediaId: number) {
+    if (!window.confirm('Delete this reel? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(mediaId);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              videos: prev.videos.filter((v) => v.id !== mediaId),
+            }
+          : prev,
+      );
+      toast('Reel deleted.', 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Could not delete reel.', 'bad');
+    }
+  }
+
+  async function deletePhoto(mediaId: number) {
+    if (!window.confirm('Delete this photo? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(mediaId);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              posts: prev.posts.filter((p) => p.id !== mediaId),
+            }
+          : prev,
+      );
+      toast('Photo deleted.', 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Could not delete photo.', 'bad');
+    }
+  }
+
   if (loading) return <Loading />;
   if (!profile) return null;
 
@@ -160,18 +196,35 @@ export function Profile() {
             reels.length > 0 ? (
               <div className="vids" style={{ padding: '0 16px' }}>
                 {reels.map((video) => (
-                  <Link className="vid" key={video.id} to="/watch" aria-label={video.caption || 'Reel'}>
-                    {video.poster ? (
-                      <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
-                    ) : (
-                      <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
+                  <div key={video.id} className="vid-item">
+                    <Link className="vid" to="/watch" aria-label={video.caption || 'Reel'}>
+                      {video.poster ? (
+                        <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
+                      ) : (
+                        <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
+                      )}
+                      <i>
+                        <Icon name="i-play" size={14} />
+                        {clock(video.duration_s)}
+                      </i>
+                      <span>{video.caption || `@${profile.username}`}</span>
+                    </Link>
+                    {(profile.is_self || me?.official) && (
+                      <button
+                        type="button"
+                        className="vid-del-btn"
+                        aria-label="Delete reel"
+                        title="Delete reel"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void deleteVideo(video.id);
+                        }}
+                      >
+                        <Icon name="i-trash" size={16} />
+                      </button>
                     )}
-                    <i>
-                      <Icon name="i-play" size={14} />
-                      {clock(video.duration_s)}
-                    </i>
-                    <span>{video.caption || `@${profile.username}`}</span>
-                  </Link>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -183,9 +236,26 @@ export function Profile() {
             photos.length > 0 ? (
               <div className="post-grid" style={{ padding: '0 16px' }}>
                 {photos.map((post) => (
-                  <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
-                    <img src={post.thumb ?? post.url} alt="" loading="lazy" />
-                  </Link>
+                  <div key={post.id} className="post-item">
+                    <Link to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
+                      <img src={post.thumb ?? post.url} alt="" loading="lazy" />
+                    </Link>
+                    {(profile.is_self || me?.official) && (
+                      <button
+                        type="button"
+                        className="media-del-btn"
+                        aria-label="Delete photo"
+                        title="Delete photo"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          void deletePhoto(post.id);
+                        }}
+                      >
+                        <Icon name="i-trash" size={15} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

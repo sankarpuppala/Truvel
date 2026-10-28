@@ -32,6 +32,7 @@ export function WatchPlayer({
   onShare,
   onComments,
   onFollow,
+  onDelete,
   onView,
 }: {
   item: WatchItem;
@@ -44,6 +45,8 @@ export function WatchPlayer({
   onComments: () => void;
   /** Undefined when there is no one to follow (your own video, or no creator). */
   onFollow?: () => void;
+  /** Provided only when the video belongs to the signed-in user. */
+  onDelete?: () => void;
   /** Called when this item stops being current: (watched seconds, duration). */
   onView: (watchedSeconds: number, duration: number) => void;
 }) {
@@ -271,6 +274,12 @@ export function WatchPlayer({
           <Icon name="i-list" size={28} />
           <span>Text</span>
         </button>
+        {onDelete && (
+          <button className="wr" onClick={onDelete} aria-label="Delete this reel" style={{ color: 'var(--laterite)' }}>
+            <Icon name="i-trash" size={26} />
+            <span>Delete</span>
+          </button>
+        )}
       </div>
 
       <div className="wbody">

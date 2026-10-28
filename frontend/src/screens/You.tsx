@@ -68,7 +68,33 @@ export function You() {
     } finally {
       setLoading(false);
     }
-  }, [me, view, period, toast]);
+  }, [me?.id, view, period, toast]);
+
+  const deleteVideo = useCallback(async (mediaId: number) => {
+    if (!window.confirm('Delete this reel? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(mediaId);
+      setPassport((prev) =>
+        prev ? { ...prev, videos: (prev.videos || []).filter((v) => v.id !== mediaId) } : prev,
+      );
+      toast('Reel deleted.', 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Could not delete reel.', 'bad');
+    }
+  }, [toast]);
+
+  const deletePhoto = useCallback(async (mediaId: number) => {
+    if (!window.confirm('Delete this photo? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(mediaId);
+      setPassport((prev) =>
+        prev ? { ...prev, posts: (prev.posts || []).filter((p) => p.id !== mediaId) } : prev,
+      );
+      toast('Photo deleted.', 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Could not delete photo.', 'bad');
+    }
+  }, [toast]);
 
   useEffect(() => {
     void load();
@@ -345,18 +371,33 @@ export function You() {
                 ) : (
                   <div className="vids" style={{ padding: '12px 16px' }}>
                     {passport.videos.map((video) => (
-                      <Link className="vid" key={video.id} to="/watch" aria-label={video.caption || 'Reel'}>
-                        {video.poster ? (
-                          <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
-                        ) : (
-                          <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
-                        )}
-                        <i>
-                          <Icon name="i-play" size={14} />
-                          {clock(video.duration_s)}
-                        </i>
-                        <span>{video.caption || `@${passport.user.username}`}</span>
-                      </Link>
+                      <div key={video.id} className="vid-item">
+                        <Link className="vid" to="/watch" aria-label={video.caption || 'Reel'}>
+                          {video.poster ? (
+                            <img className="vid-ph" src={video.poster} alt="" style={{ objectFit: 'cover' }} />
+                          ) : (
+                            <Scene name={categoryScene('other')} className="vid-ph" viewBox="60 0 280 500" />
+                          )}
+                          <i>
+                            <Icon name="i-play" size={14} />
+                            {clock(video.duration_s)}
+                          </i>
+                          <span>{video.caption || `@${passport.user.username}`}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          className="vid-del-btn"
+                          aria-label="Delete reel"
+                          title="Delete reel"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void deleteVideo(video.id);
+                          }}
+                        >
+                          <Icon name="i-trash" size={16} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -379,9 +420,24 @@ export function You() {
                 ) : (
                   <div className="post-grid" style={{ padding: '12px 16px' }}>
                     {passport.posts.map((post) => (
-                      <Link key={post.id} to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
-                        <img src={post.thumb ?? post.url} alt="" loading="lazy" />
-                      </Link>
+                      <div key={post.id} className="post-item">
+                        <Link to={`/place/${post.place_id}`} aria-label={post.caption || 'Photo'}>
+                          <img src={post.thumb ?? post.url} alt="" loading="lazy" />
+                        </Link>
+                        <button
+                          type="button"
+                          className="media-del-btn"
+                          aria-label="Delete photo"
+                          title="Delete photo"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void deletePhoto(post.id);
+                          }}
+                        >
+                          <Icon name="i-trash" size={15} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}

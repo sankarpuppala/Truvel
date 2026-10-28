@@ -203,6 +203,18 @@ export function Watch() {
     }
   }
 
+  async function deleteReel(item: WatchItem) {
+    if (!window.confirm('Delete this reel? This cannot be undone.')) return;
+    try {
+      await api.deleteMedia(item.media.id);
+      haptic();
+      setItems((list) => list.filter((entry) => entry.media.id !== item.media.id));
+      toast('Reel deleted.', 'plain');
+    } catch (error) {
+      toast(error instanceof ApiError ? error.message : 'Could not delete reel.', 'bad');
+    }
+  }
+
   const savedNearby = useMemo(
     () => items.find((item) => item.place.saved && (item.place.distance_km ?? 999) < 10),
     [items],
@@ -280,6 +292,11 @@ export function Watch() {
                   onFollow={
                     item.media.creator && item.media.creator.id !== me?.id
                       ? () => void follow(item)
+                      : undefined
+                  }
+                  onDelete={
+                    item.media.creator && (item.media.creator.id === me?.id || me?.official)
+                      ? () => void deleteReel(item)
                       : undefined
                   }
                   onView={sendView(item.media.id)}

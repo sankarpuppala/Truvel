@@ -24,6 +24,7 @@ from ..errors import bad_request, not_found
 from ..geo import haversine_km
 from ..models import (
     City,
+    Media,
     Neighbourhood,
     Place,
     Save,

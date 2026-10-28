@@ -124,26 +124,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [setMe]);
 
+  const positionRef = useRef<Position | null>(null);
+  positionRef.current = position;
+  const requestingPosition = useRef(false);
+
   const requestPosition = useCallback(async (force = false) => {
     if (simulated) return simulated;
-    if (!force && position) return position;
+    if (!force && positionRef.current) return positionRef.current;
+    if (requestingPosition.current) return positionRef.current;
+    requestingPosition.current = true;
     try {
       const next = await getCoarsePosition();
-      setPosition(next);
-      try {
-        const hereInfo = await api.here(next.lat, next.lng);
-        if (hereInfo && hereInfo.name) {
-          setActiveCityName(hereInfo.name);
+      const cur = positionRef.current;
+      const changed =
+        !cur ||
+        Math.abs(cur.lat - next.lat) > 0.0005 ||
+        Math.abs(cur.lng - next.lng) > 0.0005;
+      if (changed) {
+        setPosition(next);
+        positionRef.current = next;
+        try {
+          const hereInfo = await api.here(next.lat, next.lng);
+          if (hereInfo && hereInfo.name) {
+            setActiveCityName(hereInfo.name);
+          }
+        } catch {
+          // Ignore here lookup error
         }
-      } catch {
-        // Ignore here lookup error
       }
       return next;
     } catch {
-      // Location denied or unavailable fallback
-      return position;
+      return positionRef.current;
+    } finally {
+      requestingPosition.current = false;
     }
-  }, [simulated, position, setPosition, setActiveCityName]);
+  }, [simulated, setPosition, setActiveCityName]);
 
   useEffect(() => {
     void refreshMe();
@@ -161,15 +176,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .then((health) => setDevTools(Boolean(health.dev_fake_location)))
         .catch(() => setDevTools(false));
     }
-  }, [refreshMe, requestPosition]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toast = useCallback((text: string, kind: Toast['kind'] = 'plain') => {
-    const id = ++toastId.current;
-    setToasts((current) => [...current, { id, text, kind }]);
-    // 2.5 s, as SPEC §12.7 specifies for the kadam toast.
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((t) => t.id !== id));
-    }, 2500);
+    setToasts((current) => {
+      if (current.some((t) => t.text === text)) return current;
+      const id = ++toastId.current;
+      window.setTimeout(() => {
+        setToasts((curr) => curr.filter((t) => t.id !== id));
+      }, 2500);
+      return [...current.slice(-2), { id, text, kind }];
+    });
   }, []);
 
   const logout = useCallback(async () => {

@@ -99,7 +99,7 @@ export function PlacePage() {
     place.distance_km * 1000 <= Math.max(place.radius_m, 150);
 
   const canDelete =
-    !!me && !!current && current.source === 'upload' && current.creator?.id === me.id;
+    !!me && !!current && current.source === 'upload' && (current.creator?.id === me.id || me.official);
 
   async function deleteCurrentPhoto() {
     if (!current) return;

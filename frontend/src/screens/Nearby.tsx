@@ -33,8 +33,9 @@ export function Nearby() {
   const radii = config?.deck.radii_km ?? RADII;
 
   useEffect(() => {
-    void requestPosition(true);
-  }, [requestPosition]);
+    void requestPosition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The header should say where someone actually *is* ("Tirupati"), not
   // their saved home city ("Hyderabad") -- that is a different thing, and
