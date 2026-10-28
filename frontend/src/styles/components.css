@@ -301,12 +301,12 @@
 .pulse-c span{display:inline-flex;gap:5px;align-items:center}
 .pulse-c .ic{color:var(--moss)}
 .pulse-n{margin:0;font:400 15.5px/1.3 Kalam,cursive}
-.vids{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.vid{position:relative;aspect-ratio:9/14;border-radius:12px;overflow:hidden}
-.vid-ph{position:absolute;inset:0;width:100%;height:100%}
+.vids{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vid{position:relative;display:block;width:100%;height:100%;aspect-ratio:9/14;border-radius:12px;overflow:hidden;background:var(--sunk)}
+.vid-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .vid::after{content:"";position:absolute;inset:50% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.75))}
 .vid i{position:absolute;z-index:1;left:6px;bottom:24px;font-style:normal;font-size:11.5px;font-weight:700;color:var(--on-photo);display:flex;gap:2px;align-items:center}
-.vid span{position:absolute;z-index:1;left:6px;bottom:6px;color:var(--on-photo);font-size:11.5px;font-weight:600}
+.vid span{position:absolute;z-index:1;left:6px;bottom:6px;right:6px;color:var(--on-photo);font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Watch: dark in both themes */
 .scr-watch{background:#0B0D0C;color:var(--on-photo)}
 .watch-ph{position:absolute;left:0;top:0;width:100%;height:calc(100% - 68px)}
@@ -534,7 +534,8 @@
 .post-item a{display:block;width:100%;height:100%}
 .media-del-btn{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#fff;border:1px solid rgba(255,255,255,.25);cursor:pointer;z-index:6;transition:transform .15s ease,background .15s ease}
 .media-del-btn:hover{background:var(--laterite);transform:scale(1.08)}
-.vid-item{position:relative}
+.vid-item{position:relative;display:block;width:100%;aspect-ratio:9/14;border-radius:12px;overflow:hidden;background:var(--sunk)}
+.vid-item .vid{display:block;width:100%;height:100%}
 .vid-del-btn{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#fff;border:1px solid rgba(255,255,255,.25);cursor:pointer;z-index:6;transition:transform .15s ease,background .15s ease}
 .vid-del-btn:hover{background:var(--laterite);transform:scale(1.08)}
 @media (min-width:1100px){.page-you .feed,.page-you .people{max-width:620px;margin-inline:auto}}
