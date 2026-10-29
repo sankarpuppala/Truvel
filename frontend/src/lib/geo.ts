@@ -89,9 +89,17 @@ export function getPosition(timeoutMs = 15_000): Promise<Position> {
   });
 }
 
-/** A coarse position for the deck and Explore, where a cached fix is fine. */
-export async function getCoarsePosition(timeoutMs = 2500): Promise<Position> {
-  // 1. Try real device geolocation first so the user gets their actual live location
+/** A coarse position for the deck and Explore, where a cached fix is fine.
+ *
+ * Real device geolocation is tried first and given enough time to clear the
+ * browser's own "Allow location?" prompt -- a short timeout here used to
+ * expire while that prompt was still on screen, so the app would quietly
+ * fall back to IP-based geolocation (accurate to a city, not a street) and
+ * every distance shown afterwards was wrong by tens of kilometres. The
+ * `/api/here/detect` fallback (server-side, invariant 7) only fires when the
+ * device truly has no usable location.
+ */
+export async function getCoarsePosition(timeoutMs = 8000): Promise<Position> {
   if (typeof navigator !== 'undefined' && 'geolocation' in navigator && window.isSecureContext) {
     try {
       const pos = await new Promise<Position>((resolve, reject) => {
@@ -108,14 +116,13 @@ export async function getCoarsePosition(timeoutMs = 2500): Promise<Position> {
       });
       return pos;
     } catch {
-      // Permission denied or timed out; fall through to network IP detection
+      // Permission denied or timed out; fall through to the server fallback.
     }
   }
 
-  // 2. Immediate same-origin network / IP geolocation (resolves in ~50ms, never blocked)
   try {
     const res = await fetch('/api/here/detect', {
-      signal: AbortSignal.timeout(2500),
+      signal: AbortSignal.timeout(3500),
     });
     if (res.ok) {
       const data = await res.json();
@@ -128,29 +135,17 @@ export async function getCoarsePosition(timeoutMs = 2500): Promise<Position> {
       }
     }
   } catch {
-    // Fallback if local endpoint unreachable
-  }
-
-  // 3. Try ipwho.is (public CORS enabled)
-  try {
-    const res = await fetch('https://ipwho.is/', {
-      signal: AbortSignal.timeout(2500),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
-        return {
-          lat: data.latitude,
-          lng: data.longitude,
-          accuracy: 5000,
-        };
-      }
-    }
-  } catch {
-    // Fallback
+    // Fallback if the endpoint is unreachable.
   }
 
   throw new LocationError('unavailable', 'Location is not available.');
+}
+
+/** True once a position is precise enough to trust for distances -- a coarse
+ * IP-based fix (accuracy >= 5000 m, see above) is not, and a screen should
+ * ask the device again rather than keep showing distances from it. */
+export function isCoarseFallback(position: Position | null): boolean {
+  return !position || position.accuracy >= 5000;
 }
 
 /** Whether the browser is on a metered or slow connection (SPEC §8.3). */

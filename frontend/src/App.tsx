@@ -9,26 +9,41 @@
  * Watch gets the dark nav and no scrolling shell, because it is the one
  * full-bleed immersive surface (SPEC §12.1).
  */
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { BottomNav } from './components/BottomNav';
 import { SideNav } from './components/SideNav';
+import { Loading } from './components/common';
 import { Toasts } from './components/common';
-import { Admin } from './screens/Admin';
-import { AddMedia } from './screens/AddMedia';
-import { AddPlace } from './screens/AddPlace';
-import { AddPulse } from './screens/AddPulse';
-import { Explore } from './screens/Explore';
 import { Nearby } from './screens/Nearby';
-import { PlacePage } from './screens/PlacePage';
-import { Following } from './screens/Following';
-import { Profile } from './screens/Profile';
-import { Settings } from './screens/Settings';
-import { ForgotPassword, ResetPassword } from './screens/Recover';
-import { SignIn } from './screens/SignIn';
-import { Watch } from './screens/Watch';
-import { WriteSteps } from './screens/WriteSteps';
-import { You } from './screens/You';
+
+// Every other screen is its own chunk, fetched the first time its route is
+// visited (SPEC §15): the entry bundle used to carry Admin, Watch, every Add
+// flow and Settings up front, which is most of what made the first paint of
+// *any* page slow, not just the heavy ones (Watch already pays for MapLibre
+// and turf as separate chunks -- see vite.config.ts).
+const Admin = lazy(() => import('./screens/Admin').then((m) => ({ default: m.Admin })));
+const AddMedia = lazy(() => import('./screens/AddMedia').then((m) => ({ default: m.AddMedia })));
+const AddPlace = lazy(() => import('./screens/AddPlace').then((m) => ({ default: m.AddPlace })));
+const AddPulse = lazy(() => import('./screens/AddPulse').then((m) => ({ default: m.AddPulse })));
+const Explore = lazy(() => import('./screens/Explore').then((m) => ({ default: m.Explore })));
+const PlacePage = lazy(() => import('./screens/PlacePage').then((m) => ({ default: m.PlacePage })));
+const Following = lazy(() => import('./screens/Following').then((m) => ({ default: m.Following })));
+const Profile = lazy(() => import('./screens/Profile').then((m) => ({ default: m.Profile })));
+const Settings = lazy(() => import('./screens/Settings').then((m) => ({ default: m.Settings })));
+const ForgotPassword = lazy(() =>
+  import('./screens/Recover').then((m) => ({ default: m.ForgotPassword })),
+);
+const ResetPassword = lazy(() =>
+  import('./screens/Recover').then((m) => ({ default: m.ResetPassword })),
+);
+const SignIn = lazy(() => import('./screens/SignIn').then((m) => ({ default: m.SignIn })));
+const Watch = lazy(() => import('./screens/Watch').then((m) => ({ default: m.Watch })));
+const WriteSteps = lazy(() =>
+  import('./screens/WriteSteps').then((m) => ({ default: m.WriteSteps })),
+);
+const You = lazy(() => import('./screens/You').then((m) => ({ default: m.You })));
 
 /** Screens that fill the viewport themselves and hide the standard chrome. */
 const FULL_BLEED = ['/watch'];
@@ -63,35 +78,39 @@ export function App() {
 
         {fullBleed ? (
           <>
-            <Routes>
-              <Route path="/watch" element={<Watch />} />
-            </Routes>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/watch" element={<Watch />} />
+              </Routes>
+            </Suspense>
             <BottomNav dark />
           </>
         ) : (
           // The screen itself is the <main> landmark: an extra wrapper here would
           // break every `.scr > …` layout rule (scrolling, the Place split).
           <main className={`scr page-${pageName(path)}`}>
-            <Routes>
-              <Route path="/" element={<Nearby />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/place/:id" element={<PlacePage />} />
-              <Route path="/place/:id/pulse" element={<AddPulse />} />
-              <Route path="/place/:id/steps/new" element={<WriteSteps />} />
-              <Route path="/add/place" element={<AddPlace />} />
-              <Route path="/add/media" element={<AddMedia />} />
-              <Route path="/add/pulse" element={<AddPulse />} />
-              <Route path="/you" element={<You />} />
-              <Route path="/u/:handle" element={<Profile />} />
-              <Route path="/users/:handle" element={<Profile />} />
-              <Route path="/following" element={<Following />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/forgot" element={<ForgotPassword />} />
-              <Route path="/reset" element={<ResetPassword />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<Nearby />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/place/:id" element={<PlacePage />} />
+                <Route path="/place/:id/pulse" element={<AddPulse />} />
+                <Route path="/place/:id/steps/new" element={<WriteSteps />} />
+                <Route path="/add/place" element={<AddPlace />} />
+                <Route path="/add/media" element={<AddMedia />} />
+                <Route path="/add/pulse" element={<AddPulse />} />
+                <Route path="/you" element={<You />} />
+                <Route path="/u/:handle" element={<Profile />} />
+                <Route path="/users/:handle" element={<Profile />} />
+                <Route path="/following" element={<Following />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/forgot" element={<ForgotPassword />} />
+                <Route path="/reset" element={<ResetPassword />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
             {!hideNav && <BottomNav />}
           </main>
         )}

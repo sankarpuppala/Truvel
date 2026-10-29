@@ -87,7 +87,7 @@ async def security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "img-src 'self' data: blob: https://tiles.openfreemap.org https://upload.wikimedia.org https://commons.wikimedia.org https://*.wikimedia.org https://images.unsplash.com; "
-        "connect-src 'self' https://tiles.openfreemap.org https://ipwho.is https://ipapi.co; "
+        "connect-src 'self' https://tiles.openfreemap.org; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"

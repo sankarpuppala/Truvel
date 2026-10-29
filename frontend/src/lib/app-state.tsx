@@ -15,7 +15,7 @@ import {
 } from 'react';
 
 import { ApiError, api } from './api';
-import { getCoarsePosition, type Position } from './geo';
+import { getCoarsePosition, isCoarseFallback, type Position } from './geo';
 import type { AppConfig, Me } from './types';
 
 export type Toast = {
@@ -130,8 +130,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const requestPosition = useCallback(async (force = false) => {
     if (simulated) return simulated;
-    if (!force && positionRef.current) return positionRef.current;
-    if (requestingPosition.current) return positionRef.current;
+    const cached = positionRef.current;
+    // A cached IP-based fix (isCoarseFallback) is good enough to paint a
+    // screen immediately, but it is never a reason to skip asking the
+    // device for its real location -- that's how a wrong city-level guess
+    // used to stick for the rest of the session.
+    if (!force && cached && !isCoarseFallback(cached)) return cached;
+    if (requestingPosition.current) return cached;
     requestingPosition.current = true;
     try {
       const next = await getCoarsePosition();
@@ -139,7 +144,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const changed =
         !cur ||
         Math.abs(cur.lat - next.lat) > 0.0005 ||
-        Math.abs(cur.lng - next.lng) > 0.0005;
+        Math.abs(cur.lng - next.lng) > 0.0005 ||
+        isCoarseFallback(cur) !== isCoarseFallback(next);
       if (changed) {
         setPosition(next);
         positionRef.current = next;

@@ -170,7 +170,6 @@ export function You() {
                   deltaPct={studio.metrics.visits_caused.delta_pct}
                   spark={studio.sparklines.visits_caused}
                   sparkLabel="Visits caused per day"
-                  key_
                 />
                 <EarningsCard
                   paise={studio.metrics.estimated_earnings_paise}
