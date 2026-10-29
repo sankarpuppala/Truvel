@@ -208,7 +208,7 @@ export const api = {
     }>('/here/detect'),
   /** The town/village/city at a live position, for Nearby's header. */
   here: (lat: number, lng: number) =>
-    request<{ name: string | null; state: string | null; kind: string }>(
+    request<{ name: string | null; state: string | null; kind: string; slug: string | null }>(
       '/here' + query({ lat, lng }),
     ),
   cityPlaces: (

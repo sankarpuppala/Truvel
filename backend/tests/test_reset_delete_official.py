@@ -313,7 +313,7 @@ def test_place_location_falls_back_to_locality_not_just_area(client, session):
 def test_here_says_the_seeded_city_inside_its_bbox(client, session):
     city = make_city(session)  # Hyderabad bbox from the fixture
     out = client.get("/api/here?lat=17.40&lng=78.45").json()
-    assert out == {"name": city.name_en, "state": city.state, "kind": "city"}
+    assert out == {"name": city.name_en, "state": city.state, "kind": "city", "slug": city.slug}
 
 
 def test_here_falls_back_to_the_nearest_localitys_town(client, session):
@@ -322,11 +322,16 @@ def test_here_falls_back_to_the_nearest_localitys_town(client, session):
     out = client.get("/api/here?lat=13.681&lng=79.351").json()
     assert out["name"] == "Tirupati"
     assert out["kind"] == "locality"
+    # Explore's default scope relies on this slug matching `locality_places`
+    # exactly, so a town like Tirupati (or Araku) can be jumped to without
+    # ever being added to the hand-picked city list (SPEC §8.4).
+    assert out["slug"] == "tirupati"
 
 
 def test_here_is_none_far_from_anything_known(client, session):
     out = client.get("/api/here?lat=5.0&lng=5.0").json()
     assert out["name"] is None
+    assert out["slug"] is None
 
 
 def test_deck_eventually_shows_every_place_within_radius(client, session):

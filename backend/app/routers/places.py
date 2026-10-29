@@ -276,11 +276,20 @@ def _rank_places(
         out.append(payload)
 
     # Trending badge: the top 3 of the trending sort, so the badge agrees with
-    # the tab rather than being a second definition.
+    # the tab rather than being a second definition. Scored only over the ids
+    # on *this page* (and, when already fetched for the trending sort itself,
+    # reusing those events) -- scoring the whole candidate set here as well
+    # meant "All India" ran the three trending queries, with every place's id
+    # in the `IN (...)`, twice on every request regardless of sort.
+    window_ids = [int(place.id) for place in window]
     trending_ids: set[int] = set()
-    if ids:
-        events = _events_for_trending(session, ids, now)
-        ranked = sorted(ids, key=lambda pid: -trending_score(events.get(pid, []), now))
+    if window_ids:
+        events = (
+            events
+            if sort == "trending"
+            else _events_for_trending(session, window_ids, now)
+        )
+        ranked = sorted(window_ids, key=lambda pid: -trending_score(events.get(pid, []), now))
         trending_ids = {pid for pid in ranked[:3] if trending_score(events.get(pid, []), now) > 0}
     for payload in out:
         payload["is_trending"] = payload["id"] in trending_ids
@@ -507,7 +516,7 @@ def here(
     for city in session.exec(select(City)).all():
         bbox = city.bbox or []
         if len(bbox) == 4 and bbox[0] <= lat <= bbox[2] and bbox[1] <= lng <= bbox[3]:
-            return {"name": city.name_en, "state": city.state, "kind": "city"}
+            return {"name": city.name_en, "state": city.state, "kind": "city", "slug": city.slug}
 
     box = bbox_around(lat, lng, 40)
     nearby = session.exec(
@@ -524,13 +533,29 @@ def here(
         if d <= nearest_km:
             nearest, nearest_km = place, d
     if nearest is not None:
-        name = nearest.locality or nearest.area
-        if name:
-            return {"name": name, "state": nearest.state, "kind": "locality"}
+        # `locality` is the field Explore's own `/localities/{slug}/places`
+        # groups by, so only that gives a scope worth jumping Explore into by
+        # default (SPEC §8.4, Araku-sized towns with no seeded `City` row);
+        # `area` is a finer OSM neighbourhood name that nothing else is
+        # grouped by, so it is a label here, never a slug to browse by.
+        if nearest.locality:
+            return {
+                "name": nearest.locality,
+                "state": nearest.state,
+                "kind": "locality",
+                "slug": locality_slug(nearest.locality),
+            }
+        if nearest.area:
+            return {"name": nearest.area, "state": nearest.state, "kind": "area", "slug": None}
         if nearest.state:
-            return {"name": nearest.state, "state": nearest.state, "kind": "state"}
+            return {
+                "name": nearest.state,
+                "state": nearest.state,
+                "kind": "state",
+                "slug": state_slug(nearest.state),
+            }
 
-    return {"name": None, "state": None, "kind": "none"}
+    return {"name": None, "state": None, "kind": "none", "slug": None}
 
 
 def _events_for_trending(

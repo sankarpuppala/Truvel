@@ -4,7 +4,7 @@
  * explains in one sentence what the current sort actually measures -- a ranking
  * nobody can explain is a ranking nobody should trust (SPEC §8.4).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { api, ApiError } from '../lib/api';
@@ -67,11 +67,53 @@ export function Explore() {
     [params, setParams],
   );
 
+  // Opening Explore with no city/state/locality in the URL used to mean "all
+  // 18,000+ places in India" -- both the slowest possible list and not where
+  // the person actually is. Once, per screen, jump the (otherwise untouched)
+  // default to wherever `position` resolves to -- the same detection
+  // Nearby's header already uses (SPEC §8.4), which covers an unseeded town
+  // (Araku) as a `locality` just as well as a seeded `City` -- and leave it
+  // alone the moment the person picks somewhere themselves. The list itself
+  // waits for this (`scopeReady`) so it fetches the detected place once
+  // instead of all of India and then the detected place.
+  const hasExplicitScope = params.has('city') || params.has('state') || params.has('locality');
+  const appliedDefaultLocation = useRef(false);
+  const [scopeReady, setScopeReady] = useState(hasExplicitScope);
+  useEffect(() => {
+    if (hasExplicitScope) {
+      appliedDefaultLocation.current = true;
+      setScopeReady(true);
+      return undefined;
+    }
+    if (appliedDefaultLocation.current) return undefined;
+    if (position) {
+      appliedDefaultLocation.current = true;
+      void api
+        .here(position.lat, position.lng)
+        .then((info) => {
+          if (info.kind === 'city' && info.slug) update({ city: info.slug });
+          else if (info.kind === 'locality' && info.slug) update({ locality: info.slug });
+          else if (info.kind === 'state' && info.slug) update({ state: info.slug });
+        })
+        .catch(() => undefined)
+        .finally(() => setScopeReady(true));
+      return undefined;
+    }
+    // No position yet: fall back to All India after a short wait rather
+    // than leaving the list blocked forever when location is off.
+    const timer = window.setTimeout(() => {
+      appliedDefaultLocation.current = true;
+      setScopeReady(true);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [position?.lat, position?.lng, hasExplicitScope, update]);
+
   useEffect(() => {
     setPage(1);
   }, [stateSlug, localitySlug, citySlug, sort, category, verifiedOnly]);
 
   useEffect(() => {
+    if (!scopeReady) return undefined;
     let cancelled = false;
     setLoading(true);
     const options = {
@@ -125,6 +167,7 @@ export function Explore() {
     debouncedQuery,
     position?.lat,
     position?.lng,
+    scopeReady,
     toast,
   ]);
 

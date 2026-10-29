@@ -33,7 +33,11 @@ export function Nearby() {
   const radii = config?.deck.radii_km ?? RADII;
 
   useEffect(() => {
-    void requestPosition();
+    // Forced: a cached fix from the last time Nearby was open can be hours
+    // old and from somewhere else entirely (SPEC §8.2) -- someone who has
+    // since travelled to Araku should see Araku, not wherever they were
+    // signed in from this morning.
+    void requestPosition(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
